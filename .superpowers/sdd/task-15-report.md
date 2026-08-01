@@ -79,7 +79,7 @@ episode OK
 ## FIX ROUND 1（2026-08-01）：评审 2 Important + 2 Minor 修复
 
 状态：DONE
-提交：`<commit-hash>`（fix: voices-coverage 显式落盘 + reviewer 产物命名对齐）
+提交：`e7c4362`（fix: voices-coverage 显式落盘 + reviewer 产物命名对齐）
 分支：feat/m0-m1
 
 ### Important ①：Review 产物命名与 reviewer 契约对齐（I-1）
