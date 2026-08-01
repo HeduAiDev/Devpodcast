@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 音频产物（大文件，不入库）
+*.wav
+*.mp3
+shows/*/episodes/*/audio/
+
+# 音色克隆样本（可能含他人声音，不入库）
+shows/*/voice-samples/
+
+# 环境 / 编辑器
+.env
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# TTS 模型权重（本地下载，不入库）
+models/
