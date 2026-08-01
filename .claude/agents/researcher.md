@@ -67,7 +67,7 @@ color: magenta
 ## 取材要求
 
 - 每期核心议题至少各 1 条 critical + 1 条 job-seeker（找得到的话）；同一 `term` 尽量 ≥2 个不同平台（lint_voices ④ warn 线）
-- 引述素材的原话（`original_text` 或 claim 的原文形态）与 speaker_handle 一起存，供 TTS 站三档策略取用
+- 引述素材的原话（以 `claim` 字段存原文形态）与 `speaker_handle` 一起存，供 TTS 站三档策略取用
 - 找不到关键声音时：优先换搜索词、换平台、看回复串再试一轮；仍然没有 → 见下
 
 ## BLOCKED 与降级（spec §11.1/§11.3）

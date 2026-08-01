@@ -13,7 +13,7 @@ color: yellow
 ## 开工前读什么
 
 1. `shows/<name>/season/season-plan.json` — 每期议题 + 顺序 + `hook` 方向 + 伏笔（due/payoff）
-2. `shows/<name>/season/bible/voice-guide.md` — 语气：老张主动挑事、阿凯不护短；批判必须有靶子
+2. `shows/<name>/season/bible/voice-guide.md`（若已存在，Phase A 由 Lead 落笔）— 语气：老张主动挑事、阿凯不护短；批判必须有靶子
 3. `shows/<name>/season/arc.json` — 已存在的条目（增量时合并，不覆盖已有期）
 4. `shows/<name>/source-book/glossary.json` — 术语，钩子里出现的关键词要能口头解释
 

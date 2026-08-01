@@ -80,6 +80,6 @@ producer 的 production-notes 与 reviewer 的 reviews 意见：**逐条采纳�
 ## 收工自检（必跑）
 
 - [ ] `python3 scripts/lint_script.py <ep_dir>/script.md --voices <show>/season/voices.json --target-minutes <N>`：**BLOCKING 清零**（WARN 逐条看：双声线比例 / 「我不知道」/ 换气超限）
-- [ ] `python3 scripts/lint_punct.py` 无报错（半角标点）
+- [ ] `python3 scripts/lint_punct.py <ep_dir>/script.md` 无报错（半角标点）
 - [ ] grep 自检：无脚手架内部词；每条 `{{voice:` 都有引述边界框定；档位 (b) 的引述无授权标注 = 必改
 - [ ] 求职话题 ≤2 处且全挂 voices；单段 ≤200 字；伏笔 due/payoff 与 arc-map 一致

@@ -4,7 +4,10 @@ import json
 import sys
 from pathlib import Path
 
-USAGE = "usage: season_bible.py due <arc-map.json> <ep_id>"
+USAGE = (
+    "usage: season_bible.py due <arc-map.json> <ep_id>\n"
+    "       season_bible.py register <arc-map.json> <ep_id> <fields-json>"
+)
 
 
 def _load(p: Path) -> dict:
@@ -34,7 +37,24 @@ def main(argv=None) -> int:
     if cmd == "due":
         for item in due(arc_map, ep):
             print(item)
-    return 0
+        return 0
+    if cmd == "register":
+        if len(argv) < 4:
+            print(USAGE, file=sys.stderr)
+            return 2
+        try:
+            fields = json.loads(argv[3])
+        except json.JSONDecodeError as exc:
+            print(f"season_bible.py register: 非法 JSON: {exc}", file=sys.stderr)
+            return 2
+        if not isinstance(fields, dict):
+            print("season_bible.py register: fields 必须是 JSON 对象", file=sys.stderr)
+            return 2
+        register(arc_map, ep, fields)
+        return 0
+    print(f"season_bible.py: 未知命令 {cmd!r}", file=sys.stderr)
+    print(USAGE, file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":
