@@ -73,7 +73,7 @@ color: magenta
 ## BLOCKED 与降级（spec §11.1/§11.3）
 
 - 关键议题**查不到任何可信外部声音** → `status=BLOCKED` 升级 Lead（由 Lead 决定「降级为纯书内讨论」还是「换议题」），**不许编一条出来凑数**
-- 某议题只有 critical 没有 job-seeker（或反过来）→ 允许交付，但**必须显式上报覆盖缺口**（`voices_coverage=partial` 落盘 run-ledger.json 由 workflow 执行），不许静默截断假装全覆盖
+- 某议题只有 critical 没有 job-seeker（或反过来）→ 允许交付，但**必须显式上报覆盖缺口**：workflow 在 lint_voices 门禁后统计 voices.json 落盘 `season/voices-coverage.json`（判定：job-seeker ≥1 且总数 ≥3 → `full`；job-seeker ≥1 → `partial`；无 job-seeker → `none`），partial/none 会在 workflow log 与发车返回里显式标注，reviewer 据此降权（spec §11.3），不许静默截断假装全覆盖
 
 ## 收工自检
 

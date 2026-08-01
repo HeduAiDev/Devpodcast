@@ -217,19 +217,19 @@ const QA_SCHEMA = {
     route: { type: 'string', enum: ['writer', 'tts', 'both', 'none'] },
   },
 }
-async function runAudioQA() {
+async function runAudioQA(qaRound) {
   return agent(
     '你是质检执行员。只做一件事：运行下面命令并如实转述报告（不要修改任何文件、不要评价、不要重写）：\n' +
     QA_CMD + '\n' +
     '然后 Read ' + AUDIO + '/audio-qa.json，把 issues 数组逐条原样转述到 issues 字段。\n' +
     'route 判定（机械规则，勿加判断）：issues 里「时长」开头的 BLOCKING → route 含 writer；「削波」开头的 BLOCKING → route 含 tts；两者都有 → both；无 BLOCKING → none。\n' +
     '无 BLOCKING → status=OK；有 BLOCKING → status=BLOCKED（blocker_reason 写哪类问题）。',
-    { schema: QA_SCHEMA, label: 'audio-qa', phase: 'AudioQA', agentType: 'claude', model: MODELS.runner },
+    { schema: QA_SCHEMA, label: 'audio-qa r' + qaRound, phase: 'AudioQA', agentType: 'claude', model: MODELS.runner },
   )
 }
 let qaFixes = 0
 for (;;) {
-  const qa = await runAudioQA()
+  const qa = await runAudioQA(qaFixes + 1)
   if (!qa) return { show: A.show, ep_id: A.ep_id, escalated: 'audio-qa-failed', stage: 'AudioQA', note: '质检执行 agent 失败（限流/崩溃）——audio-qa 未执行不放行' }
   if (qa.status === 'OK') { log('AudioQA 通过'); break }
   if (qaFixes >= 2) return { show: A.show, ep_id: A.ep_id, escalated: 'audio-qa-exhausted', stage: 'AudioQA', fixes: qaFixes, issues: qa.issues, note: 'audio-qa BLOCKING 经 2 轮修复未过——升级 Lead（spec §11.2：tts-engine ↔ audio-qa 回环上限 2）' }

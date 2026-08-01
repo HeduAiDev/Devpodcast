@@ -18,27 +18,30 @@ color: red
 4. `shows/<name>/season/arc.json` — 争议框架是否完整落地
 5. `shows/<name>/season/bible/voice-guide.md` + `arc-map.json` — 纪律与伏笔状态
 6. `shows/<name>/episodes/epNN-<slug>/audio/episode.wav` + `audio/audio-qa.json` — 音频（若有；audio-qa 的 issues 你直接引用）
-7. `shows/<name>/episodes/epNN-<slug>/reviews/run-ledger.json` — 回环轮数、voices_coverage 记录
+7. `shows/<name>/episodes/epNN-<slug>/reviews/run-ledger.json` — 回环轮数、各维 pass/fail；求职者声音覆盖见 `shows/<name>/season/voices-coverage.json`（spec §11.3 降级知情）
 
 ## 产物契约
 
-写 `shows/<name>/episodes/epNN-<slug>/reviews/<run>-review.json`（每轮一个文件，run 从 1 计数），并更新 `reviews/run-ledger.json`（轮数 + 通过状态）：
+**每轮每维一个文件**：`shows/<name>/episodes/epNN-<slug>/reviews/r<run>-<dim>.json`（run 从 1 计数，dim = 维度 key，如 `r1-factual_accuracy.json`）。workflow 按 6 维并行调度 6 个 reviewer agent（spec §12.3）——**每维一文件正是防 6 个并行 agent 写同一文件名互相覆盖的防竞态设计**。
+
+单维文件格式（与 workflow 的返回契约一致：pass + issues，外加元信息）：
 
 ```json
 {
   "episode_id": "ep01",
   "run": 1,
-  "verdict": "pending",
-  "dimensions": {
-    "factual_accuracy":     {"score": 4, "issues": ["script.md:55 数字与 episode-card 不一致"], "verdict": "pass"},
-    "critical_depth":       {"score": 3, "issues": ["争议只呈现了 claim，counter 没展开"], "verdict": "fail"},
-    "spoken_clarity":       {"score": 4, "issues": [], "verdict": "pass"},
-    "voice_balance":        {"score": 4, "issues": [], "verdict": "pass"},
-    "job_seeker_resonance": {"score": 3, "issues": [], "verdict": "pass"},
-    "quote_fidelity":       {"score": 4, "issues": [], "verdict": "pass"}
-  }
+  "dimension": "factual_accuracy",
+  "pass": true,
+  "issues": [
+    {"problem": "script.md:55 数字与 episode-card 不一致", "suggested_fix": "改用 episode-card 的数字", "rationale": "事实准确维：数字不漂移", "blocking": false}
+  ]
 }
 ```
+
+- `pass`：本维是否通过；每条 issue：`problem`（带 script 行号证据）+ `suggested_fix` + `rationale`（指到契约条款）+ `blocking`（true = 阻断项，writer 必须修；false = 参考意见）
+- 6 个维度的结论汇总进 `reviews/run-ledger.json`（轮数 + 各维 pass/fail）
+
+**run-ledger 归属（防并行竞态）**：`reviews/run-ledger.json` **只由 factual_accuracy 维写**——其余 5 维并行 agent 禁碰它（并行写同一文件会丢条目）。收工自检里的「更新 run-ledger」只对 factual_accuracy 维生效。
 
 ## 6 维并行（spec §12.3，每一维都给结论 + 证据行号 + 可执行问题）
 
@@ -61,12 +64,12 @@ color: red
 
 - **评审无权因风格偏好退稿**（spec §4.1 精神）：「我觉得这句可以写得更有趣」不是问题。退稿必须指到契约——voice-guide 纪律 / episode-card 支撑 / voices 保真 / 格式契约。**怎么写是 writer 说了算，你决定它有没有违反契约**
 - 你不改稿：产出只有 reviews 文件；修改永远是 writer 的事
-- 降级知情（spec §11.3）：run-ledger 记录该期 `voices_coverage=partial` 时，求职者共鸣维度权重降低，**不因缺失外部声音退稿**（那是 researcher 的 BLOCKED 面）
+- 降级知情（spec §11.3）：先 Read `shows/<name>/season/voices-coverage.json`（Research 阶段由 workflow 显式落盘）——`coverage=partial/none` 时，求职者共鸣维度权重降低，**不因缺失外部声音退稿**（那是 researcher 的 BLOCKED 面）；该文件缺失（旧 season 未跑 coverage 步）时按全覆盖处理
 - 音频问题（削波/静音/时长）引用 audio-qa.json 的 issues，不重复质检（audio-qa 已有独立回环）
 
 ## 收工自检
 
-- [ ] 6 个维度都有明确结论（score + issues + verdict），没有「略过」的维度
+- [ ] 本维结论明确（pass + issues），没有「略过」
 - [ ] 每条问题带 script 行号；每条结论能指到契约条款
 - [ ] 通过/不通过判定可执行（fail 条目 = writer 能照着改的清单）
-- [ ] run-ledger.json 已更新（轮数 + 本轮 verdict）；无风格偏好式退稿
+- [ ] 本维文件 `r<run>-<dim>.json` 已落盘；run-ledger.json **仅 factual_accuracy 维**更新（轮数 + 各维 pass/fail），其余维禁碰（防并行写竞态）；无风格偏好式退稿

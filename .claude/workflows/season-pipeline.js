@@ -1,6 +1,6 @@
 // .claude/workflows/season-pipeline.js
 // devpodcast Phase A：整季编排（spec §3.2 / §3.3①）。Task 15 骨架。
-// 阶段链：Plan → Research(+lint_voices 门禁) → Hooks → Slice(book-analyst×N 并行) → Bible。
+// 阶段链：Plan → Research(+lint_voices 门禁 + voices_coverage 落盘) → Hooks → Slice(book-analyst×N 并行) → Bible。
 // args 契约：{ show: "vllm-podcast", episodes: 5 }
 //   show：节目名（shows/<show>/ 目录）；episodes：议题数（正整数，具体议题由 planner 定）。
 // 配置兜底（repo2book 教训：Workflow 的 args 注入不可靠）：完全未传 args 才允许脚本内 CFG；
@@ -169,6 +169,39 @@ for (;;) {
 }
 log('Research 完成：voices.json 过 lint_voices 门禁')
 
+// ---------- Research 收尾：voices_coverage 显式落盘（spec §11.3） ----------
+// 降级知情链：researcher 契约允许交付有覆盖缺口的 voices.json（某议题查不到求职者声音，
+// coverage=partial），但缺口必须显式落盘 voices-coverage.json 并在 log/返回对象标注——
+// 不许静默截断（静默截断读起来像全覆盖，实际没有，reviewer 会按全覆盖评审求职者维度）。
+// 判定：job-seeker ≥1 且 total ≥3 → full；job-seeker ≥1 → partial；job-seeker = 0 → none。
+// M0 用 python3 -c 内联（不新建脚本文件），正式化留给 M3。
+const COVERAGE_SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['status', 'note', 'coverage'],
+  properties: {
+    status: { type: 'string', enum: ['OK', 'BLOCKED'] },
+    note: { type: 'string' },
+    blocker_reason: { type: 'string' },
+    coverage: { type: 'string', enum: ['full', 'partial', 'none'] },
+    total_voices: { type: 'integer' },
+    job_seeker_voices: { type: 'integer' },
+  },
+}
+const COV_CMD = 'python3 -c \'import sys,json,datetime; d=json.load(open(sys.argv[1])); vs=list(d.values()) if isinstance(d,dict) else [d]; js=sum(1 for v in vs if v.get("category")=="job-seeker"); cov="none" if js==0 else ("full" if len(vs)>=3 else "partial"); out=dict(checked_at=datetime.date.today().isoformat(), total_voices=len(vs), job_seeker_voices=js, coverage=cov, note="voice 总数 %d 条，其中求职者声音 %d 条" % (len(vs), js)); json.dump(out, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=2)\' ' + SEASON + '/voices.json ' + SEASON + '/voices-coverage.json'
+const voicesCov = await agent(
+  '你是门禁执行员。只做一件事：运行下面 1 条命令并如实转述结果（不要修改任何文件、不要评价、不要重写）：\n' +
+  COV_CMD + '\n' +
+  '然后 cat ' + SEASON + '/voices-coverage.json，把 coverage / total_voices / job_seeker_voices 如实填回返回字段。\n' +
+  '判定：命令退出码 0 → status=OK；命令失败（voices.json 缺失/解析错等）→ status=BLOCKED，blocker_reason 写清退出码与错误输出。',
+  { schema: COVERAGE_SCHEMA, label: 'voices-coverage', phase: 'Research', agentType: 'claude', model: MODELS.runner },
+)
+if (!voicesCov) return { show: A.show, escalated: 'voices-coverage-failed', stage: 'Research', note: 'coverage 执行 agent 失败（限流/崩溃）——voices_coverage 未落盘不放行（spec §11.3 不许静默）' }
+if (voicesCov.status === 'BLOCKED') return { show: A.show, escalated: 'voices-coverage', stage: 'Research', reason: voicesCov.blocker_reason }
+if (voicesCov.coverage !== 'full') {
+  log('voices_coverage=' + voicesCov.coverage + '——researcher 未找到足够求职者声音（求职者 ' + voicesCov.job_seeker_voices + ' 条 / 总 ' + voicesCov.total_voices + ' 条），reviewer 知情降权（spec §11.3），已落盘 ' + SEASON + '/voices-coverage.json')
+} else {
+  log('voices_coverage=full——voice 总 ' + voicesCov.total_voices + ' 条，其中求职者 ' + voicesCov.job_seeker_voices + ' 条，已落盘 ' + SEASON + '/voices-coverage.json')
+}
+
 // ---------- Hooks：hook-engineer 出钩子/金句/争议框架 ----------
 phase('Hooks')
 const hooks = await agent(
@@ -218,7 +251,7 @@ const bible = await agent(
     '输入：' + SEASON + '/season-plan.json + arc.json + voices.json + 全部 episodes/<slug>/episode-card.json',
     '书源快照（只读，glossary 提炼来源）：' + SRC + '/',
     '产出：' + SEASON + '/bible/ 四件套（glossary.json / voice-guide.md / arc-map.json / voices-index.json，对齐 schemas/season-bible.schema.json）+ trace 记录',
-    '任务（Phase A 建季）：glossary 从书源快照 + episode-cards 提炼口播译名；arc-map 从 season-plan + arc 汇总伏笔登记（每期 foreshadow_due/payoff_due）；voices-index 初始为空；voice-guide.md **由 Lead 落笔**（spec §5）——你只建占位/核对其存在，绝不擅自改内容，若缺失 → status=BLOCKED。trace 至少一条 entry（建季 + 经验）。',
+    '任务（Phase A 建季）：glossary 从书源快照 + episode-cards 提炼口播译名；arc-map 从 season-plan + arc 汇总伏笔登记（每期 foreshadow_due/payoff_due）；voices-index 初始为空；voice-guide.md **由 Lead 落笔**（spec §5）——你只核对其存在，绝不建占位/改内容（空占位会废掉缺失检查，writer 照读空 guide 无从退稿），若缺失 → status=BLOCKED。trace 至少一条 entry（建季 + 经验）。',
   ]),
   { schema: STATUS_SCHEMA, label: 'bible', phase: 'Bible', agentType: 'archivist', model: MODELS.archivist },
 )
@@ -226,4 +259,14 @@ if (!bible) return { show: A.show, escalated: 'bible-failed', stage: 'Bible', no
 if (bible.status === 'BLOCKED') return { show: A.show, escalated: 'bible', stage: 'Bible', reason: bible.blocker_reason }
 log('Bible 完成：' + (bible.note || 'Season Bible 已建'))
 
-return { show: A.show, episodes: EPS.map(function (e) { return e.slug }), note: 'Phase A 完成：' + EPS.length + ' 期议题 + Season Bible' }
+return {
+  show: A.show,
+  episodes: EPS.map(function (e) { return e.slug }),
+  voices_coverage: {
+    coverage: voicesCov.coverage,
+    total_voices: voicesCov.total_voices,
+    job_seeker_voices: voicesCov.job_seeker_voices,
+    file: SEASON + '/voices-coverage.json',
+  },
+  note: 'Phase A 完成：' + EPS.length + ' 期议题 + Season Bible' + (voicesCov.coverage === 'full' ? '' : '（voices_coverage=' + voicesCov.coverage + '，reviewer 知情降权）'),
+}
