@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["duration_s", "peak_db", "clipping", "silence_ratio", "rms_db",
+               "issues", "vram_gb"],
+  "properties": {
+    "duration_s": {"type": "number", "minimum": 0},
+    "peak_db": {"type": "number"},
+    "clipping": {"type": "boolean"},
+    "silence_ratio": {"type": "number", "minimum": 0, "maximum": 1},
+    "rms_db": {"type": "number"},
+    "issues": {"type": "array", "items": {"type": "string"}},
+    "vram_gb": {"type": "number", "minimum": 0}
+  }
+}

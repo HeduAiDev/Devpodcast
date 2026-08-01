@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["show", "episodes"],
+  "properties": {
+    "show": {"type": "string"},
+    "episodes": {"type": "array", "items": {
+      "type": "object",
+      "required": ["episode_id", "slug", "topic", "hook", "depends_on", "foreshadow_due"],
+      "properties": {
+        "episode_id": {"type": "string"},
+        "slug": {"type": "string"},
+        "topic": {"type": "string"},
+        "hook": {"type": "string"},
+        "depends_on": {"type": "array", "items": {"type": "string"}},
+        "foreshadow_due": {"type": "array", "items": {"type": "string"}},
+        "payoff_due": {"type": "array", "items": {"type": "string"}}
+      }}}
+  }
+}

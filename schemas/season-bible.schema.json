@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["glossary", "voice-guide", "arc-map", "voices-index"],
+  "properties": {
+    "glossary": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "voice-guide": {"type": "string"},
+    "arc-map": {
+      "type": "object",
+      "required": ["episodes"],
+      "properties": {
+        "episodes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "foreshadow_due": {"type": "array", "items": {"type": "string"}},
+              "payoff_due": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        }
+      }
+    },
+    "voices-index": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    }
+  }
+}

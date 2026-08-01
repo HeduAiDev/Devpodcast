@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["episode_id", "slug", "topic", "cross_chapter_threads",
+               "key_mechanisms", "voices_refs", "narrative_anchors"],
+  "properties": {
+    "episode_id": {"type": "string"},
+    "slug": {"type": "string"},
+    "topic": {"type": "string"},
+    "cross_chapter_threads": {"type": "array", "items": {
+      "type": "object", "required": ["chapter_id", "mechanism"],
+      "properties": {"chapter_id": {"type": "string"}, "mechanism": {"type": "string"}}}},
+    "key_mechanisms": {"type": "array", "items": {"type": "string"}},
+    "voices_refs": {"type": "array", "items": {"type": "string"}},
+    "narrative_anchors": {"type": "array", "items": {
+      "type": "object", "required": ["chapter_id", "section"],
+      "properties": {"chapter_id": {"type": "string"}, "section": {"type": "string"}}}}
+  }
+}
