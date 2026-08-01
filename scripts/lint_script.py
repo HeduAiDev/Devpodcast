@@ -1,5 +1,6 @@
 """脚本门禁：voices 引用存在性 / 双声线平衡 / 「我不知道」warn / 时长预算。"""
-import json, re, sys
+import json
+import sys
 from pathlib import Path
 
 # 以 `python3 scripts/lint_script.py ...` 直接运行时 sys.path[0] 是 scripts/，
@@ -7,10 +8,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scripts.script_parser import parse
-from scripts.voice_budget import budget_check, MAX_TURN_CHARS
+from scripts.voice_budget import budget_check
 
 UNKNOWN_WORDS = ("我不知道", "没搞清", "没想明白", "说不准")
 MIN_SPEAKER_RATIO = 0.30
+
+USAGE = "usage: python3 scripts/lint_script.py <path> [--voices <json>] [--target-minutes N]"
 
 
 def lint_script(path: Path, voices: dict, target_minutes: float) -> list[dict]:
@@ -49,13 +52,28 @@ def lint_script(path: Path, voices: dict, target_minutes: float) -> list[dict]:
 
 def main(argv=None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
+    if not argv:
+        print(USAGE, file=sys.stderr)
+        return 2
     path = Path(argv[0])
     voices: dict = {}
     target = 35.0
     if "--voices" in argv:
-        voices = json.loads(Path(argv[argv.index("--voices") + 1]).read_text(encoding="utf-8"))
+        i = argv.index("--voices")
+        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
+            print(USAGE, file=sys.stderr)
+            return 2
+        voices = json.loads(Path(argv[i + 1]).read_text(encoding="utf-8"))
     if "--target-minutes" in argv:
-        target = float(argv[argv.index("--target-minutes") + 1])
+        i = argv.index("--target-minutes")
+        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
+            print(USAGE, file=sys.stderr)
+            return 2
+        try:
+            target = float(argv[i + 1])
+        except ValueError:
+            print(f"error: --target-minutes 需要合法数值，得到 '{argv[i + 1]}'", file=sys.stderr)
+            return 2
     issues = lint_script(path, voices, target)
     for i in issues:
         print(f"[{i['level']}] {i['msg']}")
