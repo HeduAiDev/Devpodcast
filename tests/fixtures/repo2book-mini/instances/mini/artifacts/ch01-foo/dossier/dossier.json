@@ -1,0 +1,1 @@
+{"chapter_id": "ch01", "title": "Foo 章", "key_classes": [{"name": "FooEngine", "file": "demo/foo.py", "responsibility": "干 Foo"}], "mechanisms": [{"id": "m1", "name": "机制甲", "difficulty": "core"}], "code_spine": []}
