@@ -51,12 +51,12 @@ const SHOW = REPO + '/shows/' + A.show
 const SEASON = SHOW + '/season'
 const TARGET = A.target_minutes
 
-// 模型分配：角色 frontmatter 已定模型（writer/reviewer=opus，其余 sonnet）；此处显式传值
-// 便于 args.models 覆盖，两处应保持一致。tts/门禁/质检是确定性 CLI 站，用通用 agent。
-const MODELS = Object.assign(
-  { writer: 'opus', producer: 'sonnet', reviewer: 'opus', archivist: 'sonnet', tts: 'sonnet', runner: 'sonnet' },
-  A.models || {},
-)
+// 模型策略：默认不指定 model → agent 继承 session 模型（本 harness 的 alias 解析不可靠，
+// 曾出现 claude-sonnet-5 不被识别导致 Slice 全挂）；args.models 显式提供才传值覆盖。
+const MODELS = A.models || {}
+
+// mo(key)：只有 args.models 显式提供时才传 model 字段，否则省略（继承 session 模型）
+function mo(key) { return MODELS[key] ? { model: MODELS[key] } : {} }
 
 // 逃生舱：任何阶段发现路线/素材是错的，不许硬着头皮做错
 const ESC = '\n\n**逃生舱（重要）**：如果发现给定输入/路线是错的——素材与任务对不上、产物无法忠实产出、发现无法在不撒谎的前提下继续——不要硬着头皮做。立即返回 status="BLOCKED"，blocker_reason 写清「哪里不对 + 建议怎么改」。workflow 会**立即中止**并把问题交给 Lead（项目负责人），Lead 修正后从断点续跑。**宁可拉闸，不要产出错误成果一路跑到底。**'
@@ -89,7 +89,7 @@ async function runLints(cmds, label, phaseName) {
     cmds.join('\n') + '\n' +
     '把每条命令的退出码与完整输出带回 note（命令不存在/报错也照实记录）。\n' +
     '判定：全部退出码 0 → status=OK；任一条退出码 ≠ 0（linter 找到 BLOCKING 级问题，或命令本身失败）→ status=BLOCKED，blocker_reason 写清是哪条命令、退出码多少。',
-    { schema: STATUS_SCHEMA, label: label, phase: phaseName, agentType: 'claude', model: MODELS.runner, effort: 'max' },
+    { schema: STATUS_SCHEMA, label: label, phase: phaseName, agentType: 'claude', ...mo('runner'), effort: 'max' },
   )
 }
 
@@ -112,7 +112,7 @@ const epResolve = await agent(
   '  1. 输出里恰好有名为 ' + A.ep_id + ' 的目录 → OK，dir 填它；\n' +
   '  2. 否则找以 ' + A.ep_id + '- 开头的目录：唯一一个 → OK，dir 填它；多个 → BLOCKED（blocker_reason 写「ambiguous」，note 列出全部候选）；\n' +
   '  3. 一个都没有 → BLOCKED（blocker_reason 写「not-found」，note 写 ls 的实际输出——可能是 Phase A 未跑，或 ep_id 拼错）。',
-  { schema: EP_RESOLVE_SCHEMA, label: 'ep-resolve', phase: 'Write', agentType: 'claude', model: MODELS.runner, effort: 'max' },
+  { schema: EP_RESOLVE_SCHEMA, label: 'ep-resolve', phase: 'Write', agentType: 'claude', ...mo('runner'), effort: 'max' },
 )
 if (!epResolve) return { show: A.show, ep_id: A.ep_id, escalated: 'ep-resolve-failed', stage: 'Write', note: '目录解析 agent 失败（限流/崩溃）' }
 if (epResolve.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'ep-not-found', stage: 'Write', reason: epResolve.blocker_reason, note: epResolve.note }
@@ -141,7 +141,7 @@ for (let w = 1; w <= 3; w++) {   // w=1 初稿；w=2/3 为门禁修复轮（回�
         : '修复门禁 BLOCKING 后修订 ' + EP + '/script.md。上一轮四 linter 输出（逐条修复，修完自跑 lint_script 确认 BLOCKING 清零）：\n' + writeLedger) +
       '\n完成后自跑你契约的「收工自检」清单。',
     ]),
-    { schema: STATUS_SCHEMA, label: 'write r' + w, phase: 'Write', agentType: 'writer', model: MODELS.writer },
+    { schema: STATUS_SCHEMA, label: 'write r' + w, phase: 'Write', agentType: 'writer', ...mo('writer') },
   )
   if (!writeV) return { show: A.show, ep_id: A.ep_id, escalated: 'write-failed', stage: 'Write', round: w, note: 'writer agent 失败（限流/崩溃），无 script.md 不得继续' }
   if (writeV.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'write', stage: 'Write', round: w, reason: writeV.blocker_reason }
@@ -163,7 +163,7 @@ const produce = await agent(
     '产出：' + EP + '/production-notes.md，对齐 schemas/production-notes.schema.json',
     '任务：口播工程师视角提意见（换气 / 双声线节奏 / 引述前停顿 / 时长预算；每条意见带 script 行号）。**绝不修改 script.md**——连 typo 都只写进 note（spec §4.1 硬规则 2）。',
   ]),
-  { schema: STATUS_SCHEMA, label: 'produce', phase: 'Produce', agentType: 'producer', model: MODELS.producer },
+  { schema: STATUS_SCHEMA, label: 'produce', phase: 'Produce', agentType: 'producer', ...mo('producer') },
 )
 if (!produce) return { show: A.show, ep_id: A.ep_id, escalated: 'produce-failed', stage: 'Produce', note: 'producer agent 失败（限流/崩溃）' }
 if (produce.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'produce', stage: 'Produce', reason: produce.blocker_reason }
@@ -177,7 +177,7 @@ const revise = await agent(
     '输入：' + EP + '/production-notes.md（producer 意见）',
     '任务：用 superpowers:receiving-code-review 方法逐条处理 producer 意见（采纳的改、反驳的写明理由），定稿 ' + EP + '/script.md。完成后自跑「收工自检」清单。',
   ]),
-  { schema: STATUS_SCHEMA, label: 'revise', phase: 'Revise', agentType: 'writer', model: MODELS.writer },
+  { schema: STATUS_SCHEMA, label: 'revise', phase: 'Revise', agentType: 'writer', ...mo('writer') },
 )
 if (!revise) return { show: A.show, ep_id: A.ep_id, escalated: 'revise-failed', stage: 'Revise', note: 'writer agent 失败（限流/崩溃），未定稿' }
 if (revise.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'revise', stage: 'Revise', reason: revise.blocker_reason }
@@ -199,7 +199,7 @@ const tts = await agent(
     '目标时长：' + TARGET + ' 分钟（超过 20% 余量会被 audio-qa BLOCKING）。',
     '拉闸（spec §11.1）：音色样本质量不足 / 显存不够 / 模型加载失败 → status=BLOCKED。**TTS 是必经站**（spec §11.3）：环境没配好 = BLOCKED，不给「先出脚本、音频待补」的后门。',
   ]),
-  { schema: STATUS_SCHEMA, label: 'tts', phase: 'TTS', agentType: 'claude', model: MODELS.tts, effort: 'max' },
+  { schema: STATUS_SCHEMA, label: 'tts', phase: 'TTS', agentType: 'claude', ...mo('tts'), effort: 'max' },
 )
 if (!tts) return { show: A.show, ep_id: A.ep_id, escalated: 'tts-failed', stage: 'TTS', note: 'tts 执行 agent 失败（限流/崩溃）' }
 if (tts.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'tts', stage: 'TTS', reason: tts.blocker_reason }
@@ -224,7 +224,7 @@ async function runAudioQA(qaRound) {
     '然后 Read ' + AUDIO + '/audio-qa.json，把 issues 数组逐条原样转述到 issues 字段。\n' +
     'route 判定（机械规则，勿加判断）：issues 里「时长」开头的 BLOCKING → route 含 writer；「削波」开头的 BLOCKING → route 含 tts；两者都有 → both；无 BLOCKING → none。\n' +
     '无 BLOCKING → status=OK；有 BLOCKING → status=BLOCKED（blocker_reason 写哪类问题）。',
-    { schema: QA_SCHEMA, label: 'audio-qa r' + qaRound, phase: 'AudioQA', agentType: 'claude', model: MODELS.runner, effort: 'max' },
+    { schema: QA_SCHEMA, label: 'audio-qa r' + qaRound, phase: 'AudioQA', agentType: 'claude', ...mo('runner'), effort: 'max' },
   )
 }
 let qaFixes = 0
@@ -240,7 +240,7 @@ for (;;) {
       head('writer', [
         '任务：audio-qa BLOCKING 为**时长超限**（目标 ' + TARGET + ' 分钟）。压缩 ' + EP + '/script.md 正文到时长预算内（约 ' + Math.round(TARGET * 60 * 4) + ' 字；删冗余、不砍必讲机制），保持双声线平衡与「我不知道」纪律。完成后自跑「收工自检」。\n质检 issues：' + JSON.stringify(qa.issues),
       ]),
-      { schema: STATUS_SCHEMA, label: 'audio-qa-fix-writer r' + qaFixes, phase: 'AudioQA', agentType: 'writer', model: MODELS.writer },
+      { schema: STATUS_SCHEMA, label: 'audio-qa-fix-writer r' + qaFixes, phase: 'AudioQA', agentType: 'writer', ...mo('writer') },
     )
     if (!fixW || fixW.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'audio-qa-fix-writer', stage: 'AudioQA', round: qaFixes, reason: (fixW && fixW.blocker_reason) || 'writer 改稿 agent 失败（限流/崩溃）' }
   }
@@ -249,7 +249,7 @@ for (;;) {
       head(null, [
         '任务：audio-qa BLOCKING（削波/静音/响度类）。重合成 ' + AUDIO + '/episode.wav：按上轮参数调整（削波 → 降增益/检查响度归一；时长 → 检查 tokens 换算），重新产出 ' + AUDIO + '/episode.wav + ' + AUDIO + '/segments/。\n质检 issues：' + JSON.stringify(qa.issues),
       ]),
-      { schema: STATUS_SCHEMA, label: 'audio-qa-fix-tts r' + qaFixes, phase: 'AudioQA', agentType: 'claude', model: MODELS.tts, effort: 'max' },
+      { schema: STATUS_SCHEMA, label: 'audio-qa-fix-tts r' + qaFixes, phase: 'AudioQA', agentType: 'claude', ...mo('tts'), effort: 'max' },
     )
     if (!fixT || fixT.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'audio-qa-fix-tts', stage: 'AudioQA', round: qaFixes, reason: (fixT && fixT.blocker_reason) || '重合成 agent 失败（限流/崩溃）' }
   }
@@ -296,7 +296,7 @@ for (let r = 1; r <= 3; r++) {
           '任务：只从「' + dim[1] + '」维度评审。产物：' + EP + '/reviews/r' + r + '-' + dim[0] + '.json（对齐你契约的产物格式）。返回 pass 与 issues（每条给 problem + evidence 行号 + suggested_fix + rationale + blocking）。**退稿必须指到契约**（voice-guide 纪律 / episode-card 支撑 / voices 保真 / 格式契约），无权因风格偏好退稿。',
           '**run-ledger.json 只由 factual_accuracy 维写**（' + EP + '/reviews/run-ledger.json：轮数 + 本轮 verdict + 各维 pass/fail；其余维不要碰它——避免并行写同一文件的竞态）。',
         ]),
-        { schema: DIM_SCHEMA, label: 'review:' + dim[0] + ' r' + r, phase: 'Review', agentType: 'reviewer', model: MODELS.reviewer },
+        { schema: DIM_SCHEMA, label: 'review:' + dim[0] + ' r' + r, phase: 'Review', agentType: 'reviewer', ...mo('reviewer') },
       )
     }
   })
@@ -318,7 +318,7 @@ for (let r = 1; r <= 3; r++) {
       '本轮 blocking 清单：\n' + JSON.stringify(blocking) +
       '\n完成后自跑「收工自检」清单。',
     ]),
-    { schema: STATUS_SCHEMA, label: 'revise-review r' + r, phase: 'Review', agentType: 'writer', model: MODELS.writer },
+    { schema: STATUS_SCHEMA, label: 'revise-review r' + r, phase: 'Review', agentType: 'writer', ...mo('writer') },
   )
   if (!rev) return { show: A.show, ep_id: A.ep_id, escalated: 'review-revise-failed', stage: 'Review', round: r, note: 'writer 修订 agent 失败（限流/崩溃）' }
   if (rev.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'review-revise', stage: 'Review', round: r, reason: rev.blocker_reason }
@@ -341,7 +341,7 @@ const archive = await agent(
     '6. 写 trace：`python3 ' + REPO + '/scripts/archivist.py ' + SHOW + '/trace log "<msg>" <kind>`（本期归档 + 跨期经验）。\n' +
     '铁律：只回写 bible 与 trace，**不改任何 episode 产物**（script / episode-card / production-notes 都是别人的领土）。',
   ]),
-  { schema: STATUS_SCHEMA, label: 'archive', phase: 'Archive', agentType: 'archivist', model: MODELS.archivist },
+  { schema: STATUS_SCHEMA, label: 'archive', phase: 'Archive', agentType: 'archivist', ...mo('archivist') },
 )
 if (!archive) return { show: A.show, ep_id: A.ep_id, escalated: 'archive-failed', stage: 'Archive', note: 'archivist agent 失败（限流/崩溃）' }
 if (archive.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'archive', stage: 'Archive', reason: archive.blocker_reason }
