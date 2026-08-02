@@ -1,0 +1,75 @@
+{
+  "show": "vllm-podcast",
+  "episodes": [
+    {
+      "episode_id": "ep01",
+      "slug": "three-stage-decoupling",
+      "topic": "一个请求的一生：三段式异步解耦怎么把请求拆开、跨进程送进引擎、再分回用户",
+      "hook": "一个 chat 请求进门，先被拆成三段、送进两个进程，中间隔着一层 ZMQ——这套三段式解耦是 vLLM v1 与 v0 的分水岭，也是千万并发下唯一经得起拷问的架构。",
+      "depends_on": [],
+      "foreshadow_due": [
+        "EngineCore 一拍 = schedule → execute_model → sample_tokens → update_from_output（ep02 展开）",
+        "KV cache 块分配失败时的抢占循环与 skipped_waiting 双队列（ep03 回收）"
+      ],
+      "payoff_due": [],
+      "chapters": ["ch01", "ch02", "ch04", "ch05", "ch06", "ch07", "ch08", "ch09", "ch10", "ch37", "ch38"]
+    },
+    {
+      "episode_id": "ep02",
+      "slug": "engine-heartbeat",
+      "topic": "引擎的心跳：调度器不认请求数只认 token 数——连续批处理、抢占与请求生命周期",
+      "hook": "vLLM 的调度器不关心你有几个请求——它每一拍只问一个问题：这一批 GPU 能吃下多少个 token？",
+      "depends_on": ["ep01"],
+      "foreshadow_due": [
+        "execute_model：模型前向在 GPU worker 上的真实执行（ep04 回收）",
+        "语法编译要上百毫秒，不能堵在调度循环里（ep05 回收）"
+      ],
+      "payoff_due": [
+        "EngineCore 一拍 = schedule → execute_model → sample_tokens → update_from_output"
+      ],
+      "chapters": ["ch11", "ch12", "ch13", "ch14"]
+    },
+    {
+      "episode_id": "ep03",
+      "slug": "memory-and-persistent-batch",
+      "topic": "显存是主角：分页 KV 缓存、前缀缓存与跨迭代存活的持久批次",
+      "hook": "显存总共就那么多，但每个请求的 KV cache 必须活到生成结束。vLLM 从操作系统借了个主意——把 KV cache 切成固定大小的块，像虚拟内存一样换入换出、共享相同的前缀。",
+      "depends_on": ["ep02"],
+      "foreshadow_due": [
+        "block_table：Triton kernel 把逻辑块号映射成 GPU 物理 slot（ep04 回收）"
+      ],
+      "payoff_due": [
+        "KV cache 块分配失败时的抢占循环与 skipped_waiting 双队列"
+      ],
+      "chapters": ["ch15", "ch16", "ch18"]
+    },
+    {
+      "episode_id": "ep04",
+      "slug": "gpu-execution-pipeline",
+      "topic": "从 EngineArgs 到 GPU 融合 kernel：启动装配、Worker 生命周期、CustomOp、torch.compile 分片与注意力后端",
+      "hook": "你在 Python 里写了一个 attention 层，但 vLLM 最终把它变成一段在 CUDA graph 里反复重播的融合 kernel——中间连 Python 解释器都不经过。",
+      "depends_on": ["ep02", "ep03"],
+      "foreshadow_due": [
+        "采样不是简单 argmax：9 步 logits 处理器管线（ep05 回收）"
+      ],
+      "payoff_due": [
+        "execute_model：模型前向在 GPU worker 上的真实执行",
+        "block_table：Triton kernel 把逻辑块号映射成 GPU 物理 slot"
+      ],
+      "chapters": ["ch03", "ch17", "ch19", "ch22", "ch23", "ch24", "ch25"]
+    },
+    {
+      "episode_id": "ep05",
+      "slug": "smart-sampling",
+      "topic": "选一个 token 出门要过 9 道关卡：采样管线、语法编译与 GPU 上的位掩码约束",
+      "hook": "GPU 算出了 128000 个 logits，但选哪个 token 出门要过 9 道工序——其中一道把 JSON Schema 实时编译成 GPU 位掩码，把非法 token 的 logit 精确打成负无穷。",
+      "depends_on": ["ep04"],
+      "foreshadow_due": [],
+      "payoff_due": [
+        "采样不是简单 argmax：9 步 logits 处理器管线",
+        "语法编译要上百毫秒，不能堵在调度循环里"
+      ],
+      "chapters": ["ch30", "ch31", "ch32"]
+    }
+  ]
+}
