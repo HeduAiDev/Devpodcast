@@ -1,0 +1,44 @@
+{
+  "episodes": {
+    "ep01": {
+      "foreshadow_due": [
+        "EngineCore 一拍 = schedule → execute_model → sample_tokens → update_from_output",
+        "KV cache 块分配失败时的抢占循环与 skipped_waiting 双队列"
+      ],
+      "payoff_due": []
+    },
+    "ep02": {
+      "foreshadow_due": [
+        "execute_model：模型前向在 GPU worker 上的真实执行",
+        "语法编译要上百毫秒，不能堵在调度循环里"
+      ],
+      "payoff_due": [
+        "EngineCore 一拍 = schedule → execute_model → sample_tokens → update_from_output"
+      ]
+    },
+    "ep03": {
+      "foreshadow_due": [
+        "block_table：Triton kernel 把逻辑块号映射成 GPU 物理 slot"
+      ],
+      "payoff_due": [
+        "KV cache 块分配失败时的抢占循环与 skipped_waiting 双队列"
+      ]
+    },
+    "ep04": {
+      "foreshadow_due": [
+        "采样不是简单 argmax：9 步 logits 处理器管线"
+      ],
+      "payoff_due": [
+        "execute_model：模型前向在 GPU worker 上的真实执行",
+        "block_table：Triton kernel 把逻辑块号映射成 GPU 物理 slot"
+      ]
+    },
+    "ep05": {
+      "foreshadow_due": [],
+      "payoff_due": [
+        "采样不是简单 argmax：9 步 logits 处理器管线",
+        "语法编译要上百毫秒，不能堵在调度循环里"
+      ]
+    }
+  }
+}

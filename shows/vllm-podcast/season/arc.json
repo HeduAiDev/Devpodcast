@@ -1,0 +1,62 @@
+{
+  "ep01": {
+    "opening": "你发了一条'你好'给 vLLM，它先在当前进程把这两个字切成 token，跨进程扔给一个叫 EngineCore 的独立进程做推理，算完再跨进程传回来拼成汉字——同一条请求跑两次进程间通信。这不是脱了裤子放屁，是服务一千个并发用户时唯一能让 GPU 不等 CPU 的架构。",
+    "closing": "但这段被锁在独立进程里的 EngineCore，它自己里面到底在干嘛？下一期我们把它拆开——一个忙循环，四步心跳，每一步都可能决定一个请求是被喂饱还是被饿死。",
+    "controversy": {
+      "claim": "社区技术作者 Aleksa Gordic 在剖析 vLLM 架构时指出：三段式解耦把一条请求拆成输入处理、引擎执行、输出处理三个异步阶段，跨 ZMQ+msgpack 序列化边界通信，调试和排错复杂度远高于 SGLang 等框架的同步路径。SGLang 用更简单的架构就能实现相当的性能——多出来的这些进程边界不是过度设计吗？",
+      "counter": "但当并发量跨过单进程同步路径的饱和点时，不解耦意味着 tokenization 的 CPU 时间会阻塞 GPU 前向。Marcus Chen 的生产 trace（dev.to, 2026-05）实测：同步路径下 p99 延迟从 1.2 秒飙升到 9.8 秒，一次 60ms 的 prefill 让 23 个在飞的 decode 流全部排队。三段式的本质不是'拆开更好玩'，而是'不等 tokenization 就把 GPU 喂饱'——GPU 的空转成本远超 IPC 开销。",
+      "resolution": "判据不是'解耦好不好'，是'你的并发量有没有跨过单进程同步路径的 GPU 饥饿点'。低于 10 并发时同步更简单更快，三位数并发时不解耦等于让 GPU 空转等人的 CPU 活。选架构要看你的负载落在哪个区间。"
+    },
+    "foreshadow_map": {
+      "EngineCore 独立进程内部到底跑什么循环": ["ep02"],
+      "从 logits 到挑出一个 token 的完整路径": ["ep05"]
+    }
+  },
+  "ep02": {
+    "opening": "你开了 100 个 chat 会话同时请求 vLLM，它的调度器根本不在乎有几个——它只问一个问题：这一拍 GPU 能吞下多少个 token？一个 2000 token 的系统提示词可能一口吃掉整拍预算，剩下 99 个请求全饿在后面。这不是 bug，这是设计——但这个设计的代价被严重低估了。",
+    "closing": "调度器把谁放进这一拍、把谁踢出去，最终落地在一件事上——显存能不能分到足够的 KV cache 块。下一期我们从操作系统偷一个主意：把 KV cache 像虚拟内存一样切成固定大小的页，换入换出，甚至跨请求共享相同的前缀。",
+    "controversy": {
+      "claim": "以 token 数而非请求数调度，看似高效实则造成'长请求暴政'。Marcus Chen 在 dev.to 发表的生产 trace（2026-05）用实测数据证明：开启连续批处理后 p50 延迟从 340ms 降到 190ms——但 p99 从 1.2 秒飙升到 9.8 秒，p99.9 从 2.1 秒跳到 27 秒。根因是一个长 prefill 阻塞了 23 个 decode 流。vLLM 社区论坛也有用户反馈 token budget 下调度不一致（discuss.vllm.ai, 2025-12），某些请求被无限期推迟。连续批处理保了吞吐，丢了尾延迟。",
+      "counter": "但从 GPU 的角度看，FLOPS 不关心 token 来自哪个请求——token-centric 调度是唯一能吃饱 GPU 的方式。Sarathi-Serve 在 OSDI 2024 发表的论文证明，单个 prefill 与 decode 共享同一前向 pass 时可以把 inter-token latency 推高 28 倍。而他们的 chunked prefill 方案把长 prefill 切成小块插入 decode batch 后，实现了 2.6x（Mistral-7B）到 6.9x（Falcon-180B）的吞吐提升，同时 p99 回归正常。vLLM 也实现了 chunked prefill——问题不是设计错了，是默认配置没开。",
+      "resolution": "判据是你的尾延迟 SLA。如果你卖实时 API、p99 必须控制在 2 秒内，token-centric 调度必须配 chunked prefill 和优先级队列——vLLM 这些都有，但需要你主动调参，默认值不会替你选。如果你做离线批处理、尾延迟无所谓，裸 token-centric 调度最省显存。"
+    },
+    "foreshadow_map": {
+      "KV cache 分配失败时调度器的抢占循环与双队列隔离": ["ep03"],
+      "execute_model：模型前向在 GPU worker 上的实际执行过程": ["ep04"]
+    }
+  },
+  "ep03": {
+    "opening": "面试官问：你给 vLLM 加了 KV cache 压缩，淘汰了 90% 的不重要 token，重启发现显存几乎没降，同样的 sequence length 还是 OOM——为什么？答案不是'你淘汰的不够多'，是 PagedAttention 的 block size 是 16 token——只要一个 block 里还剩一个 token 没淘汰，整块就释放不了。你省的不是 token，是物理块。",
+    "closing": "块表把逻辑块号映射到 GPU 上的物理 slot——这最后一步是 Triton kernel 做的，而 Triton kernel 只是 vLLM 里几十个 custom op 中的一个。下一期我们把镜头推到 GPU 上：一个 PyTorch 模型层怎么变成一段 CUDA graph 里反复重播的融合 kernel，中间连 Python 解释器都不经过。",
+    "controversy": {
+      "claim": "PagedAttention 的 block size=16 是论文里的缺省值，但在生产环境中远非最优。社区面试官开始追问这个问题：block size 设为 1 能消除内部碎片但块表暴涨 O(n/16 → n)；block size 太大会在短序列场景下严重浪费显存（voice-008，牛客面经转述面试官追问）。更尴尬的是，Mistral AI 在 2026 年 6 月发现 vLLM 生产环境存在 CPU 内存泄漏，根因追踪到 prefix caching 的 Request 引用循环（GitHub issue #43639）。一面说 PagedAttention 是 vLLM 最漂亮的创新，一面在生产里踩引用循环的坑。",
+      "counter": "但正是因为分页设计，vLLM 才能做前缀缓存——相同系统提示词的 KV 块在不同请求间共享引用计数。llm-d 团队在 16 块 H100 跑 Qwen-32B、150 个客户、每客户 6000 token 系统提示词的生产 benchmark 显示：启用前缀缓存感知调度后，P90 TTFT 从 93 秒降到 0.542 秒——差了 170 倍（voice-007）。FutureAGI 的评估进一步揭示：KV-cache hit rate 低于 0.55 时，RAG 应用的 Groundedness 评分从 0.88 跌到 0.69——缓存命中率不仅是性能指标，更是质量指标。分页的'浪费'是共享的前提。",
+      "resolution": "判据不是你有没有碎片，是你的前缀共享率能不能覆盖碎片开销。唯一 prompt 场景下（每个请求各说各的），分页只有碎片没有收益，block size 越小越好。多租户 Agent 场景下（80% 共享系统提示词），前缀缓存收益压倒一切碎片——170x TTFT 差距不是 block size 能换来的。选 block size 本质上是判断你的负载属于哪种。"
+    },
+    "foreshadow_map": {
+      "block_table：Triton kernel 将逻辑块号映射为 GPU 物理 slot": ["ep04"]
+    }
+  },
+  "ep04": {
+    "opening": "你在 Python 里写了一个 attention 层——一行 F.scaled_dot_product_attention。vLLM 把它变成了一段在 CUDA graph 里反复重播的融合 kernel，中间连 Python 解释器都不经过。更离谱的是，vLLM 的 Triton attention backend 用 800 行代码跑出了 FlashAttention 3 七万行 C++ 的 100.7% 性能。这怎么做到的？代价又是什么？",
+    "closing": "GPU 算出了 128000 个 logits——但最终选哪一个 token 出门，还要过 9 道关卡。其中一道把你写的 JSON Schema 实时编译成一个 GPU 位掩码，在采样之前就把非法 token 的概率精确归零。不是模型学会了 JSON，是 kernel 不让它犯错。下一期，采样管线的最后一站。",
+    "controversy": {
+      "claim": "torch.compile 的 Inductor partition 不是免费午餐。vLLM 社区成员 ProExpertProg 在 GitHub issue #27080（2025-10）报告：冷启动编译时间暴涨 2-5 倍，大模型可达 100 秒；需要大量 monkeypatch 和 workaround；而且 attention+quant 融合在 Blackwell 上甚至出现性能倒退。最终 vLLM 社区决定默认不启用 Inductor partition，通过优化级别 -O1/-O2 分层——这说明 torch.compile 在生产推理框架里还远未到'开了就跑'的阶段。此外，社区论坛揭示了一个深层约束：piecewise compilation 不能做 in-place allreduce，因为 PyTorch Dynamo 的 custom op 不能安全支持 in-place mutation（voice-013）——这是编译器本身的天花板，vLLM 绕不过去。",
+      "counter": "但在 H100 上，vLLM 用 Triton 写的 attention backend 仅 800 行代码达到了 FlashAttention 3 70,000 行 C++ 的 100.7% 性能（vLLM 官方技术博客, 2026-03）。CustomOp 的两级 dispatch 机制（forward_cuda vs forward_native）让你在开发时保持 Python 的可读性，运行时在 H100 上选融合 CUDA kernel、在 Blackwell 上回退纯 torch 让 Inductor 自己发挥。800 行 vs 70000 行的维护成本差距是结构性的——当新 GPU 架构出来时，调 800 行 Triton 和重写 70000 行 C++ 的工程代价不在一个量级。",
+      "resolution": "判据不是'编译优化跑得快不快'，是'跨 GPU 架构的表现是否一致'。Inductor 在 H100 上可行但在 Blackwell 上倒退，说明编译优化还没到'一行代码吃所有卡'的阶段。CustomOp 的二级 dispatch 正是为这种不确定性留的后门——你可以按 GPU 型号切换 kernel。至于 AI Infra 面试已经要求候选人手写 Triton/CUDA kernel（voice-014），说明这门手艺正在从'加分项'变成'基本功'。"
+    },
+    "foreshadow_map": {
+      "采样不是简单 argmax：9 步 logits 处理器管线": ["ep05"]
+    }
+  },
+  "ep05": {
+    "opening": "GPU 算了 128000 个 logits，但如果你让模型输出 JSON，其中 127999 个 token 都是非法的。vLLM 的做法不是'先采样再校验'——它把你写的 JSON Schema 实时编译成一个 GPU 位掩码，在采样之前就把非法 token 的 logit 精确归零。128000 个数的掩码只占 4000 个 int32——小到能每拍跑一次而感觉不到。但有一个 bug：投机解码关掉之后，草稿模型可能还在偷偷跑。",
+    "closing": "我们走完了从一个 HTTP 请求到一颗 token 的完整路径。五期下来你可能注意到一个共同模式：vLLM 的每一个设计决定——拆三段、数 token 不数请求、把 KV cache 切成页、把 Python 编译成 CUDA graph、把 JSON Schema 变成位掩码——背后的逻辑都不是'这样更好'，而是'不这样就跑不动'。这也是为什么一本 40 章的源码书值得读：不是因为它教你 API，是因为它让你看见一个推理引擎的每一滴汗。",
+    "controversy": {
+      "claim": "结构化输出整体比无约束解码慢，瓶颈在 CPU-GPU 同步。vLLM 社区版主 RunLLM 在官方论坛（2025-10）公开承认：xgrammar 在 RTX 4090 上因 PCIe 带宽瓶颈反而比 outlines 更慢，'真正的异步 logit 处理仍在开发中'。SqueezeBits 的 benchmark（2025-09）进一步揭示：XGrammar 在动态复杂 schema 下吞吐剧烈波动，且 vLLM 的集成 filter 额外拒绝了部分 XGrammar 能编译的 schema，实际可用覆盖率低于预期。更致命的是，MLSys 2026 Oral 论文的评估表明投机解码的验证开销占运行时间的 42%-95%——投机解码的真正瓶颈不是草稿模型质量，是验证本身。",
+      "counter": "但 bitmask 方案的设计哲学就是'便宜到能进热路径'——128K vocab 的掩码只需 4000 个 int32，vLLM 用独立 CUDA stream 做异步 H2D 拷贝让传输和前向重叠（ch32 的 copy_stream 设计），V2 路径的自写 Triton kernel（_apply_grammar_bitmask_kernel）用位解包直接在 GPU 上展开打包 int32，连传输瓶颈都在绕。vLLM 官方博客（2026-03）也确认 Triton attention backend 在 H100 上达到 FA3 的 100.7%，这些 kernel 层面的优化正在把结构化输出的开销压到最低。",
+      "resolution": "判据不是'哪个后端更快'——是在你的 GPU 和 schema 复杂度下，bitmask 填充+传输的延迟能不能被前向计算完全遮盖。能遮盖就是免费的。不能遮盖的话，你还得额外考虑：INT4 量化会悄悄吃掉你的 JSON 遵守率——FutureAGI（2026-04）实测 Llama 3.3 70B 从 FP16 到 AWQ-INT4 后 function calling 评分从 0.91 跌到 0.78（voice-035）。量化咬结构化输出一口，比咬对话生成狠得多。"
+    },
+    "foreshadow_map": {}
+  }
+}
