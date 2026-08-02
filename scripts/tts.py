@@ -194,6 +194,28 @@ class DialogueTTSProvider(LocalTTSProvider):
             raise ValueError("script 无任何发言内容，无法合成")
         full_text = " ".join(parts)
 
+        # 分段生成（规避模型提前终止）：模型对长文本会过早输出 audio_end
+        # （实测 300 字仅生成 ~53 步 vs 短文本可到 318 步）。按目标秒数分块，
+        # 每段独立生成后拼接；每段 ≤60s 音频（750 步），提前终止风险低。
+        # 音色一致性：每段用同一参考音频克隆，漂移可控。
+        chunk_seconds = 45.0
+        chunk_chars = int(chunk_seconds * 4.0)  # 4 字/秒口播
+        # 按 turn 边界切分（避免把单个 turn 劈开）
+        chunks: list[str] = []
+        cur: list[str] = []
+        cur_chars = 0
+        for part in parts:
+            n = len(part)
+            if cur and cur_chars + n > chunk_chars:
+                chunks.append(" ".join(cur))
+                cur, cur_chars = [], 0
+            cur.append(part)
+            cur_chars += n
+        if cur:
+            chunks.append(" ".join(cur))
+        if len(chunks) > 1:
+            print(f"  [tts] 分段生成：{len(chunks)} 段（每段 ≤{chunk_chars} 字）")
+
         # 2. 参考音频：voice_map {speaker: wav_path}，编码为 codec tokens
         import torchaudio
         wavs, ref_names = [], []
@@ -212,60 +234,65 @@ class DialogueTTSProvider(LocalTTSProvider):
         concat_wav = torch.cat(wavs, dim=-1)
         prompt_audio = processor.encode_audios_from_wav([concat_wav], sampling_rate=target_sr)[0]
 
-        # 3. conversation（官方 voice_clone_and_continuation 模式）
-        conversation = [[
-            processor.build_user_message(text=full_text, reference=ref_codes),
-            processor.build_assistant_message(audio_codes_list=[prompt_audio]),
-        ]]
-        batch = processor(conversation, mode="continuation")
-
-        # 4. 生成
-        max_new_tokens = opts.max_new_tokens
-        if max_new_tokens is None:
-            # 官方换算：1s ≈ 12.5 tokens（README §Generation Hyperparameters）；
-            # 中文口播 ~4 字/秒 → 文本字数 → 秒数 → tokens，加 30% 余量
-            approx = int(len(full_text) / 4.0 * 12.5 * 1.3)
-            max_new_tokens = max(512, approx)
+        # 3-5. 分段生成 + 解码
         device = self._model.device
-        with torch.no_grad():
-            outputs = model.generate(
-                input_ids=batch["input_ids"].to(device),
-                attention_mask=batch["attention_mask"].to(device),
-                max_new_tokens=max_new_tokens,
-                text_temperature=1.1, text_top_p=0.9, text_top_k=50,
-                audio_temperature=1.1, audio_top_p=0.9, audio_top_k=50,
-                audio_repetition_penalty=1.1,
-            )
-
-        # 5. 解码：绕过 processor.decode 的缺陷裁剪路径（波形域按比例裁剪会留下
-        #    prompt 音频的错误截断尾巴 → 听感噪声），改为 codes 域精确处理：
-        #    de-delay → 裁 prompt 帧 → 通道移位修正 → 丢 pad → decode_audio_codes。
-        #    通道移位：模型输出的通道布局与 tokenizer 不一致（粗层不在通道 0），
-        #    且延迟基线与 start_length 语义有偏差——两者都随输入变化，故用
-        #    pitch 自校准网格搜索（shift × 时间偏移）选最优解码组合。
-        audio_codes = outputs[0][1][:, 1:].cpu()
-        dedelayed = processor.apply_de_delay_pattern(audio_codes)
-        start_length = int(outputs[0][0].item())
         pad_code = processor.model_config.audio_pad_code
-        decoded_audio = self._calibrated_decode(dedelayed, start_length, n_vq, pad_code, target_sr)
-
         segments_dir = Path(opts.output_dir) / "segments"
         segments_dir.mkdir(parents=True, exist_ok=True)
         segments: list[Path] = []
         total_frames = 0
+        import soundfile as sf
 
-        for j, wav in enumerate(decoded_audio):
-            wav_np = wav.cpu().numpy() if hasattr(wav, "cpu") else wav
-            if wav_np.ndim == 1:
-                wav_np = wav_np.reshape(-1, 1)
-            seg_path = segments_dir / f"segment_{j:03d}.wav"
-            import soundfile as sf
-            sf.write(str(seg_path), wav_np.astype("float32"), target_sr)
-            segments.append(seg_path)
-            total_frames += wav_np.shape[0]
+        for ci, chunk_text in enumerate(chunks):
+            conversation = [[
+                processor.build_user_message(text=chunk_text, reference=ref_codes),
+                processor.build_assistant_message(audio_codes_list=[prompt_audio]),
+            ]]
+            batch = processor(conversation, mode="continuation")
+
+            # 每段 max_new_tokens：文本 → 步数 + 余量；温度 0.7（实测更稳定）
+            chunk_steps = int(len(chunk_text) / 4.0 * 12.5 * 1.3)
+            max_new_tokens = max(512, chunk_steps)
+            expected_new = int(len(chunk_text) / 4.0 * 12.5)
+            min_ok_steps = max(60, int(expected_new * 0.35))
+
+            best_out = None
+            best_new = -1
+            for attempt in range(3):
+                torch.manual_seed(42 + ci * 101 + attempt * 17)
+                with torch.no_grad():
+                    outputs = model.generate(
+                        input_ids=batch["input_ids"].to(device),
+                        attention_mask=batch["attention_mask"].to(device),
+                        max_new_tokens=max_new_tokens,
+                        text_temperature=0.7, text_top_p=0.9, text_top_k=50,
+                        audio_temperature=0.7, audio_top_p=0.9, audio_top_k=50,
+                        audio_repetition_penalty=1.1,
+                    )
+                new_steps = int(outputs[0][1].shape[0]) - int(outputs[0][0].item())
+                if new_steps > best_new:
+                    best_new = new_steps
+                    best_out = outputs
+                if new_steps >= min_ok_steps:
+                    break
+            outputs = best_out
+
+            # 解码（自校准）
+            audio_codes = outputs[0][1][:, 1:].cpu()
+            dedelayed = processor.apply_de_delay_pattern(audio_codes)
+            start_length = int(outputs[0][0].item())
+            decoded_audio = self._calibrated_decode(dedelayed, start_length, n_vq, pad_code, target_sr)
+
+            for wav in decoded_audio:
+                wav_np = wav.cpu().numpy() if hasattr(wav, "cpu") else wav
+                if wav_np.ndim == 1:
+                    wav_np = wav_np.reshape(-1, 1)
+                seg_path = segments_dir / f"chunk{ci:02d}_{len(segments):03d}.wav"
+                sf.write(str(seg_path), wav_np.astype("float32"), target_sr)
+                segments.append(seg_path)
+                total_frames += wav_np.shape[0]
 
         # 6. 拼接总音频
-        import soundfile as sf
         bundle_path = Path(opts.output_dir) / "episode.wav"
         if len(segments) == 1:
             bundle_path.write_bytes(segments[0].read_bytes())
