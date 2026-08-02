@@ -33,11 +33,6 @@ Task 17: partial
   待 Lead:
     - voice-samples (laozhang.wav / akai.wav, 各 5-10s)
 
-Task 18: partial
-  已完成:
-    - vllm-podcast scaffold + 书源摄入 (39章)
-    - devpodcast.json 已更新 ingested_at/snapshot_digest
-  待 Lead: voice-guide.md 定稿 (当前为 scaffold 模板, 需敲定老张/阿凯最终人格细节)
-  待 MOSS-TTSD 就绪后: Phase A season-pipeline 发车
+MOSS-TTSD sample_dialogue.wav: 34.6s/23.3s @ 1.5x; 额外发现并修复 2 个模型代码 bug (dtype/float mismatch + torch.split position→size)
 
 Task 19: pending — 等待 Task 17 + 18 完成
