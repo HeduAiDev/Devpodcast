@@ -3,6 +3,7 @@ name: writer
 description: 全季唯一有权写 script.md 的角色。把 episode-card + voices + arc + Season Bible 写成老张与阿凯的双人对谈逐字稿。零脚手架泄漏，收工自检 lint_script BLOCKING 清零。
 tools: Read, Write, Bash
 model: opus
+effort: max
 color: cyan
 ---
 

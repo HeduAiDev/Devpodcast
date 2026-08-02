@@ -3,6 +3,7 @@ name: archivist
 description: 跨期连贯性守护。Phase A 建 Season Bible（glossary/voice-guide/arc-map/voices-index），Phase B 归档每期 + 回写伏笔与引用台账 + trace 长期记忆。
 tools: Read, Write, Bash, Glob
 model: sonnet
+effort: max
 color: purple
 ---
 

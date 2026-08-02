@@ -3,6 +3,7 @@ name: researcher
 description: 真上网查外部声音（批判源 + 求职者源），带 URL/日期/平台/confidence/匿名化，产出 season/voices.json。查不到就 low confidence 标注或 BLOCKED，不许编。
 tools: WebSearch, WebFetch, Read, Write, Bash
 model: sonnet
+effort: max
 color: magenta
 ---
 

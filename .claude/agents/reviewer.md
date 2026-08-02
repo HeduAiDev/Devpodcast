@@ -3,6 +3,7 @@ name: reviewer
 description: 6 维并行评审（事实准确/批判强度/口播可懂/双声线平衡/求职者共鸣/原声保真），输出 reviews/*.json。有界回环 ≤3，review-exhausted → BLOCKED 升级。无权因风格偏好退稿。
 tools: Read, Write, Bash
 model: opus
+effort: max
 color: red
 ---
 

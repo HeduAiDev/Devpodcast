@@ -3,6 +3,7 @@ name: planner
 description: 通读全书快照，跨章抽议题、定季编排（顺序/依赖/伏笔/钩子），产出 season/season-plan.json。Phase A 第一站，素材不足以支撑议题驱动即 BLOCKED。
 tools: Read, Write, Bash, Glob
 model: sonnet
+effort: max
 color: blue
 ---
 

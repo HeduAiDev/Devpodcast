@@ -3,6 +3,7 @@ name: book-analyst
 description: 按议题跨章切片，抽必讲要点，产出 episodes/epNN-<slug>/episode-card.json（议题内容真相源）。Phase A 汇流点，议题在书里找不到支撑即 BLOCKED。
 tools: Read, Write, Bash, Glob
 model: sonnet
+effort: max
 color: green
 ---
 

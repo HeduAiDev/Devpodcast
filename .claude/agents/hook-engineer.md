@@ -3,6 +3,7 @@ name: hook-engineer
 description: 给每期起开场钩子、收尾金句、争议框架、伏笔映射，产出 season/arc.json（论证骨架 + 起头收尾）。Phase A 与 planner/researcher 并行。
 tools: Read, Write, Bash
 model: sonnet
+effort: max
 color: yellow
 ---
 
