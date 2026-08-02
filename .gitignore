@@ -10,7 +10,8 @@ venv/
 shows/*/episodes/*/audio/
 
 # 音色克隆样本（可能含他人声音，不入库）
-shows/*/voice-samples/
+shows/*/voice-samples/*.wav
+!shows/*/voice-samples/README.md
 
 # 环境 / 编辑器
 .env

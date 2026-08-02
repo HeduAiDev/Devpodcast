@@ -1,0 +1,32 @@
+{
+  "show": "vllm-podcast",
+  "title": "把 vLLM 拆开讲",
+  "book_source": {
+    "kind": "repo2book",
+    "root": "D:/Env/Git/mnt/e/Laboratory/Repo2Book",
+    "instance": "vllm",
+    "ingested_at": "",
+    "snapshot_digest": ""
+  },
+  "audience": {
+    "profile": "对 LLM 推理有兴趣的工程师 + 正在准备相关面试的求职者",
+    "assumed_knowledge": [
+      "Python",
+      "Transformer 基本概念"
+    ],
+    "language": "zh-CN"
+  },
+  "format": {
+    "hosts": 2,
+    "target_minutes": 35,
+    "episodes_planned": null
+  },
+  "tts": {
+    "provider": "moss-ttsd",
+    "fallback": "cosyvoice3",
+    "voice_map": {
+      "S1": "voice-samples/laozhang.wav",
+      "S2": "voice-samples/akai.wav"
+    }
+  }
+}
