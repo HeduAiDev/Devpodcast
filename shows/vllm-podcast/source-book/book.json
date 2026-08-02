@@ -1,0 +1,3441 @@
+{
+  "title": "vllm",
+  "chapters": [
+    {
+      "chapter_id": "ch01",
+      "title": "vLLM v1 是什么，以及这本书怎么读",
+      "slug": "ch01-config-and-wiring",
+      "sections": [
+        "1.1 一个请求的端到端旅程",
+        "1.2 v1 相比 v0 变了什么",
+        "1.3 两个使用面：同一个内核，两种驱动",
+        "1.4 配置是怎么搭起来的",
+        "1.5 这本书怎么读",
+        "1.6 全书地图：8 个 Part、37 章"
+      ],
+      "key_classes": [
+        {
+          "name": "LLM",
+          "file": "vllm/entrypoints/llm.py",
+          "responsibility": "离线（offline）使用面：同步 generate()/chat()/embed()，内部建 LLMEngine、亲自驱动 step 循环"
+        },
+        {
+          "name": "AsyncLLM",
+          "file": "vllm/v1/engine/async_llm.py",
+          "responsibility": "服务（OpenAI server）使用面：异步门面，EngineCore 跑在独立子进程，背景 output_handler 多路复用输出"
+        },
+        {
+          "name": "LLMEngine",
+          "file": "vllm/v1/engine/llm_engine.py",
+          "responsibility": "v1 同步引擎门面：renderer/InputProcessor + OutputProcessor + EngineCore(client) 三件套（asyncio_mode=False）"
+        },
+        {
+          "name": "EngineCore",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "引擎内核：装配 executor、profiling 后初始化分页 KV cache、建 Scheduler；step() 一拍 schedule→execute→update；服务态 run_busy_loop 在独立进程不停步进"
+        },
+        {
+          "name": "VllmConfig",
+          "file": "vllm/config/vllm.py",
+          "responsibility": "聚合 dataclass：把 model/cache/parallel/scheduler/compilation 等十几个子 config 合成一个全栈传递的单一对象"
+        },
+        {
+          "name": "EngineArgs",
+          "file": "vllm/engine/arg_utils.py",
+          "responsibility": "扁平参数集合；create_engine_config(usage_context) 装配成 VllmConfig"
+        },
+        {
+          "name": "InputProcessor",
+          "file": "vllm/v1/engine/input_processor.py",
+          "responsibility": "三段式第一段：把用户 prompt 处理成 EngineCoreRequest（本章只点名，Part II 深挖）"
+        },
+        {
+          "name": "OutputProcessor",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "三段式第三段：把 EngineCoreOutputs 还原成 RequestOutput（本章只点名，Part II 深挖）"
+        },
+        {
+          "name": "CompilationMode",
+          "file": "vllm/config/compilation.py",
+          "responsibility": "torch.compile 编译路径枚举：NONE/STOCK_TORCH_COMPILE/DYNAMO_TRACE_ONCE/VLLM_COMPILE(=piecewise 编译)。无 PIECEWISE 成员"
+        },
+        {
+          "name": "CUDAGraphMode",
+          "file": "vllm/config/compilation.py",
+          "responsibility": "CUDA graph 捕获模式枚举：NONE/PIECEWISE/FULL。PIECEWISE 属于这里，勿与 CompilationMode 混淆"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch02",
+      "title": "请求的一生（鸟瞰追踪）：从入口到出口走一遍完整主线",
+      "slug": "ch02-entrypoints",
+      "sections": [
+        "2.1 一张总图：三段式异步把整条链串起来",
+        "2.2 入口：两扇门，同一套核心",
+        "2.3 渲染 → Stage 1：prompt 变成跨进程的 `EngineCoreRequest`",
+        "2.4 建信箱：每个请求一个 `RequestOutputCollector`",
+        "2.5 分叉点：同一个请求，同时挂到本进程和引擎进程",
+        "2.6 引擎段：一个独立进程，不停地算「一拍」",
+        "2.7 输出段：后台搬运工把结果拉回来",
+        "2.8 Stage 3：去 token 化、判停止、组装 `RequestOutput`",
+        "2.9 出口：`generate()` 只消费队列",
+        "2.10 对照：一套核心，两种驱动"
+      ],
+      "key_classes": [
+        {
+          "name": "LLM",
+          "file": "vllm/entrypoints/llm.py",
+          "responsibility": "离线同步入口。generate()/chat() 渲染输入→_render_and_add_requests 把请求加入 LLMEngine→_run_engine 裸 step 循环驱动到全部 finished。无后台 task、无 IPC 消费者。"
+        },
+        {
+          "name": "AsyncLLM",
+          "file": "vllm/v1/engine/async_llm.py",
+          "responsibility": "异步入口 / 三段式总装。generate() 是 API 服务器调用的主函数；add_request 做 Stage1+分叉，_run_output_handler 起后台搬运 task，是本章主角。"
+        },
+        {
+          "name": "OpenAIServingChat",
+          "file": "vllm/entrypoints/openai/chat_completion/serving.py",
+          "responsibility": "HTTP /v1/chat/completions 处理器：渲染（chat template+tokenize）→构造 sampling_params→调 engine_client.generate()→流式/批量成 SSE/JSON。本章只点它是 HTTP→AsyncLLM 的桥。"
+        },
+        {
+          "name": "InputProcessor",
+          "file": "vllm/v1/engine/input_processor.py",
+          "responsibility": "Stage1：process_inputs() 校验+分词+多模态+任务路由→EngineCoreRequest；assign_request_id 加随机后缀保证唯一。"
+        },
+        {
+          "name": "EngineCoreRequest",
+          "file": "vllm/v1/engine/__init__.py",
+          "responsibility": "Stage1 产物 / 跨进程载荷：携带 prompt_token_ids、sampling_params、mm_features 等，经 ZMQ 送进引擎进程。"
+        },
+        {
+          "name": "EngineCore",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "引擎核心。step() 一拍 = schedule→execute_model→sample_tokens→update_from_output，产出 EngineCoreOutputs。本章当黑盒，四步各有专章放大。"
+        },
+        {
+          "name": "EngineCoreProc",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "引擎进程封装。run_busy_loop 取输入队列→step→出输出队列，是三段式中段独立进程的主循环。"
+        },
+        {
+          "name": "AsyncMPClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "IPC 客户端。add_request_async 经 ZMQ 送请求进引擎进程，get_output_async 从输出队列 await 一批 EngineCoreOutputs。是 API 进程与引擎进程之间的隧道。"
+        },
+        {
+          "name": "OutputProcessor",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "Stage3。process_outputs() 是唯一遍历整批的函数：去 token 化+停止判定+logprobs→RequestOutput；有 queue 则 put（异步），无则返回 list（离线）。"
+        },
+        {
+          "name": "RequestOutputCollector",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "每请求 asyncio 信箱。output_handler 用 put 生产、generate() 用 get_nowait/get 消费；DELTA 合并；异常经此通道传播。三段式两端的对接点。"
+        },
+        {
+          "name": "RequestOutput",
+          "file": "vllm/outputs.py",
+          "responsibility": "面向用户的最终/增量产物：text、token_ids、logprobs、finished、finish_reason。generate() yield 的就是它。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch03",
+      "title": "从 EngineArgs 到 VllmConfig：把整套引擎装配起来",
+      "slug": "ch03-config-and-wiring",
+      "sections": [
+        "3.1 一句话钩子：扁平进去，结构化出来",
+        "3.2 第一级映射：EngineArgs 是个扁平的参数袋子",
+        "3.3 create_engine_config：把扁平参数重新打包",
+        "3.4 VllmConfig.__post_init__：跨子配置的校验与推导中枢",
+        "3.5 async_scheduling 三态决策：默认开，但会自动退化",
+        "3.6 第二级映射之一：执行器工厂 Executor.get_class",
+        "3.7 第二级映射之二：调度器工厂 get_scheduler_cls",
+        "3.8 第二级映射之三：IPC 客户端工厂 make_client",
+        "3.9 O0–O3 优化级：一个声明式的旋钮",
+        "3.10 compute_hash：计算图的 10 位指纹",
+        "3.11 汇合点：EngineCore.__init__，三个工厂的产物落地",
+        "3.12 跑一遍：观察装配的实际数值",
+        "3.13 小结：抓住两级映射，启动就不神秘了"
+      ],
+      "key_classes": [
+        {
+          "name": "EngineArgs",
+          "file": "vllm/engine/arg_utils.py",
+          "responsibility": "扁平的用户级参数 dataclass（字段默认值借自各子 Config 类）；__post_init__ 做 dict→Config 升格与插件加载；create_engine_config() 是核心：把扁平参数组装成 VllmConfig；create_model_config/create_load_config/create_speculative_config 为子构造器。AsyncEngineArgs 是其子类（多 enable_log_requests）。"
+        },
+        {
+          "name": "AsyncEngineArgs",
+          "file": "vllm/engine/arg_utils.py",
+          "responsibility": "EngineArgs 的异步变体（AsyncLLM/OpenAI server 用），仅增加 enable_log_requests 与异步专属 CLI 参数。"
+        },
+        {
+          "name": "VllmConfig",
+          "file": "vllm/config/vllm.py",
+          "responsibility": "聚合所有子配置（model/cache/parallel/scheduler/compilation/kernel/...）的总配置体，下游只需传它一个。__post_init__ 做跨子配置交叉校验与默认推导（async_scheduling 决策、O0-O3 应用、compilation/cudagraph 落定）；compute_hash() 产计算图指纹；持 optimization_level(默认 O2)/performance_mode(默认 balanced)。"
+        },
+        {
+          "name": "OptimizationLevel",
+          "file": "vllm/config/vllm.py",
+          "responsibility": "IntEnum O0-O3，表达启动时间 vs 运行性能权衡；经 OPTIMIZATION_LEVEL_TO_CONFIG 映射到一组 compilation/kernel 默认值字典。"
+        },
+        {
+          "name": "ModelConfig",
+          "file": "vllm/config/model.py",
+          "responsibility": "模型相关配置（HF config、dtype、max_model_len、runner_type、is_moe/is_multimodal 等派生属性）；许多其他子配置从它派生关键标志。"
+        },
+        {
+          "name": "CacheConfig",
+          "file": "vllm/config/cache.py",
+          "responsibility": "KV cache 配置（block_size、gpu_memory_utilization、enable_prefix_caching、cache_dtype 等）。"
+        },
+        {
+          "name": "ParallelConfig",
+          "file": "vllm/config/parallel.py",
+          "responsibility": "并行配置（TP/PP/DP/CP 各 size、distributed_executor_backend）；其 __post_init__ 推导 world_size 与 executor backend 默认值（mp/uni/ray）。"
+        },
+        {
+          "name": "SchedulerConfig",
+          "file": "vllm/config/scheduler.py",
+          "responsibility": "调度配置（max_num_batched_tokens/max_num_seqs、enable_chunked_prefill、policy、async_scheduling、scheduler_cls）；get_scheduler_cls() 是调度器工厂。"
+        },
+        {
+          "name": "CompilationConfig",
+          "file": "vllm/config/compilation.py",
+          "responsibility": "torch.compile 与 cudagraph 配置（mode、cudagraph_mode、pass_config 各 fusion 开关）；优化级默认值落到此对象。"
+        },
+        {
+          "name": "Executor",
+          "file": "vllm/v1/executor/abstract.py",
+          "responsibility": "执行器抽象基类；静态方法 get_class(vllm_config) 是执行器工厂，按 distributed_executor_backend 选 Uni/Multiproc/Ray/ExternalLauncher 子类；supports_async_scheduling() 反哺 async_scheduling 决策。"
+        },
+        {
+          "name": "EngineCoreClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "IPC 客户端抽象基类；make_client/make_async_mp_client 是 IPC 工厂，按 (multiprocess_mode, asyncio_mode) 与 DP 维度选 Inproc/SyncMP/AsyncMP/DP* 客户端。"
+        },
+        {
+          "name": "EngineCore",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "引擎核心；__init__ 是三工厂产物的汇合点——实例化 executor_class、调用 get_scheduler_cls 选并实例化调度器、初始化 KV cache。本章止于此（运行循环属后续章节）。"
+        },
+        {
+          "name": "LLMEngine",
+          "file": "vllm/v1/engine/llm_engine.py",
+          "responsibility": "v1 同步引擎门面；from_engine_args 串起 create_engine_config + Executor.get_class + EngineCoreClient.make_client(asyncio_mode=False)，是本章数据流的起点入口。"
+        }
+      ],
+      "mechanisms": [
+        {
+          "id": "ch03-compute-hash",
+          "name": "compute_hash：计算图指纹（torch.compile 缓存键）",
+          "kind": "algorithm",
+          "difficulty": "core",
+          "source_anchors": [
+            "vllm/config/vllm.py:L362-L468"
+          ],
+          "needs_worked_example": true,
+          "needs_figure": true,
+          "depth": "shallow",
+          "figure": "missing",
+          "note": "外科回修体检登记：本章点名的算法机制，但缺『机制含数值推演』这一层——3.10 节把『收什么/不收什么』讲清了，却没有 factors 列表→10 位指纹的实际 trace，也没有『改 TP/优化级 → 指纹变 / 改 max_num_seqs → 指纹不变』的 before/after 数值例子（该结论只在 3.10 尾以散文断言）。3.12『跑一遍』只验证 backend/async/优化级三项，独漏 compute_hash。全章亦无对应配图。kind=algorithm → needs_worked_example=true。其余机制（两级映射/async 三态/优化级/三工厂）体检合格，属外科范围外，本次不登记。"
+        }
+      ]
+    },
+    {
+      "chapter_id": "ch04",
+      "title": "AsyncLLM：三段式异步解耦",
+      "slug": "ch04-async-llm",
+      "sections": [
+        "4.1 一句话钩子：为什么要拆成三段",
+        "4.2 三段在哪里诞生：`__init__` 的构造与背景任务",
+        "4.3 一个请求进来：`generate()` 异步生成器",
+        "4.4 三段解耦的扇出点：`add_request` 与 `_add_request`",
+        "4.5 结果怎么回来：`output_handler` 背景任务（生产者）",
+        "4.6 队列的真身：`RequestOutputCollector`",
+        "4.7 解多路复用：一批输出怎么分回 N 个队列",
+        "4.8 IPC 上流动的是什么：两种跨进程消息",
+        "4.9 把三段串起来：完整时序",
+        "4.10 跑起来看数值：交叉验证",
+        "4.11 小结：你现在掌握了什么"
+      ],
+      "key_classes": [
+        {
+          "name": "AsyncLLM",
+          "file": "vllm/v1/engine/async_llm.py:L70",
+          "responsibility": "三段式异步 facade(继承 EngineClient)。__init__ 构造三段并急切/懒启 output_handler；对外暴露 generate()(异步生成器)与 add_request()/abort()；持有 input_processor/output_processor/engine_core/output_handler 四个核心成员。"
+        },
+        {
+          "name": "RequestOutputCollector",
+          "file": "vllm/v1/engine/output_processor.py:L45",
+          "responsibility": "每个请求一个的输出收集器(f1)。单槽 self.output + asyncio.Event self.ready 实现 put(生产者, output_handler 调)/get(消费者, generate 调)/get_nowait(消费者快路径)；生产者超前时 merge(支持 DELTA 聚合)。是连接背景任务与 per-request generate 协程的解耦队列。"
+        },
+        {
+          "name": "OutputProcessor",
+          "file": "vllm/v1/engine/output_processor.py:L413",
+          "responsibility": "Stage3 后处理与 per-request 队列登记/分发。add_request 把 queue 存入 req_id->RequestState 表；process_outputs 按 req_id 把 EngineCoreOutput 解多路复用、生成 RequestOutput 并 put 回各请求队列。(去 tokenize/累积细节留 ch08, 本章只用其'登记+分发'骨架。)"
+        },
+        {
+          "name": "InputProcessor",
+          "file": "vllm/v1/engine/input_processor.py:L36 (process_inputs L234, assign_request_id L215)",
+          "responsibility": "Stage1 前处理。process_inputs(prompt,params,...) 把原始 prompt + 采样参数转成已 tokenize 的 EngineCoreRequest。本章只把它当作 add_request 的第一步黑盒；内部 tokenize/校验留 ch05。"
+        },
+        {
+          "name": "EngineCoreClient / AsyncMPClient",
+          "file": "vllm/v1/engine/core_client.py:L69 / L887",
+          "responsibility": "Stage2 的进程边界客户端(f2)。make_async_mp_client 启动独立进程的 EngineCore；add_request_async 经 ZMQ 投递 EngineCoreRequest, get_output_async 经 asyncio 队列收 EngineCoreOutputs。本章只用这两个异步方法标 IPC 接缝；ZMQ/msgpack/进程编排留 ch07。"
+        },
+        {
+          "name": "EngineCoreRequest / EngineCoreOutput",
+          "file": "vllm/v1/engine/__init__.py:L80 / L161",
+          "responsibility": "跨进程边界的 msgspec 消息。前者承载已 tokenize 的请求进入引擎, 后者承载 new_token_ids + finish_reason 返回；EngineCoreOutput.finished 是 generate() 判停依据。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch05",
+      "title": "Stage 1 输入处理：从 prompt 到 EngineCoreRequest",
+      "slug": "ch05-input-processing",
+      "sections": [
+        "5.1 一句话钩子：tokenize 已经不在这里了",
+        "5.2 进门先验票：三道校验关卡",
+        "5.3 归一化：透传还是兜底 tokenize",
+        "5.4 模型输入校验：空、超长、越界，三种死法",
+        "5.5 取出 prompt 字段：三种载体的归一化访问",
+        "5.6 补料：`SamplingParams.clone()` 与三处补全",
+        "5.7 多模态展平：从 dict-of-list 到有序的 feature 列表",
+        "5.8 组装成品：`EngineCoreRequest`",
+        "5.9 请求 id 唯一化：那串随机后缀是干嘛的",
+        "5.10 fan-out：n>1 的并行采样在哪一层裂开",
+        "5.11 跑起来看数值：补全与 fan-out 的可观察行为",
+        "5.12 小结：这一关到底把好了什么"
+      ],
+      "key_classes": [
+        {
+          "name": "InputProcessor",
+          "file": "vllm/v1/engine/input_processor.py",
+          "responsibility": "把 PromptType/EngineInput + SamplingParams/PoolingParams 转成 EngineCoreRequest：参数校验、LoRA 校验、（兜底）tokenize/多模态、模型输入校验、SamplingParams 克隆补全、多模态 placeholder 排序展平、组装 EngineCoreRequest，并经 assign_request_id() 注入唯一 id。"
+        },
+        {
+          "name": "EngineCoreRequest",
+          "file": "vllm/v1/engine/__init__.py",
+          "responsibility": "进入 EngineCore 的请求载荷，msgspec.Struct（array_like/omit_defaults/gc=False，为跨进程 IPC 优化）。承载 request_id/external_req_id、prompt_token_ids/prompt_embeds/prompt_is_token_ids、mm_features、sampling_params 或 pooling_params、arrival_time、lora_request、cache_salt、priority、data_parallel_rank 等。.params 属性统一返回 sampling 或 pooling 参数。"
+        },
+        {
+          "name": "InputPreprocessor",
+          "file": "vllm/inputs/preprocess.py",
+          "responsibility": "raw-prompt（deprecated）兜底路径的预处理：enc-dec 与 decoder-only 分流，文本经 _tokenize_prompt 出 token ids，多模态委托 renderer._process_multimodal，embeds 委托 renderer._process_embeds，产出统一的 EngineInput TypedDict。真实主路径已由 Renderer 完成，这里仅兜底。"
+        },
+        {
+          "name": "EngineInput / SingletonInput",
+          "file": "vllm/inputs/engine.py",
+          "responsibility": "已渲染输入的 TypedDict 家族：TokensInput(type='token')、EmbedsInput(type='embeds')、MultiModalInput(type='multimodal')、以及 enc-dec 复合类型；split_enc_dec_input 把复合拆成 (encoder, decoder)。"
+        },
+        {
+          "name": "MultiModalFeatureSpec",
+          "file": "vllm/multimodal/inputs.py",
+          "responsibility": "单个多模态 item 的处理结果与元数据：data(MultiModalKwargsItem 或 None)、modality、identifier(含 LoRA 前缀的缓存键)、mm_position(PlaceholderRange)、mm_hash。InputProcessor 把按 dict 组织的多模态数据展平排序成 list[MultiModalFeatureSpec]。"
+        },
+        {
+          "name": "PlaceholderRange",
+          "file": "vllm/multimodal/inputs.py",
+          "responsibility": "多模态占位符在 prompt_token_ids 中的位置(offset/length/is_embed mask)。get_num_embeds() 给出该 item 实际嵌入 token 数，用于编码器缓存超限校验。"
+        },
+        {
+          "name": "ParentRequest",
+          "file": "vllm/v1/engine/parallel_sampling.py",
+          "responsibility": "n>1 并行采样的父请求状态机：记录 n 个子请求 id，按 index 生成子 SamplingParams（n=1；有 seed 时 seed+index，无 seed 时复用同一克隆），并聚合子 CompletionOutput（流式逐个转发 / FINAL_ONLY 攒齐 n 个再回）。"
+        }
+      ],
+      "mechanisms": [
+        {
+          "id": "parallel-sampling-fanout",
+          "name": "n>1 并行采样 fan-out 与子请求派生",
+          "kind": "algorithm",
+          "difficulty": "core",
+          "source_anchors": [
+            "vllm/v1/engine/async_llm.py:L381-L398",
+            "vllm/v1/engine/parallel_sampling.py:L36-L94"
+          ],
+          "needs_worked_example": true,
+          "needs_figure": true,
+          "retrofit_reason": "体检判定 figure=wrong：02-request-id-and-fanout 的四个子请求框内三行文字(request_id / sampling n=1 / copy)行距过密相撞，需重绘换图；机制文字讲解本身合格，不重写正文。"
+        }
+      ]
+    },
+    {
+      "chapter_id": "ch06",
+      "title": "Parallel Sampling：把一个 n=3 请求扇成三个独立请求",
+      "slug": "ch06-input-processor",
+      "sections": [
+        "6.1 一句话钩子：n 不是一个引擎参数",
+        "6.2 扇出的入口：`add_request` 的两条岔路",
+        "6.3 为什么独立调度优于「引擎内批量 n」",
+        "6.4 子请求的身份：唯一 id 与确定性种子",
+        "6.5 双进程登记：本进程一份 RequestState，跨进程一个独立请求",
+        "6.6 归并：n 路结果怎么合回一路",
+        "6.7 取消：一个对外 id 牵出 n 个内部 child",
+        "6.8 跑起来看数值：扇出、种子、归并、级联取消",
+        "6.9 小结：复杂度被关进了一个类"
+      ],
+      "key_classes": [
+        {
+          "name": "ParentRequest",
+          "file": "vllm/v1/engine/parallel_sampling.py",
+          "responsibility": "封装 n>1 父请求的状态与处理：保存父 request_id/external_req_id/sampling_params；通过 get_child_info(idx) 派生唯一 child id 与 n=1 child 采样参数（seed 递进/无 seed 复用）；通过 child_requests 集合跟踪 n 路完成；通过 get_outputs 把 n 路 child 输出归并（流式逐条转发 / FINAL_ONLY 按 index 聚合）。"
+        },
+        {
+          "name": "AsyncLLM.add_request",
+          "file": "vllm/v1/engine/async_llm.py",
+          "responsibility": "请求入口：先 assign_request_id 内部化 id、起 output_handler、建 RequestOutputCollector；n==1/pooling 走单请求 fast path；n>1 时建 ParentRequest 并循环扇出 n 个独立 child EngineCoreRequest 下发。是 ch04 三段式 add_request 延迟讲解的 n>1 分支兑现处。"
+        },
+        {
+          "name": "OutputProcessor.add_request",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "本进程侧为每个 child 建独立 RequestState（独立 detokenizer/logprobs，request_index=idx）；登记 parent_requests[parent_id]=parent 与 external_req_ids[external] -> [internal...] 反查表，使输出归并与级联 abort 成为可能。"
+        },
+        {
+          "name": "EngineCoreRequest",
+          "file": "vllm/v1/engine/__init__.py",
+          "responsibility": "跨进程 IPC 载荷。本章关注其 request_id（child 唯一内部 id）、external_req_id（n 路共享的对外 id）、sampling_params（child 被强制 n=1，可能带 seed+index）三字段在扇出/归并中的角色。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch07",
+      "title": "IPC 边界：前端与 EngineCore 之间那条线",
+      "slug": "ch07-engine-core",
+      "sections": [
+        "7.1 一句话钩子：同一套接口，三种传输",
+        "7.2 对照组：`InprocClient`，没有 IPC 的 IPC 客户端",
+        "7.3 socket 拓扑：四个 socket，两个方向",
+        "7.4 ready 握手：DEALER 为什么必须先开口",
+        "7.5 字节标签协议：6 个单字节，省一次编码",
+        "7.6 发与收：多帧消息怎么打包、怎么落地",
+        "7.7 两个 IO 线程：把 ZMQ 和 GPU 解耦",
+        "7.8 跨进程 RPC：在单向流上模拟\"调用-返回\"",
+        "7.9 清理与故障：谁来关 socket",
+        "7.10 输出热路径：编码复用与零拷贝回收",
+        "7.11 msgpack 多帧零拷贝：小张量内联，大张量旁路",
+        "7.12 多模态张量共享内存旁路",
+        "7.13 跑起来看数值：端到端交叉验证",
+        "7.14 小结：你现在掌握了什么"
+      ],
+      "key_classes": [
+        {
+          "name": "EngineCoreClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "抽象基类 + make_client 工厂。定义前端向 EngineCore 推请求/拉输出的统一接口（同步与 async_ 两套方法签名），三个子类用不同传输策略实现。这就是 ch04 三段式 Stage2 的真实接缝抽象。"
+        },
+        {
+          "name": "InprocClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "进程内 client：直接持有一个 EngineCore 实例，add_request 直接调用、get_output 直接 step_fn()，无 ZMQ、无序列化、无 busy loop。用于 V0 风格 LLMEngine（同步、单进程）。它正是 ch04 替身 InProcessEngineCore 在真实代码里的对应物之一。"
+        },
+        {
+          "name": "MPClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "多进程 client 基类：建立 ZMQ context、ROUTER input_socket(bind)、PULL output_socket，启动/连接 EngineCore 子进程，等待每个 engine 的 ready 握手，装配 MsgpackEncoder/Decoder 与可选 TensorIpcSender，并起后台线程监控子进程存活。"
+        },
+        {
+          "name": "SyncMPClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "MPClient 的同步子类（用于 LLM 离线 API）：用 threading.Thread 跑 process_outputs_socket 把 EngineCoreOutputs 投入 queue.Queue；call_utility 用 concurrent.futures.Future 做请求-响应配对。"
+        },
+        {
+          "name": "AsyncMPClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "MPClient 的 asyncio 子类（用于 AsyncLLM/OpenAI 服务）：用 asyncio.Task 跑 process_outputs_socket 协程把输出投入 asyncio.Queue；call_utility_async 用 asyncio.Future 配对。这是 ch04 生产路径真正用的 client。"
+        },
+        {
+          "name": "EngineCoreRequestType",
+          "file": "vllm/v1/engine/__init__.py",
+          "responsibility": "enum.Enum，值为单字节 hex bytes（ADD=b'\\x00' 等）。'so it can be sent over sockets without separate encoding step' —— 作为 ZMQ 多帧消息的首帧直接发送，省一次编码。"
+        },
+        {
+          "name": "EngineCoreProc",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "EngineCore 的 ZMQ 包装子类，运行在后台进程。__init__ 起两个 IO 线程：process_input_sockets（DEALER 收、解码、投 input_queue）与 process_output_sockets（PUSH 发、编码 output_queue）。run_busy_loop 在主线程消费 input_queue、生产 output_queue。三者通过两个内部 queue.Queue 解耦，使 ZMQ IO/序列化与 GPU forward 重叠。"
+        },
+        {
+          "name": "MsgpackEncoder",
+          "file": "vllm/v1/serial_utils.py",
+          "responsibility": "自定义 msgpack 编码器：返回多帧序列 bufs（bufs[0] 为主结构帧，其后为大张量/ndarray 的零拷贝 backing buffer 帧）。enc_hook 处理 torch.Tensor / np.ndarray / MultiModal* / slice 等；小张量内联、大张量进 aux_buffers 或交给 OOB consumer。"
+        },
+        {
+          "name": "MsgpackDecoder",
+          "file": "vllm/v1/serial_utils.py",
+          "responsibility": "对应解码器：decode(bufs) 用 bufs[0] 解主结构、aux_buffers[idx] 零拷贝还原张量；遇到 OOB dict 占位则调用 oob_tensor_provider（TensorIpcReceiver）取真张量。"
+        },
+        {
+          "name": "OOBTensorConsumer / OOBTensorProvider",
+          "file": "vllm/v1/serial_utils.py",
+          "responsibility": "out-of-band 张量旁路协议：consumer(__call__) 在编码时被调用，返回 dict 占位（张量走带外通道）或 None（回退普通序列化）；provider 在解码时按 (dtype, shape, meta) 取回张量。TensorIpcSender 实现前者，TensorIpcReceiver 充当后者。"
+        },
+        {
+          "name": "TensorIpcData",
+          "file": "vllm/v1/engine/tensor_ipc.py",
+          "responsibility": "经 torch.multiprocessing.Queue 传递的载荷 dataclass：sender_id + message_id + tensor_id + 实际 tensor（已 share_memory_）。"
+        },
+        {
+          "name": "TensorIpcSender",
+          "file": "vllm/v1/engine/tensor_ipc.py",
+          "responsibility": "发送端（实现 OOBTensorConsumer）：把多模态张量 share_memory_() 后 put 进 queue，返回 {sender_id,message_id,tensor_id} 元数据嵌入 msgpack 主帧。new_message() 每条消息重置 tensor 计数。"
+        },
+        {
+          "name": "TensorIpcReceiver",
+          "file": "vllm/v1/engine/tensor_ipc.py",
+          "responsibility": "接收端（充当 OOBTensorProvider）：按元数据从 queue 取张量，用 drain-and-buffer 模式排空队列并缓冲，处理多生产者乱序到达，丢弃过期张量。"
+        },
+        {
+          "name": "BackgroundResources",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "weakref.finalize 终结器持有的资源包（ctx/sockets/tasks/engine_manager），保证 client 被 GC 或构造中途异常时干净关闭 socket 与子进程，避免循环引用。含 validate_alive 检测 ENGINE_CORE_DEAD 帧并抛 EngineDeadError。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch08",
+      "title": "Stage 3 输出处理：把一批 token 分发回 N 个流",
+      "slug": "ch08-output-processor",
+      "sections": [
+        "8.1 一句话钩子：一个函数管整批，一条队列喂一个流",
+        "8.2 生产者：`output_handler` 怎么把一批喂进单循环",
+        "8.3 主轴：`process_outputs()` 的单循环",
+        "8.4 第一个子系统：增量去 token 与停止串",
+        "8.5 三道闸门：`make_request_output` 与 DELTA 归并",
+        "8.6 `n>1` 父聚合与完成清理",
+        "8.7 跑起来看数值：交叉验证",
+        "8.8 小结：你现在掌握了什么"
+      ],
+      "key_classes": [
+        {
+          "name": "OutputProcessor",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "Stage 3 总入口。持有 request_states(内部 id→RequestState)、parent_requests、external_req_ids(外部 id→[内部 id]) 三张表。process_outputs 是唯一遍历整批的单循环；abort_requests/propagate_error 处理异常路径；_finish_request 注销。同时服务 AsyncLLM（入队）与 LLMEngine（返回列表）两条路径。"
+        },
+        {
+          "name": "RequestState",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "per-request 累积状态：detokenizer、logprobs_processor、queue(RequestOutputCollector)、parent_req、output_kind、stream_interval/sent_tokens_offset、is_prefilling、num_cached_tokens、stats。make_request_output 把本步增量变成 RequestOutput（含 stream_interval 节流、DELTA/FINAL_ONLY 分支、父聚合分流）。from_new_request 是工厂。"
+        },
+        {
+          "name": "RequestOutputCollector",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "f1：per-request 单槽队列/邮箱，连接 output_handler 生产者与 generate() 消费者。aggregate(DELTA) 时 put 调 RequestOutput.add 归并落后于消费者的 deltas；asyncio.Event 做唤醒；put 非阻塞、get 阻塞、get_nowait 快取。"
+        },
+        {
+          "name": "IncrementalDetokenizer",
+          "file": "vllm/v1/engine/detokenizer.py",
+          "responsibility": "增量去 token + 停止串检测。基类 update 逐 token 追加 output_text、min_tokens 保护、check_stop_strings 截断；get_next_output_text 给 delta/全量文本。from_new_request 按 tokenizer 类型选 Fast(DecodeStream)/Slow(python 增量)/空(无 tokenizer) 三种实现。"
+        },
+        {
+          "name": "LogprobsProcessor",
+          "file": "vllm/v1/engine/logprobs.py",
+          "responsibility": "sample/prompt logprobs 增量累积与去 token。update_from_output 分发到 _update_sample_logprobs（累 cumulative_logprob）与 _update_prompt_logprobs；pop_prompt_logprobs 在 DELTA 下一次性吐出并清空 prompt logprobs。"
+        },
+        {
+          "name": "ParentRequest",
+          "file": "vllm/v1/engine/parallel_sampling.py",
+          "responsibility": "n>1 并行采样的父请求聚合器。get_outputs 把各子 CompletionOutput 按 index 聚合（流式转发 / FINAL_ONLY 攒齐 n 个一次返回），并维护 child_requests 决定整体 finished。"
+        },
+        {
+          "name": "OutputProcessorOutput",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "process_outputs 的返回值：request_outputs(仅 LLMEngine 同步路径非空) + reqs_to_abort(因检测到停止串而需反向 abort EngineCore 的请求)。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch09",
+      "title": "增量去 token 化与 stop string：把 id 流变成会停的文字流",
+      "slug": "ch09-detokenization",
+      "sections": [
+        "9.1 三路工厂：一个 tokenizer 决定走哪条路",
+        "9.2 主流程：update 一次做完解码、min_tokens、查 stop",
+        "9.3 holdback：流式输出为什么要扣住尾巴",
+        "9.4 check_stop_strings：只搜该搜的那一小段",
+        "9.5 慢路径：双 offset 窗口怎么对抗空格清理",
+        "9.6 快路径：DecodeStream 与 UTF-8 错误恢复",
+        "9.7 闭环：stop_string 怎么反向通知 EngineCore"
+      ],
+      "key_classes": [
+        {
+          "name": "IncrementalDetokenizer",
+          "file": "vllm/v1/engine/detokenizer.py",
+          "responsibility": "层级根 + 空壳实现（无 tokenizer 或 detokenize=False 时使用）：只累积 token_ids，update 返回 None、get_next_output_text 返回空串。同时持有工厂 from_new_request，按 tokenizers 版本与 tokenizer 类型三路分派。"
+        },
+        {
+          "name": "BaseIncrementalDetokenizer",
+          "file": "vllm/v1/engine/detokenizer.py",
+          "responsibility": "抽象基类（ABC）：承载与具体 tokenizer 无关的全部公共逻辑——stop/min_tokens 解析、stop_buffer_length holdback 计算、update 主流程（跳过 stop token、逐 token decode_next、min_tokens 推进 stop_check_offset、check_stop_strings 截断）、get_next_output_text 的 delta/cumulative 取文本与尾字符扣留。decode_next 是抽象方法，两个子类各自实现。"
+        },
+        {
+          "name": "FastIncrementalDetokenizer",
+          "file": "vllm/v1/engine/detokenizer.py",
+          "responsibility": "快路径：用 Rust tokenizers 库的 DecodeStream，构造时以 prompt_token_ids 做 native prefill 预热流；decode_next 调 stream.step；_protected_step 兜两类异常——(OverflowError, TypeError) 吞掉返回 None，'Invalid prefix encountered' 则重建 DecodeStream 恢复（修复 UTF-8 非单调无效输出破坏内部状态）。可选抑制相邻特殊 token 间空格。"
+        },
+        {
+          "name": "SlowIncrementalDetokenizer",
+          "file": "vllm/v1/engine/detokenizer.py",
+          "responsibility": "慢路径（纯 Python 回退，非 fast tokenizer 或 tokenizers<0.22.0）：以 prompt 预填 tokens 并算初始 prefix_offset/read_offset；decode_next 调 detokenize_incrementally 维护双 offset 窗口。覆写 output_token_ids/num_output_tokens 以剔除 prompt 部分（token_ids 含 prompt，与 Fast 路径不同）。"
+        },
+        {
+          "name": "OutputProcessor",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "Stage-3 输出处理器，唯一遍历 EngineCoreOutputs 的单循环。本章只关心其 process_outputs 中对 detokenizer.update() 的调用：把返回的 stop_string 转成 finish_reason=STOP / stop_reason，并在 EngineCore 自己没结束时把 req_id 放入 reqs_to_abort 回灌给 EngineCore。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch10",
+      "title": "Logprobs 装配与字节回退修正：从张量到 OpenAI 容器",
+      "slug": "ch10-logprobs",
+      "sections": [
+        "10.1 一张总图：两条泳道，一个分派口",
+        "10.2 容器初始化：三个三元分支决定开关",
+        "10.3 sample logprobs：累计、sampled-first、非增量去 token",
+        "10.4 prompt logprobs：自己 Pythonize 一个二维张量",
+        "10.5 字节回退修正：把半截字节拼回完整字符",
+        "10.6 两种存储格式：FlatLogprobs 怎么降 GC",
+        "10.7 写入分叉与 rank 链：第一个为什么是被选中 token",
+        "10.8 下游取用：DELTA 切尾、prompt 一次性发完",
+        "10.9 小结"
+      ],
+      "key_classes": [
+        {
+          "name": "LogprobsProcessor",
+          "file": "vllm/v1/engine/logprobs.py",
+          "responsibility": "每请求的 logprobs 装配器：持有 tokenizer、sample/prompt logprobs 容器、cumulative_logprob 与 num_logprobs/num_prompt_logprobs。把 EngineCore 的张量装配成 OpenAI 兼容容器，含字节回退修正与累计跟踪。"
+        },
+        {
+          "name": "FlatLogprobs",
+          "file": "vllm/logprobs.py",
+          "responsibility": "扁平存储格式（6 条平行原生列表 + 每位置区间索引），对外仍实现 MutableSequence[LogprobsOnePosition] 接口；对象数恒定、显著降 GC。flat_logprobs=True 时启用。"
+        },
+        {
+          "name": "Logprob",
+          "file": "vllm/logprobs.py",
+          "responsibility": "单条 logprob 记录：logprob 值、vocab rank、decoded_token。nested 格式 list[dict[int, Logprob]] 的叶子。"
+        },
+        {
+          "name": "LogprobsLists",
+          "file": "vllm/v1/outputs.py",
+          "responsibility": "EngineCore 传给 sample logprobs 的 NamedTuple（logprob_token_ids/logprobs/sampled_token_ranks 三个 numpy 数组 + cu_num_generated_tokens），已是 list/numpy 形态。"
+        },
+        {
+          "name": "LogprobsTensors",
+          "file": "vllm/v1/outputs.py",
+          "responsibility": "EngineCore 传给 prompt logprobs 的 NamedTuple（三个 torch 张量），需在 _update_prompt_logprobs 内自行 Pythonize。"
+        },
+        {
+          "name": "RequestState",
+          "file": "vllm/v1/engine/output_processor.py",
+          "responsibility": "每请求状态容器，持有 logprobs_processor；在 _new_completion_output / _new_request_output 取 sample/prompt logprobs 装入 CompletionOutput/RequestOutput，按 DELTA/FINAL 区分。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch11",
+      "title": "EngineCore 与忙循环：一次推理迭代到底做了什么",
+      "slug": "ch11-engine-core",
+      "sections": [
+        "11.1 一句话钩子：引擎的一次「心跳」",
+        "11.2 采样为什么从前向里拆出来",
+        "11.3 执行期到达的中止，为什么要排队",
+        "11.4 run_busy_loop：引擎的心跳",
+        "11.5 关停：怎么叫醒一个睡着的引擎",
+        "11.6 生命周期：停调度 vs 让出显存",
+        "11.7 两条尾线：batch queue 接入点与进程内对照"
+      ],
+      "key_classes": [
+        {
+          "name": "EngineCore",
+          "file": "vllm/v1/engine/core.py:L91",
+          "responsibility": "推理引擎的'内循环'：持有 model_executor + scheduler + structured_output_manager，提供 step()/step_with_batch_queue() 单步编排、add_request/abort_requests、以及 pause/resume/sleep/wake_up 生命周期。无 IPC，可被 InprocClient 直接驱动。"
+        },
+        {
+          "name": "EngineCoreProc",
+          "file": "vllm/v1/engine/core.py:L806",
+          "responsibility": "EngineCore 的 ZMQ 子进程包装。新增 input_queue/output_queue 两个线程安全队列 + 两个守护 IO 线程（process_input_sockets / process_output_sockets），实现 run_busy_loop：取请求→step→出输出。处理握手、关停、信号。"
+        },
+        {
+          "name": "DPEngineCoreProc",
+          "file": "vllm/v1/engine/core.py:L1622",
+          "responsibility": "数据并行版 EngineCoreProc。覆写 run_busy_loop，加入 wave 机制、execute_dummy_batch（让空闲 rank 与忙 rank 对齐）、每 32 步一次全局 all-reduce 判断 global unfinished。本章只需高层提及，不展开。"
+        },
+        {
+          "name": "InprocClient",
+          "file": "vllm/v1/engine/core_client.py:L274",
+          "responsibility": "进程内客户端：直接持有一个 EngineCore，add_request 直推、get_output 调 step_fn()。是 LLMEngine 同步路径，用来对照'没有忙循环/没有 ZMQ 时 step() 怎么被驱动'。"
+        },
+        {
+          "name": "AsyncMPClient",
+          "file": "vllm/v1/engine/core_client.py:L887",
+          "responsibility": "异步多进程客户端：经 ZMQ DEALER/PULL 把 add_request_async 发到子进程 input_queue，并以后台 task 把子进程 output_queue 的 EngineCoreOutputs 搬进 asyncio outputs_queue 供 get_output_async 消费。是 ch04 AsyncLLM 三段式与本章 step() 之间的桥。"
+        },
+        {
+          "name": "EngineCoreRequestType",
+          "file": "vllm/v1/engine/__init__.py:L237",
+          "responsibility": "input_queue 里 (type, payload) 的类型枚举：ADD/ABORT/START_DP_WAVE/UTILITY，以及进程内哨兵 EXECUTOR_FAILED/WAKEUP。十六进制字节串，便于直接走 socket。"
+        },
+        {
+          "name": "EngineShutdownState",
+          "file": "vllm/v1/engine/core.py:L800",
+          "responsibility": "IntEnum：RUNNING / REQUESTED / SHUTTING_DOWN。_handle_shutdown 据此决定继续、开始排空、还是退出。"
+        },
+        {
+          "name": "PauseState",
+          "file": "vllm/v1/core/sched/interface.py:L22",
+          "responsibility": "IntEnum：UNPAUSED=0 / PAUSED_NEW=1（排队新增、可继续 step 现有）/ PAUSED_ALL=2（全停）。pause/sleep 通过 scheduler.set_pause_state 写入。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch12",
+      "title": "step_with_batch_queue：用 (SchedulerOutput, future) 对填满流水线",
+      "slug": "ch12-engine-core",
+      "sections": [
+        "12.1 一句话钩子：流水线里的空座位",
+        "12.2 启动期：队列从哪来，step 绑哪个",
+        "12.3 上半段：填管道优先于取结果",
+        "12.4 下半段：pop 队尾，取出最旧那个批",
+        "12.5 deferred sampling：当采样必须等上一步",
+        "12.6 小结：一个方法，两种受益"
+      ],
+      "key_classes": [
+        {
+          "name": "EngineCore.step_with_batch_queue",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "本章主角。流水线并行（或 async_scheduling）下取代普通 step 的单步方法：维护一个深度 = batch_queue_size 的 deque，新批 appendleft 入队、队首 pop 取结果；『填满流水线优先于取模型输出』，让多个批在 PP 不同 stage 上同时在飞以消除气泡。返回 (engine_core_outputs|None, model_executed)。"
+        },
+        {
+          "name": "EngineCore.batch_queue",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "deque[tuple[Future[ModelRunnerOutput], SchedulerOutput, Future[Any]]]，maxlen=batch_queue_size。元素 = (采样结果 future, 该批的 SchedulerOutput, execute_model 的 future) 三元组。仅当 batch_queue_size>1 时创建，否则为 None。"
+        },
+        {
+          "name": "EngineCore.batch_queue_size / step_fn / async_scheduling",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "batch_queue_size = model_executor.max_concurrent_batches；step_fn 在 __init__ 静态绑定为 step（队列为 None）或 step_with_batch_queue（队列存在）；async_scheduling 是 SchedulerConfig 标志，间接经 max_concurrent_batches 决定队列是否启用。"
+        },
+        {
+          "name": "Executor.max_concurrent_batches",
+          "file": "vllm/v1/executor/abstract.py / multiproc_executor.py / uniproc_executor.py",
+          "responsibility": "决定 batch_queue_size 的源头。基类默认 1；MultiprocExecutor 返回 pp_size（或 pp<=1 且 async_scheduling 时 2）；UniProcExecutor 返回 2（async_scheduling）或 1。这是『async_scheduling 标志决定绑定哪个 step』的实现路径。"
+        },
+        {
+          "name": "SchedulerOutput.has_structured_output_requests / pending_structured_output_tokens",
+          "file": "vllm/v1/core/sched/output.py",
+          "responsibility": "两个布尔标志（仅 async scheduling 下置位）：前者表示本批有结构化输出请求；后者表示本批还缺算 grammar bitmask 所需的输出 token，是触发 deferred sampling 的开关。"
+        },
+        {
+          "name": "Scheduler.get_grammar_bitmask",
+          "file": "vllm/v1/core/sched/scheduler.py",
+          "responsibility": "为结构化输出请求计算 grammar bitmask，依赖 scheduled_spec_decode_tokens——这正是 spec decode + structured output 必须把采样推迟到拿到上一步 draft token 之后的根因。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch13",
+      "title": "schedule()：Token 为中心的连续批处理",
+      "slug": "ch13-scheduler",
+      "sections": [
+        "13.1 没有 prefill 相，没有 decode 相",
+        "13.2 批大小是 token 数，不是请求数",
+        "13.3 阶段一：先伺候在途请求（RUNNING）",
+        "13.4 阶段二：再接纳新请求（WAITING）",
+        "13.5 SchedulerOutput：全量发一次，之后只发 diff",
+        "13.6 update_from_output：反馈环的另一半",
+        "13.7 AsyncScheduler：让调度和执行重叠"
+      ],
+      "key_classes": [
+        {
+          "name": "SchedulerInterface",
+          "file": "vllm/v1/core/sched/interface.py",
+          "responsibility": "调度器抽象基类，定义 schedule()/update_from_output()/add_request()/finish_requests() 等契约；明确‘每个调度步=一次 forward’、schedule() 产出 {req_id: num_tokens}。同时定义 PauseState(UNPAUSED/PAUSED_NEW/PAUSED_ALL)。"
+        },
+        {
+          "name": "Scheduler",
+          "file": "vllm/v1/core/sched/scheduler.py",
+          "responsibility": "同步连续批处理调度器（SchedulerInterface 实现）。持有 self.requests/waiting/skipped_waiting/running 队列与 KVCacheManager/EncoderCacheManager；schedule() 两阶段（先 RUNNING 后 WAITING）按 token 预算分配；update_from_output() 吃模型输出、追加 token、判 stop、free、产出 EngineCoreOutputs。"
+        },
+        {
+          "name": "AsyncScheduler",
+          "file": "vllm/v1/core/sched/async_scheduler.py",
+          "responsibility": "异步调度器，继承 Scheduler，只覆写 _update_after_schedule()/_update_request_with_output()。用 num_output_placeholders 占位机制解决‘调度本拍时上一拍 token 还没算完’——允许调度与执行重叠（async_scheduling=True 时 EngineCore 实例化它）。"
+        },
+        {
+          "name": "NewRequestData",
+          "file": "vllm/v1/core/sched/output.py",
+          "responsibility": "首次被调度的请求的‘全量’数据（prompt/采样参数/block_ids/mm/num_computed_tokens）。worker 进程收到后缓存，避免后续每步重发。from_request() 工厂构造。"
+        },
+        {
+          "name": "CachedRequestData",
+          "file": "vllm/v1/core/sched/output.py",
+          "responsibility": "已调度过请求的‘增量 diff’：req_ids + resumed_req_ids(替换 vs 追加 block 语义) + new_block_ids + num_computed_tokens + num_output_tokens（PP 时还带 new_token_ids）。最小化调度器→worker 的通信量。"
+        },
+        {
+          "name": "SchedulerOutput",
+          "file": "vllm/v1/core/sched/output.py",
+          "responsibility": "一拍调度的完整产物：scheduled_new_reqs(NewRequestData 列表) + scheduled_cached_reqs(CachedRequestData) + num_scheduled_tokens(每请求 token 数) + total_num_scheduled_tokens + finished_req_ids + 各类 spec/encoder/connector 元数据。送往 model runner。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch14",
+      "title": "抢占与请求生命周期回流：分配失败之后",
+      "slug": "ch14-scheduler",
+      "sections": [
+        "14.1 要不到块：抢占循环",
+        "14.2 回流：被抢请求去哪了",
+        "14.3 抢占之后，本拍不再放新请求",
+        "14.4 双队列：别让一个阻塞请求饿死整队",
+        "14.5 回流闭环：update_from_output",
+        "14.6 停止判定：check_stop，以及它不是 stop string",
+        "14.7 状态机：一次整型比较判完成"
+      ],
+      "key_classes": [
+        {
+          "name": "Scheduler",
+          "file": "vllm/v1/core/sched/scheduler.py",
+          "responsibility": "持有 running/waiting/skipped_waiting 三队列；schedule() 内嵌抢占循环；_preempt_request 执行抢占副作用；update_from_output 驱动请求生命周期回流（追加 token/停止/完成/spec 回退）"
+        },
+        {
+          "name": "AsyncScheduler",
+          "file": "vllm/v1/core/sched/async_scheduler.py",
+          "responsibility": "Scheduler 子类；覆写 _update_request_with_output 处理 num_output_placeholders 回扣与强制抢占下的异步 token 丢弃；spec 占位簿记"
+        },
+        {
+          "name": "RequestStatus",
+          "file": "vllm/v1/request.py",
+          "responsibility": "IntEnum 请求状态机；WAITING/RUNNING/PREEMPTED + 6 个 FINISHED_* 态；is_finished 用 > PREEMPTED 判定"
+        },
+        {
+          "name": "FCFSRequestQueue / PriorityRequestQueue",
+          "file": "vllm/v1/core/sched/request_queue.py",
+          "responsibility": "队列抽象。FCFS 是 deque，prepend_request=appendleft（抢占回队头、skipped 重排靠它）；PRIORITY 是 heap，prepend 退化为按 (priority, arrival_time) 入堆"
+        },
+        {
+          "name": "SchedulerOutput",
+          "file": "vllm/v1/core/sched/output.py",
+          "responsibility": "本章相关字段：preempted_req_ids（本拍被抢占的请求集，给 v2 model runner）、finished_req_ids（通知 worker 释放）"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch15",
+      "title": "分页 KV 缓存机制：块池与前缀缓存",
+      "slug": "ch15-kv-cache",
+      "sections": [
+        "15.1 分页：为什么 KV 缓存要切块",
+        "15.2 一个块：KVCacheBlock",
+        "15.3 空闲块怎么排队：FreeKVCacheBlockQueue",
+        "15.4 引用计数：谁在用这块",
+        "15.5 块哈希：前缀缓存的钥匙",
+        "15.6 查表与命中：从 block_hashes 到物理块",
+        "15.7 三段式分配：allocate_slots",
+        "15.8 小结：一张图看懂分页 KV 缓存"
+      ],
+      "key_classes": [
+        {
+          "name": "KVCacheBlock",
+          "file": "vllm/v1/core/kv_cache_utils.py",
+          "responsibility": "单个 KV 块的元数据：block_id、ref_cnt 引用计数、_block_hash（满块且被缓存时的 hash+group_id 键）、prev/next_free_block（构成 free 链表的指针）、is_null（占位块标记）。@dataclass(slots=True)。"
+        },
+        {
+          "name": "FreeKVCacheBlockQueue",
+          "file": "vllm/v1/core/kv_cache_utils.py",
+          "responsibility": "空闲块的双向链表，用 fake head/tail 哨兵；前端=LRU 最先驱逐，尾端=最近释放。直接操作块上的 prev/next 指针不分配 Python 对象，支持 O(1) 中间删除（remove）以便 touch 时把命中块从驱逐候选中摘除。"
+        },
+        {
+          "name": "BlockHashToBlockMap",
+          "file": "vllm/v1/core/block_pool.py",
+          "responsibility": "前缀缓存的查找表：{BlockHashWithGroupId -> KVCacheBlock | dict[block_id, KVCacheBlock]}。同一 hash 可对应多块（不去重内容、保证 block_id 不变以维持 block table append-only），union 类型省 GC。"
+        },
+        {
+          "name": "BlockPool",
+          "file": "vllm/v1/core/block_pool.py",
+          "responsibility": "全局块管家：持有 blocks 列表、free_block_queue、cached_block_hash_to_block、null_block。提供 get_new_blocks（取块+惰性驱逐+引用计数）、touch、free_blocks、cache_full_blocks、get_cached_block、_maybe_evict_cached_block。"
+        },
+        {
+          "name": "SingleTypeKVCacheManager / FullAttentionManager",
+          "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+          "responsibility": "单一注意力类型的块账本：req_to_blocks（请求→已分配块）、num_cached_block（请求→已缓存满块数）。负责 get_num_blocks_to_allocate、allocate_new_(computed_)blocks、cache_blocks、free，以及类方法 find_longest_cache_hit（沿哈希链查最长前缀命中）。"
+        },
+        {
+          "name": "UnitaryKVCacheCoordinator",
+          "file": "vllm/v1/core/kv_cache_coordinator.py",
+          "responsibility": "单 KV cache group 的协调器（本章主路径）：直接把请求委派给唯一的 single_type_manager；find_longest_cache_hit 返回命中块与命中 token 数。HybridKVCacheCoordinator（多组）为可省略分支。"
+        },
+        {
+          "name": "KVCacheManager / KVCacheBlocks",
+          "file": "vllm/v1/core/kv_cache_manager.py",
+          "responsibility": "对 Scheduler 的门面：get_computed_blocks（查前缀命中）、allocate_slots（三段式分配）、free、reset_prefix_cache。KVCacheBlocks 是隐藏内部结构的分配结果（按 group 分组的块序列）。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch16",
+      "title": "KV 块分配与多注意力协调",
+      "slug": "ch16-kv-cache",
+      "sections": [
+        "16.1 三阶段的全貌：allocate_slots 摊开看",
+        "16.2 阶段一：释放窗外块 + 预算检查",
+        "16.3 准入上限：SWA 凭什么敢少留块",
+        "16.4 阶段二、三：挂命中块、新建、缓存",
+        "16.5 协调层：三态工厂",
+        "16.6 Hybrid 的不动点迭代：让所有注意力达成一致",
+        "16.7 小结：分配决策与多注意力协调"
+      ],
+      "key_classes": [
+        {
+          "name": "KVCacheManager.allocate_slots",
+          "file": "vllm/v1/core/kv_cache_manager.py",
+          "responsibility": "对外分配入口；编排三阶段（释放 skipped → 挂前缀/外部命中块 → 新建 new+lookahead 块 → 缓存满块）。委托 coordinator 做跨组逻辑；预算不足返回 None。本章主骨架。"
+        },
+        {
+          "name": "KVCacheCoordinator (ABC)",
+          "file": "vllm/v1/core/kv_cache_coordinator.py",
+          "responsibility": "协调多个 KV cache group 的抽象基类。持有 BlockPool + 每组一个 single_type_manager + eagle_group_ids。把 get_num_blocks_to_allocate / allocate_new_computed_blocks / allocate_new_blocks / cache_blocks / remove_skipped_blocks / free 逐组转发并累加。find_longest_cache_hit 为抽象方法。"
+        },
+        {
+          "name": "KVCacheCoordinatorNoPrefixCache",
+          "file": "vllm/v1/core/kv_cache_coordinator.py",
+          "responsibility": "关前缀缓存时的退化实现；支持任意组数（含 0 组），find_longest_cache_hit 恒返回空命中、common prefix 恒 0。"
+        },
+        {
+          "name": "UnitaryKVCacheCoordinator",
+          "file": "vllm/v1/core/kv_cache_coordinator.py",
+          "responsibility": "单一注意力类型（恰好 1 个 KV cache group）。断言 hash_block_size==block_size、组数==1；find_longest_cache_hit 直接委托唯一 manager，命中长度 = 命中块数 * block_size。最常见路径。"
+        },
+        {
+          "name": "HybridKVCacheCoordinator",
+          "file": "vllm/v1/core/kv_cache_coordinator.py",
+          "responsibility": "混合注意力（多 KV cache group，如 full + sliding window）。verify_and_split_kv_cache_groups 按 spec 分桶、full attn 排首、算 lcm_block_size；find_longest_cache_hit 用不动点迭代让所有注意力类型对同一命中长度达成一致。断言 DCP/PCP==1、至少两类注意力组。"
+        },
+        {
+          "name": "SingleTypeKVCacheManager (ABC)",
+          "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+          "responsibility": "单一注意力类型的块管理：get_num_blocks_to_allocate（需块数推算）、allocate_new_computed_blocks（挂命中+null 填 skipped+external 分配）、remove_skipped_blocks（窗外块换 null 并归还）、get_num_skipped_tokens（基类默认 0）。"
+        },
+        {
+          "name": "SlidingWindowManager",
+          "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+          "responsibility": "滑动窗口注意力管理器；get_num_skipped_tokens=max(0,num_computed-sliding_window+1)，使窗外块被 remove_skipped_blocks 换成 null 回收。携带 recycling-aware admission cap。"
+        },
+        {
+          "name": "ChunkedLocalAttentionManager",
+          "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+          "responsibility": "分块本地注意力管理器；get_num_skipped_tokens 向下取整到 chunk 边界，复用 FullAttentionManager 的命中查找但窗外块归零。携带 recycling-aware admission cap。"
+        },
+        {
+          "name": "get_kv_cache_coordinator",
+          "file": "vllm/v1/core/kv_cache_coordinator.py",
+          "responsibility": "三态工厂：!enable_caching → NoPrefixCache；单组 → Unitary；多组 → Hybrid。"
+        },
+        {
+          "name": "get_manager_for_kv_cache_spec",
+          "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+          "responsibility": "spec 类型 → manager 类映射（spec_manager_map）；对 SWA/chunked-local 注入 max_admission_blocks_per_request。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch17",
+      "title": "执行器与 Worker 生命周期",
+      "slug": "ch17-worker-and-executor",
+      "sections": [
+        "17.1 控制平面长什么样",
+        "17.2 工厂：一个字符串挑出执行器",
+        "17.3 一切引擎指令，都是 collective_rpc",
+        "17.4 最简对照：UniProcExecutor",
+        "17.5 MultiprocExecutor：把 N 个 worker 拉起来",
+        "17.6 collective_rpc 的 mp 实现：广播一次，按需收回",
+        "17.7 worker 子进程：出生、服役、死亡",
+        "17.8 WorkerWrapperBase：延迟出生",
+        "17.9 两条失败路径：方法错 vs 进程死",
+        "17.10 三级关停：优雅 → SIGTERM → SIGKILL",
+        "17.11 本章总结：一层抽象，撑起所有并行"
+      ],
+      "key_classes": [
+        {
+          "name": "Executor",
+          "file": "vllm/v1/executor/abstract.py",
+          "responsibility": "执行器抽象基类：静态工厂 get_class() 三态分发；__init__→_init_executor() 钩子；把 execute_model/sample_tokens/determine_available_memory/add_lora/sleep 等所有引擎指令统一实现为 collective_rpc 调用（控制平面唯一入口）"
+        },
+        {
+          "name": "UniProcExecutor",
+          "file": "vllm/v1/executor/uniproc_executor.py",
+          "responsibility": "单进程执行器：driver_worker 就在本进程，collective_rpc 退化为同进程 run_method 直调。作为 mp 的最简对照"
+        },
+        {
+          "name": "MultiprocExecutor",
+          "file": "vllm/v1/executor/multiproc_executor.py",
+          "responsibility": "多进程执行器：一个执行器进程 + N 个 worker 子进程；建广播 MessageQueue 把 RPC 一次性发给所有 worker、用 FutureWrapper 异步收回复、起监控线程做失败传播、统一关停"
+        },
+        {
+          "name": "FutureWrapper",
+          "file": "vllm/v1/executor/multiproc_executor.py",
+          "responsibility": "concurrent.futures.Future 子类：把『worker 回复尚未到达』包成 future；result() 按发出顺序排空 futures_queue（底层 MQ 是 FIFO），可选 aggregate 聚合多 rank 输出"
+        },
+        {
+          "name": "WorkerProc",
+          "file": "vllm/v1/executor/multiproc_executor.py",
+          "responsibility": "把一个 Worker 跑在独立子进程里的包装：worker_main 入口、READY/death pipe 握手、worker_busy_loop 取 RPC 执行回写、异常转 FAILURE、shutdown 清理分布式组"
+        },
+        {
+          "name": "UnreadyWorkerProcHandle / WorkerProcHandle",
+          "file": "vllm/v1/executor/multiproc_executor.py",
+          "responsibility": "父进程侧对 worker 子进程的句柄：进程对象、rank、response MQ、death_writer。Unready→Ready 经 wait_for_ready 转换"
+        },
+        {
+          "name": "WorkerWrapperBase",
+          "file": "vllm/v1/worker/worker_base.py",
+          "responsibility": "进程内对 worker 的延迟初始化包装：先记 rpc_rank，init_worker 时按 worker_cls qualname 解析真实 Worker 类实例化；__getattr__ 透传——使 collective_rpc 的 getattr 能命中具体方法"
+        },
+        {
+          "name": "WorkerBase",
+          "file": "vllm/v1/worker/worker_base.py",
+          "responsibility": "硬件无关的 worker 接口：execute_model/sample_tokens/init_device/load_model/determine_available_memory/add_lora 等纯虚方法，供各硬件后端实现"
+        },
+        {
+          "name": "Worker",
+          "file": "vllm/v1/worker/gpu_worker.py",
+          "responsibility": "WorkerBase 的 GPU/CUDA 具体实现：init_device 建设备+分布式环境+内存快照并构造 model_runner，execute_model 包 model_runner 前向（含 PP 通信），determine_available_memory 剖析显存定 KV 容量。本章作生命周期锚点，前向/KV 剖析细节留后章"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch18",
+      "title": "持久化批次与输入准备：把一张工单翻译成张量",
+      "slug": "ch18-model-runner",
+      "sections": [
+        "18.1 每拍的入口：先调和状态，再准备输入",
+        "18.2 为什么不每拍重建：持久批次的赌注",
+        "18.3 _update_states 之一：用 SchedulerOutput 当差量",
+        "18.4 _update_states 之二：在途请求就地更新 + 统一并入",
+        "18.5 slot 的回收与复用：打洞、复用、压实",
+        "18.6 _prepare_inputs：二维坐标拍扁成一维收集",
+        "18.7 位置、序列长与 slot_mapping：装配 attention 输入",
+        "18.8 block_table 的 CPU/GPU 双镜像与 position→slot 映射",
+        "18.9 交叉验证：在数值上看持久批次收敛",
+        "18.10 本章总结：持久批次，把工单翻译成张量"
+      ],
+      "key_classes": [
+        {
+          "name": "GPUModelRunner",
+          "file": "vllm/v1/worker/gpu_model_runner.py",
+          "responsibility": "每拍编排器：execute_model 在 synchronize_input_prep 上下文里先 _update_states(用 SchedulerOutput 调和持久批次)、再 _prepare_inputs(收集 input_ids/positions/slot_mapping)、_build_attention_metadata(装配 attn 输入)，然后前向。持有 self.requests(req_id→CachedRequestState 全量缓存) 与 self.input_batch(持久批次)。"
+        },
+        {
+          "name": "InputBatch",
+          "file": "vllm/v1/worker/gpu_input_batch.py",
+          "responsibility": "跨迭代存活的多请求容器：token_ids_cpu(max_num_reqs × max_model_len 的 int32 全长缓冲，一行一请求)、num_prompt_tokens/num_computed_tokens_cpu/num_tokens_no_spec 等 CPU 镜像、block_table(MultiGroupBlockTable)、全套采样参数列、req_id_to_index 映射。增删通过 add_request/remove_request+condense，靠 batch_update_builder 复用空 slot。"
+        },
+        {
+          "name": "CachedRequestState",
+          "file": "vllm/v1/worker/gpu_input_batch.py",
+          "responsibility": "worker 端单请求快照(dataclass)：prompt_token_ids、output_token_ids、block_ids(每 KV group 一个 list)、num_computed_tokens、sampling_params、generator、(可选) mrope/xdrope positions。num_tokens = num_prompt_tokens + len(output_token_ids)。让 worker 缓存请求、调度器后续只发差量。"
+        },
+        {
+          "name": "BatchUpdateBuilder",
+          "file": "vllm/v1/sample/logits_processor/state.py",
+          "responsibility": "记录本拍持久批次的 removed(降序)/added/moved 变更。pop_removed() 返回当前最小空 slot 供复用，peek_removed() 配合 condense 找最小空洞；get_and_reset 生成 logitsprocs 的 BatchUpdate。slot 复用的真正实现者。"
+        },
+        {
+          "name": "MultiGroupBlockTable / BlockTable",
+          "file": "vllm/v1/worker/block_table.py",
+          "responsibility": "MultiGroupBlockTable 按 KV cache group 持有多个 BlockTable。BlockTable 维护 block_table(CpuGpuBuffer, max_num_reqs × max_num_blocks_per_req)：append_row/add_row 改 CPU 镜像，commit_block_table 批量拷到 GPU，compute_slot_mapping 启动 Triton kernel 把 position 映射成物理 slot；支持 hybrid kernel block 细分与 CP/DCP 分片。"
+        },
+        {
+          "name": "_compute_slot_mapping_kernel",
+          "file": "vllm/v1/worker/block_table.py",
+          "responsibility": "Triton JIT kernel：每个 program 处理一请求，slot_id = block_table[req, pos//block_size] * block_size + pos%block_size（非 CP 简化形态）；最后一 program 把尾部 padding 成 PAD_SLOT_ID 以适配 CUDA graph。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch19",
+      "title": "前向与采样解耦：execute_model() 两阶段、写回持久批次、CUDA graph 分派",
+      "slug": "ch19-model-runner",
+      "sections": [
+        "19.1 一个反直觉的方法：发起前向，却不等结果",
+        "19.2 两阶段的桥：ExecuteModelState 与单槽断言",
+        "19.3 阶段一全景：从工单到一份缓存的 state",
+        "19.4 阶段二全景：解包、采样、写回",
+        "19.5 f13 闭环：新 token 怎么活到下一拍",
+        "19.6 CUDA graph 分派：FULL/PIECEWISE/NONE 的分级取舍",
+        "19.7 小结：一拍推理的两半"
+      ],
+      "key_classes": [
+        {
+          "name": "GPUModelRunner",
+          "file": "vllm/v1/worker/gpu_model_runner.py",
+          "responsibility": "持久 GPU 模型运行器。一拍循环：_update_states 按 SchedulerOutput 归一持久批次 → _prepare_inputs 建 GPU 张量 → execute_model 发起前向并把结果缓存进 ExecuteModelState（return None）→ sample_tokens 解包采样 → _bookkeeping_sync 把新 token 写回持久批次。持有 self.execute_model_state（两阶段桥）、self.input_batch（持久批次）、self.requests（req_id→CachedRequestState）。"
+        },
+        {
+          "name": "ExecuteModelState",
+          "file": "vllm/v1/worker/gpu_model_runner.py",
+          "responsibility": "10 字段 NamedTuple，execute_model() 与 sample_tokens() 之间的临时载荷。携带 logits、hidden_states、sample_hidden_states、spec 元数据、cudagraph_stats、slot_mappings 等。缓存在 self.execute_model_state，sample_tokens 解包后置 None。execute_model 入口断言它必须为 None——强制两阶段严格配对调用。"
+        },
+        {
+          "name": "InputBatch",
+          "file": "vllm/v1/worker/gpu_input_batch.py",
+          "responsibility": "持久批次容器，跨调度拍存活。持有 token_ids_cpu(max_reqs×max_model_len)、num_tokens_no_spec(每请求已落位 token 数)、num_computed_tokens_cpu、req_output_token_ids（与各 CachedRequestState.output_token_ids 同一 list 别名）、block_table、采样元数据。add_request 把请求装入某 slot 行；_bookkeeping_sync 把新 token 写进这些行使批次活到下一拍。"
+        },
+        {
+          "name": "CachedRequestState",
+          "file": "vllm/v1/worker/gpu_input_batch.py",
+          "responsibility": "每请求快照 dataclass：prompt_token_ids、output_token_ids(list，随采样 extend 增长)、block_ids、num_computed_tokens、sampling_params。num_tokens = num_prompt_tokens + len(output_token_ids)。其 output_token_ids 与 InputBatch.req_output_token_ids[slot] 是同一对象——这是 f13『output_token_ids 增长』的物理载体。"
+        },
+        {
+          "name": "CudagraphDispatcher",
+          "file": "vllm/v1/cudagraph_dispatcher.py",
+          "responsibility": "持有 PIECEWISE 与 FULL 两套 dispatch key 集合。dispatch() 据 num_tokens/uniform_decode/has_lora 构造 BatchDescriptor，先查 FULL（要求精确 num_reqs）、再查 relaxed PIECEWISE（num_reqs=None），命中返回对应 mode 与描述符；超过 max_cudagraph_capture_size 或未初始化则回退 NONE（eager）。"
+        },
+        {
+          "name": "BlockTable / MultiGroupBlockTable",
+          "file": "vllm/v1/worker/block_table.py",
+          "responsibility": "把逻辑块号映射成 paged attention 物理 slot id。commit_block_table 把 CPU block_table 拷到 GPU；compute_slot_mapping 启动 Triton kernel _compute_slot_mapping_kernel 据 positions 算每 token 的 slot id（含 CP/DCP 交错与 PAD_ID 填充）。本章只在 _prepare_inputs 内作为 slot_mapping 来源出现。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch20",
+      "title": "分布式并行的群组与集合通信",
+      "slug": "ch20-distributed-parallelism",
+      "sections": [
+        "20.1 一个并行维度 = 一对进程组 + 一个 communicator",
+        "20.2 三大集合原语，与「后端选择」的下沉",
+        "20.3 让集合通信进 torch.compile 图：custom-op",
+        "20.4 双群组分工：metadata 走 CPU，张量走 device",
+        "20.5 PP 的 P2P：把流水线一段的输出传给下一段",
+        "20.6 5 维 rank 张量：一套变换切出所有群组",
+        "20.7 谁把群组拉起来：MultiprocExecutor",
+        "20.8 小结：一个抽象统一了所有并行维度"
+      ],
+      "key_classes": [
+        {
+          "name": "GroupCoordinator",
+          "file": "vllm/distributed/parallel_state.py",
+          "responsibility": "单个并行维度（TP/PP/DP/EP/...）的统一抽象。持有该维度的一对进程组 cpu_group(gloo) + device_group(NCCL 等) 和一个可选 device_communicator；对外提供 all_reduce/all_gather/reduce_scatter/gather/broadcast/broadcast_tensor_dict 与 P2P send/recv/barrier。集合算子按 use_custom_op_call 走 torch.ops.vllm.* 或直接落 device_communicator。"
+        },
+        {
+          "name": "DeviceCommunicatorBase",
+          "file": "vllm/distributed/device_communicators/base_device_communicator.py",
+          "responsibility": "device 端集合通信的抽象基类，提供基于 torch.distributed（作用于 device_group）的默认 all_reduce/all_gather/reduce_scatter/gather/send/recv/broadcast。各平台子类（CudaCommunicator）覆写以接入 NCCL/自研内核。"
+        },
+        {
+          "name": "CudaCommunicator",
+          "file": "vllm/distributed/device_communicators/cuda_communicator.py",
+          "responsibility": "CUDA/ROCm 平台的 device communicator。内部持有 pynccl 与 CustomAllreduce（及若干可选加速后端），all_reduce 走一条优先级回退链；send/recv/broadcast 优先走 pynccl。GroupCoordinator 的 graph_capture 也依赖它的 ca_comm.capture()。"
+        },
+        {
+          "name": "MultiprocExecutor",
+          "file": "vllm/v1/executor/multiproc_executor.py",
+          "responsibility": "多进程编排层：每 GPU spawn 一个 WorkerProc，持有控制面输入队列 rpc_broadcast_mq 与各 worker 的输出队列 response_mqs；collective_rpc 把方法广播给所有 worker、按 output_rank 收结果，用 FutureWrapper 支持非阻塞。是把 GroupCoordinator 在各 worker 真正拉起来的容器。"
+        },
+        {
+          "name": "WorkerProc",
+          "file": "vllm/v1/executor/multiproc_executor.py",
+          "responsibility": "运行在 worker 进程内的包装：init_worker→init_device（内部调 init_distributed_environment + initialize_model_parallel 建群组）→load_model→建 MQ→发 READY，然后 worker_busy_loop 从 rpc_broadcast_mq 取 RPC、反射调用 worker 方法、按 output_rank 回传。"
+        },
+        {
+          "name": "FutureWrapper",
+          "file": "vllm/v1/executor/multiproc_executor.py",
+          "responsibility": "concurrent.futures.Future 子类，配合 futures_queue 实现 RPC 响应的 FIFO 有序排空（result() 时先把队列里排在前面的 future 全部消费），支撑异步调度下的非阻塞 collective_rpc。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch21",
+      "title": "ch21",
+      "slug": "ch21-async-engine",
+      "sections": [],
+      "key_classes": [
+        {
+          "name": "AsyncIntermediateTensors",
+          "file": "vllm/v1/worker/gpu_worker.py",
+          "responsibility": "IntermediateTensors 子类，持有 PP irecv 的 comm_handles 与 postprocess 闭包；重写 __getattribute__，首次访问 .tensors 时才调 wait_for_comm() 等待 irecv 完成并重组分片——把 PP 接收的同步点推迟到真正用到隐藏状态时，让接收通信与其它准备工作重叠。"
+        },
+        {
+          "name": "Worker.execute_model",
+          "file": "vllm/v1/worker/gpu_worker.py",
+          "responsibility": "PP 流水线一格的执行：先 wait 上一轮挂起的 isend；非首 rank 用 irecv_tensor_dict 拿到惰性接收句柄包成 AsyncIntermediateTensors 传给 model_runner；非末 rank 执行后用 isend_tensor_dict 非阻塞发送，句柄存入 _pp_send_work 留待下一轮 wait。"
+        },
+        {
+          "name": "GroupCoordinator.irecv_tensor_dict / isend_tensor_dict",
+          "file": "vllm/distributed/parallel_state.py",
+          "responsibility": "PP 组的张量字典异步收发。irecv 先收元数据（shape/dtype）预分配缓冲，再对每个张量发 torch.distributed.irecv，返回 (tensor_dict, handles, postprocess) 而不阻塞；postprocess 闭包在 handle.wait 后做可能的 all_gather 重组。"
+        },
+        {
+          "name": "DPEngineCoreProc",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "DP 上下文里运行 EngineCore 的后台进程（仅 MoE）。维护 current_wave/step_counter/pending_pause/ignore_start_dp_wave；run_busy_loop 每步后对 dp_group 做周期性 all-reduce 共识决定全体是否继续，全体空闲则 rank0 报 wave_complete 并 wave++；处理 START_DP_WAVE 唤醒。"
+        },
+        {
+          "name": "DPCoordinator / DPCoordinatorProc",
+          "file": "vllm/v1/engine/coordinator.py",
+          "responsibility": "DP>1 时的独立协调进程，居中于多个 DP engine rank 与多个前端 API server 之间。三 ZMQ socket（前端 XPUB / 后端 PULL 收 stats / 后端 XPUB 发指令）：收集各 engine 的 [waiting,running] 负载并周期广播给前端；跟踪全局 wave 号与 running 状态；engines 暂停时收到新请求则广播 START_DP_WAVE 唤醒全体。"
+        },
+        {
+          "name": "DPAsyncMPClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "external-LB 默认的 DP 异步客户端：每 client 绑一个 DP rank。add_request_async 给请求盖 current_wave，engines 暂停时经 first_req_socket 发 FIRST_REQ 通知 coordinator 唤醒；run_engine_stats_update_task 订阅 coordinator 广播更新 current_wave/engines_running/lb_engines。"
+        },
+        {
+          "name": "DPLBAsyncMPClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "internal-LB（无外部负载均衡器时默认）：在所有 DP engine 间分发。get_core_engine_for_request 用 score=waiting*4+running 选最空 engine，并本地预增 waiting 抵消 100ms stats 刷新延迟；reqs_in_flight 记录路由以便 abort 定向。"
+        },
+        {
+          "name": "ParallelConfig.sync_dp_state",
+          "file": "vllm/config/parallel.py",
+          "responsibility": "DP 状态同步原语：单次 2 元素 int32 SUM all-reduce，[0] OR 得『全局是否有未完成请求』，[1] 计数得『是否所有 rank 都 pending_pause（达成暂停共识）』，一次通信解决两个共识问题。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch22",
+      "title": "模型契约与权重装载：以 Llama 为最简参考",
+      "slug": "ch22-model-definitions",
+      "sections": [
+        "22.1 一张图看懂模型的四级嵌套",
+        "22.2 `(vllm_config, prefix)`：一份统一的构造契约",
+        "22.3 TP 线性层：列切分接行切分",
+        "22.4 QKV fuse：把三次小 GEMM 合成一次",
+        "22.5 权重装载三段式：建空壳 → 流式切填 → 后处理",
+        "22.6 Attention 统一封装：模型对后端无感",
+        "22.7 把它串起来：一层 block 的前向"
+      ],
+      "key_classes": [
+        {
+          "name": "LlamaForCausalLM",
+          "file": "vllm/model_executor/models/llama.py",
+          "responsibility": "顶层模型契约入口：(vllm_config, prefix) 构造，持有类属性 packed_modules_mapping，建 self.model + lm_head + logits_processor；forward 透传给 self.model，compute_logits 经 lm_head 出 logits；load_weights 用 AutoWeightsLoader 分发"
+        },
+        {
+          "name": "LlamaModel",
+          "file": "vllm/model_executor/models/llama.py",
+          "responsibility": "embedding + make_layers 堆叠 N 个 LlamaDecoderLayer + 末段 RMSNorm；前向 embed→逐层→norm；load_weights 持有 stacked_params_mapping 把 q/k/v、gate/up fuse 装载；被 @support_torch_compile 包裹"
+        },
+        {
+          "name": "LlamaDecoderLayer",
+          "file": "vllm/model_executor/models/llama.py",
+          "responsibility": "单层 transformer block：self_attn(LlamaAttention)+mlp(LlamaMLP)+两个 RMSNorm；forward 走 pre-norm + 显式 residual 穿针；从 vllm_config 解包 config/cache/quant"
+        },
+        {
+          "name": "LlamaAttention",
+          "file": "vllm/model_executor/models/llama.py",
+          "responsibility": "注意力子模块：TP 切头数学，构造 qkv_proj(QKVParallelLinear)+o_proj(RowParallelLinear)+rotary_emb(get_rope)+attn(Attention 统一封装)；forward: qkv→split→rope→attn→o_proj"
+        },
+        {
+          "name": "LlamaMLP",
+          "file": "vllm/model_executor/models/llama.py",
+          "responsibility": "前馈子模块：gate_up_proj(MergedColumnParallelLinear)+down_proj(RowParallelLinear)+SiluAndMul；列并行升维→SiLU 门控→行并行降维归约"
+        },
+        {
+          "name": "Attention",
+          "file": "vllm/model_executor/layers/attention/attention.py",
+          "responsibility": "统一注意力封装：吸收 backend 选择(get_attn_backend)、KV cache 存储/量化、按 prefix 注册进 static_forward_context；forward 经自定义算子 unified_attention_with_output 经 forward_context 取 attn_metadata/kv_cache，对模型定义透明"
+        },
+        {
+          "name": "ColumnParallelLinear",
+          "file": "vllm/model_executor/layers/linear.py",
+          "responsibility": "列并行线性层：权重沿 output 维按 tp_size 切，output_size_per_partition=output_size//tp_size，input 不切；weight_loader 按 tp_rank narrow 出本 rank 列切片；forward 可选 gather_output"
+        },
+        {
+          "name": "MergedColumnParallelLinear",
+          "file": "vllm/model_executor/layers/linear.py",
+          "responsibility": "ColumnParallel 子类：把多段(gate,up)沿 output 维 fuse，按 output_sizes 各自切分；weight_loader 带 shard_id(0/1) 定位段 offset 再按 rank narrow"
+        },
+        {
+          "name": "QKVParallelLinear",
+          "file": "vllm/model_executor/layers/linear.py",
+          "responsibility": "ColumnParallel 子类：把 q/k/v fuse 成一个权重；GQA 下 KV 头数<tp 时复制(num_kv_head_replicas)否则切分；weight_loader 按 shard_id(q/k/v) 定位段，q 用 tp_rank、k/v 用 tp_rank//replicas"
+        },
+        {
+          "name": "RowParallelLinear",
+          "file": "vllm/model_executor/layers/linear.py",
+          "responsibility": "行并行线性层：权重沿 input 维按 tp_size 切，input_size_per_partition=input_size//tp_size；forward 后 all_reduce 归约各 rank 部分和；bias 只在 rank0 加避免重复"
+        },
+        {
+          "name": "LinearBase",
+          "file": "vllm/model_executor/layers/linear.py",
+          "responsibility": "线性层基类：持 quant_method(默认 UnquantizedLinearMethod)，统一 forward 经 quant_method.apply 做 GEMM；记 tp_rank/tp_size"
+        },
+        {
+          "name": "DefaultModelLoader / BaseModelLoader",
+          "file": "vllm/model_executor/model_loader/default_loader.py, base_loader.py",
+          "responsibility": "load_model 编排：initialize_model 建空壳→load_weights(get_all_weights 流式喂 checkpoint)→process_weights_after_loading→eval；load_weights 调 model.load_weights 并可 track 已加载参数集"
+        },
+        {
+          "name": "AutoWeightsLoader",
+          "file": "vllm/model_executor/models/utils.py",
+          "responsibility": "递归权重分发器：按子模块名匹配，遇到自带 load_weights 的子模块(如 LlamaModel)就委派；支持 skip_prefixes(tie 时跳 lm_head)"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch23",
+      "title": "模型层如何变成融合、图捕获的 kernel：CustomOp 两级 dispatch 与 piecewise 编译",
+      "slug": "ch23-custom-ops-and-compilation",
+      "sections": [
+        "23.1 CustomOp：构造期把 forward 定死",
+        "23.2 enabled() 与 default_on()：编译路径为什么默认走纯 torch",
+        "23.3 RMSNorm：一个 CustomOp 长什么样",
+        "23.4 @support_torch_compile：给模型套上可编译的外壳",
+        "23.5 首次前向：触发 VllmBackend，之后走缓存",
+        "23.6 split_graph：在 attention 处把图切开",
+        "23.7 逐段处理：规整段编译 + 图捕获，attention 段 eager",
+        "23.8 还债：attention 算子怎么进 torch.compile 图",
+        "23.9 两级合一"
+      ],
+      "key_classes": [
+        {
+          "name": "CustomOp",
+          "file": "vllm/model_executor/custom_op.py",
+          "responsibility": "所有可切换 native/平台 kernel 的算子基类。__init__ 时一次性 dispatch_forward 选定 self._forward_method（forward_cuda 或 forward_native...），之后 forward 零开销转发。enabled()/default_on() 决定走融合 kernel 还是纯 torch（让 Inductor 融合）"
+        },
+        {
+          "name": "RMSNorm",
+          "file": "vllm/model_executor/layers/layernorm.py",
+          "responsibility": "本章 CustomOp 的范例实例。@CustomOp.register('rms_norm')；forward_native 用一串纯 torch 算子（可被 Inductor 看见/融合），forward_cuda 调用预编译融合 kernel ir.ops.rms_norm/fused_add_rms_norm（对编译器不透明）"
+        },
+        {
+          "name": "support_torch_compile / _support_torch_compile",
+          "file": "vllm/compilation/decorators.py",
+          "responsibility": "类装饰器，把一个 nn.Module 变成可编译：从 forward 注解推断动态维、注入 TorchCompileWithNoGuardsWrapper、改写 __init__（定 do_not_compile）与 __call__（首次触发 VllmBackend、后续走缓存）"
+        },
+        {
+          "name": "VllmBackend",
+          "file": "vllm/compilation/backends.py",
+          "responsibility": "torch.compile 的 vLLM 自定义后端（CompilationMode.VLLM_COMPILE）。核心工作：split_graph 把整图按 splitting_ops 切成 piecewise 子图，PiecewiseCompileInterpreter 逐段送 Inductor 编译并按需包 CUDA graph"
+        },
+        {
+          "name": "PiecewiseCompileInterpreter",
+          "file": "vllm/compilation/backends.py",
+          "responsibility": "遍历切分后的 split_gm，对非切分子图建 PiecewiseBackend 编译、对其加 CUDA graph wrapper；切分算子(attention)所在子图保持 eager"
+        },
+        {
+          "name": "should_split / splitting_ops(_attention_ops)",
+          "file": "vllm/compilation/partition_rules.py + vllm/config/compilation.py",
+          "responsibility": "决定在哪些算子处切图：node 的 namespace::name 在 splitting_ops 即切。默认 splitting_ops=_attention_ops（unified_attention_with_output 等），即在 attention 处切图"
+        },
+        {
+          "name": "unified_attention_with_output + direct_register_custom_op",
+          "file": "vllm/model_executor/layers/attention/attention.py + vllm/utils/torch_utils.py",
+          "responsibility": "f17 回收：Attention.forward 调用的 torch.ops.vllm.unified_attention_with_output 是用 direct_register_custom_op 注册的不透明 torch 自定义算子（带 fake_impl）。它让 Dynamo 不 graph break，并成为 split_graph 的稳定切点"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch24",
+      "title": "ch24",
+      "slug": "ch24-primer-flash-attention",
+      "sections": [],
+      "key_classes": [
+        {
+          "name": "flash_attn_varlen_func",
+          "file": "vllm/vllm_flash_attn/flash_attn_interface.py",
+          "responsibility": "vLLM 对 FlashAttention(FA2/FA3)前向 kernel 的 Python 入口:varlen 打平 + paged KV(block_table)+ 可选返回 softmax_lse。vLLM 把它当黑盒 import,本章掀开这个黑盒的算法内幕。"
+        },
+        {
+          "name": "FlashAttentionImpl.forward",
+          "file": "vllm/v1/attention/backends/flash_attn.py",
+          "responsibility": "v1 FA 后端的前向:非 cascade 主路径一次调用 flash_attn_varlen_func(L809);use_cascade 时走 cascade_attention(L835)。"
+        },
+        {
+          "name": "cascade_attention",
+          "file": "vllm/v1/attention/backends/flash_attn.py",
+          "responsibility": "共享前缀优化:前缀段 + 后缀段各跑一次带 LSE 的注意力,再 merge_attn_states 合并——LSE 合并的调用现场。"
+        },
+        {
+          "name": "merge_attn_states / merge_attn_states_kernel",
+          "file": "vllm/v1/attention/ops/triton_merge_attn_states.py",
+          "responsibility": "online-softmax ⊕ 算子的落地:把两段部分注意力输出按各自 LSE 权重稳定地合并成精确输出,并可选输出合并后 LSE。cascade / split-KV 的地基。"
+        }
+      ],
+      "mechanisms": [
+        {
+          "id": "standard-attn-materialization",
+          "name": "标准注意力物化 N×N 与内存带宽墙",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/attention/backends/flash_attn.py:L809-L832"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2205.14135",
+            "sections": [
+              "§2.1 Hardware Performance",
+              "§2.2 Standard Attention",
+              "Algorithm 0"
+            ]
+          },
+          "note": "读者的最大认知悬崖起点:注意力慢在 HBM 往返(物化 S=QK^T、P=softmax(S) 两张 N×N),不在 FLOP。图:GPU 内存层级(SRAM 192KB@19TB/s vs HBM 80GB@2TB/s)+ 标准三步各读写 N×N。"
+        },
+        {
+          "id": "online-softmax-recurrence",
+          "name": "online-softmax 单遍递推(running m/l)",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/attention/ops/triton_merge_attn_states.py:L129-L139"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:1805.02867",
+            "sections": [
+              "§3 Algorithm 3",
+              "Theorem 1"
+            ]
+          },
+          "note": "数值推演的主战场:小分块手算 m_j/d_j 递推,验证末值与三遍 safe-softmax 恒等。writer 必三层递进:安全 softmax 减 max -> 单遍融合 -> rescale 项的直觉。"
+        },
+        {
+          "id": "online-softmax-merge-operator",
+          "name": "online-softmax ⊕ 合并算子(结合律)",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/attention/ops/triton_merge_attn_states.py:L118-L161"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:1805.02867",
+            "sections": [
+              "§3.1 Eq.3-4"
+            ]
+          },
+          "note": "把 (max,sum) 状态抽象成二元算子 ⊕,证结合律=>可任意分块合并。tiling 与 LSE 合并的合法性根据。worked example:两块乱序合并 = 顺序遍历 = 一次性 softmax。"
+        },
+        {
+          "id": "flashattention-tiling",
+          "name": "FlashAttention 分块 tiling 与免物化",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/vllm_flash_attn/flash_attn_interface.py:L176-L209"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2205.14135",
+            "sections": [
+              "§3.1 Algorithm 1",
+              "Theorem 1"
+            ]
+          },
+          "note": "核心算法:Q/K/V 切块,running (m_i,l_i,O_i) 用 online-softmax 递推更新,N×N 的 S/P 从不落 HBM,融成单 kernel。图:tiling 外/内循环 + O_i 的 rescale-accumulate;worked example:2×2 分块跑完 O_i 递推对照朴素 softmax(QK^T)V。"
+        },
+        {
+          "id": "io-complexity-accounting",
+          "name": "IO 复杂度账 O(N²d²/M) vs Θ(N²)",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/vllm_flash_attn/flash_attn_interface.py:L232-L261"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2205.14135",
+            "sections": [
+              "§3.2 Theorem 2",
+              "Proposition 3"
+            ]
+          },
+          "note": "量化为什么快:代入 N=1024,d=64,M≈100KB 算出两者 HBM 访问次数之比(worked example)。图:随 block size 增大 HBM 访问下降的账。"
+        },
+        {
+          "id": "fa2-loop-order-warp",
+          "name": "FlashAttention-2 循环序对调与 warp 分工(带过)",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/attention/backends/fa_utils.py:L56-L110"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "supporting",
+          "paper_origin": {
+            "paper": "arXiv:2307.08691",
+            "sections": [
+              "§3.1 Algorithm 1",
+              "§3.2 Parallelism",
+              "§3.3 Work Partitioning"
+            ]
+          },
+          "note": "一节带过:外层改遍历 Q 行块=>序列长度并行;未归一化 O 收尾除一次=>减 non-matmul FLOP;只存 L=m+log l;split-K->split-Q 免 shared-memory 通信。图:FA vs FA-2 循环序/warp 分工对照。"
+        },
+        {
+          "id": "lse-merge",
+          "name": "LSE 合并(merge_attn_states——两段注意力合并)",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/attention/ops/triton_merge_attn_states.py:L118-L161",
+            "vllm/v1/attention/backends/flash_attn.py:L1185-L1236"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:1805.02867",
+            "sections": [
+              "§3.1 Eq.4 (⊕ 算子)"
+            ]
+          },
+          "note": "附「LSE 合并」小节:merge_attn_states_kernel 逐 (token,head) 以 max_lse 稳定化,按 e^{lse-max} 权重合并两段 output,合并 lse=log(Σe^{lse-max})+max——即 ⊕ 在 (lse,output) 上。代码另引 arXiv:2501.01005 §2.2(不在论文包内,数学同 online-softmax Eq.4)。cascade attention 的地基。worked example:两段部分 softmax 合并 = 对合并 KV 一次性 softmax。"
+        },
+        {
+          "id": "fa-varlen-call-surface",
+          "name": "flash_attn_varlen_func 调用面与形参语义(落地)",
+          "kind": "config",
+          "source_anchors": [
+            "vllm/vllm_flash_attn/flash_attn_interface.py:L176-L261",
+            "vllm/v1/attention/backends/flash_attn.py:L809-L832"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin_note": "vLLM 侧代码落地面,无直接论文出处;kernel 内部算法由 FA/FA-2 两论文覆盖(见 flashattention-tiling / fa2-loop-order-warp 机制)。",
+          "note": "落地主线:q/k/v (total,nheads,headdim) varlen 打平 + cu_seqlens_q 前缀和切序列 + seqused_k/block_table 指 paged KV;causal/softmax_scale/window_size/softcap/fa_version;return_softmax_lse 吐 L 给合并用。图:一次调用的形参语义表 + 回指 ch25-attention。",
+          "figure_note": "2026-07-14 素材账同步:writer 骨架重构删除原「七、落地:flash_attn_varlen_func 调用面」整节(散布为全章几处一句指路,详见第 25 章:注意力后端),该机制不再单独成节,fig34-7-varlen-call-surface 已删除且无取代图,故降为不配图。"
+        },
+        {
+          "id": "cascade-shared-prefix",
+          "name": "cascade attention:共享前缀拆两段 + 合并",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/attention/backends/flash_attn.py:L1145-L1236"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "supporting",
+          "paper_origin_note": "vLLM 推理期优化的落地(共享前缀去重),算法基础是 LSE 合并(见 lse-merge 机制);无独立论文出处。",
+          "note": "把 LSE 合并放进真实调用现场:前缀段(causal=False,共享)+ 后缀段(causal=True,私有)各 return_softmax_lse,merge_attn_states 合并。展示原理如何在 vLLM 落地。"
+        }
+      ]
+    },
+    {
+      "chapter_id": "ch25",
+      "title": "ch25",
+      "slug": "ch25-attention",
+      "sections": [
+        "25.1 一张总图：抽象、注册、选择",
+        "25.2 后端的身份证：四个抽象 staticmethod",
+        "25.3 KV cache 的形状与布局约定",
+        "25.4 注册表：枚举值就是一段类路径",
+        "25.5 validate_configuration：把\"不行\"的理由列成清单",
+        "25.6 get_attn_backend：打包成键，缓存一次",
+        "25.7 平台层：显式优先，否则按 capability 自动挑",
+        "25.8 两层 metadata：一份共享，各自翻译",
+        "25.9 PagedAttention：照表读写 KV 显存",
+        "25.10 按 layer_name 分发：先写后算",
+        "25.11 小结：一份 metadata，喂饱所有 kernel"
+      ],
+      "key_classes": [
+        {
+          "name": "AttentionBackend",
+          "file": "vllm/v1/attention/backend.py",
+          "responsibility": "所有注意力后端的抽象基类。六个抽象 staticmethod 是后端身份证：get_name / get_impl_cls / get_builder_cls / get_kv_cache_shape（+ 默认的 get_kv_cache_stride_order / get_kv_cache_block_dim）；外加一组 supports_*/is_* 能力探针与聚合器 validate_configuration（返回不合法原因列表，空=合法）。"
+        },
+        {
+          "name": "CommonAttentionMetadata",
+          "file": "vllm/v1/attention/backend.py",
+          "responsibility": "跨层、跨后端共享的 per-batch 元数据 dataclass。核心 8 字段：query_start_loc(+cpu)/seq_lens/num_reqs/num_actual_tokens/max_query_len/max_seq_len/block_table_tensor/slot_mapping。model_runner 在 _prepare_inputs 后组装它一次，喂给每个 KV 组的 builder。f14 的 block_table_tensor 与 slot_mapping 即在此作为接口字段被接住。"
+        },
+        {
+          "name": "AttentionMetadataBuilder",
+          "file": "vllm/v1/attention/backend.py",
+          "responsibility": "抽象 builder（泛型 M=后端专属 metadata 类型）。build(common_prefix_len, common_attn_metadata, fast_build) 是把 CommonAttentionMetadata 翻译成后端专属 metadata 的唯一中心入口；另有 update_block_table（多 KV 组复用元数据时只换块表）、cudagraph 支持级别 AttentionCGSupport。"
+        },
+        {
+          "name": "AttentionImpl",
+          "file": "vllm/v1/attention/backend.py",
+          "responsibility": "后端具体计算的抽象（泛型 T=metadata 类型）。抽象 forward(layer, query, key, value, kv_cache, attn_metadata, output, ...) 是算注意力的落点；do_kv_cache_update / fused_* 为可选钩子。MLAAttentionImpl/SparseMLAAttentionImpl 是 MLA 变体（本章只点名、不展开）。"
+        },
+        {
+          "name": "AttentionBackendEnum",
+          "file": "vllm/v1/attention/backends/registry.py",
+          "responsibility": "后端注册表枚举：每个成员的值就是一段默认类路径字符串（FLASH_ATTN/FLASHINFER/TRITON_ATTN/...）。get_class() = 查覆盖表 _ATTN_OVERRIDES → 回退枚举值 → resolve_obj_by_qualname 懒加载真正 import；register_backend 可运行时覆盖或注册第三方 CUSTOM 后端。"
+        },
+        {
+          "name": "AttentionSelectorConfig",
+          "file": "vllm/v1/attention/selector.py",
+          "responsibility": "NamedTuple，把选后端要看的所有维度（head_size/dtype/kv_cache_dtype/block_size/use_mla/has_sink/use_sparse/attn_type/...）打成一个可哈希的键，供 @cache 缓存命中。"
+        },
+        {
+          "name": "FlashAttentionBackend / FlashAttentionMetadata / FlashAttentionMetadataBuilder / FlashAttentionImpl",
+          "file": "vllm/v1/attention/backends/flash_attn.py",
+          "responsibility": "FlashAttention 后端四件套样板：Backend 声明 KV cache shape=(2,num_blocks,block_size,num_kv_heads,head_size) 与能力探针；Metadata 是专属 dataclass（block_table/slot_mapping/scheduler_metadata/cascade）；Builder.build 把 Common 翻译成它；Impl.forward 用 flash_attn_varlen_func 照 block_table 读 paged KV，do_kv_cache_update 用 reshape_and_cache_flash 照 slot_mapping 写。"
+        },
+        {
+          "name": "Attention（v1 统一注意力层）",
+          "file": "vllm/model_executor/layers/attention/attention.py",
+          "responsibility": "模型里每个注意力层的封装。__init__ 调 get_attn_backend 选后端、get_impl_cls 实例化 impl，并以 prefix(=layer_name) 注册进 compilation_config.static_forward_context。forward 把 q/k/v reshape 后经 unified_kv_cache_update / unified_attention_with_output 两个自定义算子分发；后者经 get_attention_context(layer_name) 从 forward_context 按 layer_name 取本层 kv_cache/attn_metadata/slot_mapping（f18 回收）。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch26",
+      "title": "ch26",
+      "slug": "ch26-primer-quantization",
+      "sections": [],
+      "key_classes": [
+        {
+          "name": "QuantizeMethodBase",
+          "file": "vllm/model_executor/layers/quantization/base_config.py",
+          "responsibility": "所有量化方法的抽象基类：create_weights（建权重占位）+ apply（前向）+ process_weights_after_loading（装载后重排）。统一调用面。"
+        },
+        {
+          "name": "QuantizationConfig",
+          "file": "vllm/model_executor/layers/quantization/base_config.py",
+          "responsibility": "量化配置抽象基类：from_config 解析检查点 quantization_config、get_quant_method 按 layer/prefix 分发方法、get_min_capability 声明硬件门槛。"
+        },
+        {
+          "name": "GPTQLinearMethod",
+          "file": "vllm/model_executor/layers/quantization/gptq.py",
+          "responsibility": "GPTQ 权重（打包 INT + per-group scales + qzeros + g_idx）的建权重与 apply→ops.gptq_gemm。"
+        },
+        {
+          "name": "AWQLinearMethod",
+          "file": "vllm/model_executor/layers/quantization/awq.py",
+          "responsibility": "AWQ 权重（打包 INT + scales + qzeros，激活感知缩放已离线折入）的 apply→awq_dequantize/awq_gemm。"
+        },
+        {
+          "name": "Fp8LinearMethod",
+          "file": "vllm/model_executor/layers/quantization/fp8.py",
+          "responsibility": "FP8（e4m3 权重）线性方法：支持 per-tensor / per-channel / 块量化，块量化 scale 可用 e8m0fnu 装载；apply 委派 fp8_linear.apply_weights。"
+        },
+        {
+          "name": "QuantFP8 (_quantize_group_native)",
+          "file": "vllm/model_executor/layers/quantization/input_quant_fp8.py",
+          "responsibility": "激活的在线 FP8 分组量化，use_ue8m0 时把 scale 向上取整到 2 的幂（e8m0 约束）。"
+        }
+      ],
+      "mechanisms": [
+        {
+          "id": "m1-uniform-affine-quant",
+          "name": "均匀（仿射）量化：scale / zero-point / 对称 vs 非对称",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/layers/quantization/utils/quant_utils.py:L586-L621"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2306.00978",
+            "sections": [
+              "§3.2",
+              "Eq.1"
+            ]
+          }
+        },
+        {
+          "id": "m2-quant-granularity",
+          "name": "量化粒度：per-tensor / per-token / per-channel / per-group",
+          "kind": "layout",
+          "source_anchors": [
+            "vllm/model_executor/layers/quantization/utils/quant_utils.py:L577-L584",
+            "vllm/model_executor/layers/quantization/utils/quant_utils.py:L39-L44"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2211.10438",
+            "sections": [
+              "§2",
+              "Figure 3",
+              "Table 1"
+            ]
+          }
+        },
+        {
+          "id": "m3-gptq-second-order",
+          "name": "GPTQ：二阶（Hessian）误差补偿 + lazy batch + Cholesky",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/layers/quantization/utils/quant_utils.py:L655-L686",
+            "vllm/model_executor/layers/quantization/gptq.py:L376-L399"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2210.17323",
+            "sections": [
+              "§3",
+              "§4",
+              "Eq.2",
+              "Eq.3",
+              "Eq.4",
+              "Eq.5",
+              "Algorithm 1"
+            ]
+          }
+        },
+        {
+          "id": "m4-awq-activation-aware-scaling",
+          "name": "AWQ：激活感知的逐通道缩放（保护显著权重）",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/layers/quantization/awq.py:L262-L286"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2306.00978",
+            "sections": [
+              "§3.1",
+              "§3.2",
+              "Eq.1",
+              "Eq.2",
+              "Eq.5"
+            ]
+          }
+        },
+        {
+          "id": "m5-smoothquant-migration",
+          "name": "SmoothQuant：把量化难度从激活迁移到权重（s 因子）",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/layers/quantization/utils/quant_utils.py:L286-L338"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2211.10438",
+            "sections": [
+              "§4",
+              "Eq.3",
+              "Eq.4"
+            ]
+          }
+        },
+        {
+          "id": "m6-dequant-error-worked-example",
+          "name": "量化-反量化误差数值推演：RTN vs AWQ vs SmoothQuant 三法对比",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/layers/quantization/utils/quant_utils.py:L614-L621",
+            "vllm/model_executor/layers/quantization/utils/quant_utils.py:L342-L353"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2306.00978",
+            "sections": [
+              "§3.2",
+              "Eq.1",
+              "Eq.2"
+            ],
+            "note": "Eq.2 之后的 RoundErr≈0.25 散文分析"
+          }
+        },
+        {
+          "id": "m7-quant-method-calling-surface",
+          "name": "落地调用面：quant_config → get_quant_method → quant_method.apply",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/model_executor/layers/quantization/base_config.py:L36-L41",
+            "vllm/model_executor/layers/quantization/base_config.py:L150-L163"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting",
+          "paper_origin_note": "纯 vllm 落地面（框架调用契约），无论文出处；回指 [模型定义章] 的 Linear 装配与量化方法分发。"
+        },
+        {
+          "id": "m8-fp8-e8m0-scale",
+          "name": "FP8(e4m3) 权重 + e8m0fnu 块 scale（scale 为 2 的幂）装载面",
+          "kind": "layout",
+          "source_anchors": [
+            "vllm/model_executor/layers/quantization/fp8.py:L358-L370",
+            "vllm/model_executor/layers/quantization/input_quant_fp8.py:L240-L248"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin_note": "e8m0/MX(Microscaling) 为 OCP 硬件格式约定（非本论文包三篇之一），落地面锚点；回指 [DeepSeek-V4 章] 的 W8A8/FP8 块量化。"
+        }
+      ]
+    },
+    {
+      "chapter_id": "ch27",
+      "title": "ch27",
+      "slug": "ch27-primer-lightning-indexer",
+      "sections": [],
+      "key_classes": [
+        {
+          "name": "Indexer",
+          "file": "vllm/model_executor/models/deepseek_v2.py",
+          "responsibility": "V3.2 lightning indexer（compress_ratio=1，无压缩）：低秩出 indexer query、fused wk+weights_proj 出 key 与逐头权重、k_norm+RoPE+FP8 量化，然后调 SparseAttnIndexer 出 top-k。落地 Eq.(1)-(2)。"
+        },
+        {
+          "name": "DeepseekV32IndexerCache",
+          "file": "vllm/model_executor/models/deepseek_v2.py",
+          "responsibility": "索引器专属 KV 缓存（AttentionLayerBase）：MLAAttentionSpec，num_kv_heads=1，head_size=132（128 fp8 + 4B fp32 scale），与主 KV cache 完全独立分配。"
+        },
+        {
+          "name": "DeepseekV4Indexer",
+          "file": "vllm/model_executor/layers/deepseek_v4_attention.py",
+          "responsibility": "V4/CSA lightning indexer（compress_ratio>1）：用 DeepseekCompressor 建压缩索引键 K^IComp、支持 MXFP4 缓存、fused_indexer_q_rope_quant 融合 RoPE+量化。落地 Eq.(16)-(17)。"
+        },
+        {
+          "name": "DeepseekV4IndexerCache",
+          "file": "vllm/model_executor/layers/deepseek_v4_attention.py",
+          "responsibility": "V4 索引器缓存：与 V3.2 同布局但页对齐 576B（与 FlashMLA/compressor 状态打包），compress_ratio 使缓存以压缩块为单位增长。"
+        },
+        {
+          "name": "SparseAttnIndexer",
+          "file": "vllm/model_executor/layers/sparse_attn_indexer.py",
+          "responsibility": "CustomOp：封装重核（mqa_logits/paged_mqa_logits/top_k_per_row），CUDA/ROCm/XPU 分派；把 q_fp8/k/weights 变成写入 topk_indices_buffer 的 top-k 索引。"
+        },
+        {
+          "name": "DeepseekV32IndexerMetadataBuilder",
+          "file": "vllm/v1/attention/backends/mla/indexer.py",
+          "responsibility": "索引器后端 metadata builder：prefill 按 workspace/logits 预算分块、decode 展开（MTP/flatten/native）、compress_ratio 时把 seq_lens 与 slot_mapping 转成压缩坐标。"
+        },
+        {
+          "name": "DeepseekV32IndexerBackend / DeepseekV4IndexerBackend",
+          "file": "vllm/v1/attention/backends/mla/indexer.py",
+          "responsibility": "索引器 KV cache 后端：get_kv_cache_shape=(num_blocks, block_size, head_size)、num_kv_heads==1 断言、支持头维 {32,64,128}；V4 子类改 kernel block size 为 256。"
+        },
+        {
+          "name": "DeepseekCompressor",
+          "file": "vllm/model_executor/layers/deepseek_compressor.py",
+          "responsibility": "V4 KV/索引键压缩器：fused_wkv_wgate 出 KV 与门控分数，按 softmax 权重把每 m 个条目压成 1 个（Eq.9-12/K^IComp），写进对应缓存。"
+        }
+      ],
+      "mechanisms": [
+        {
+          "id": "index-score-formula",
+          "name": "Lightning indexer 打分函数 I_{t,s}=Σ w·ReLU(q·k)",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/models/deepseek_v2.py:L676-L737",
+            "vllm/model_executor/layers/sparse_attn_indexer.py:L223-L230"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2512.02556",
+            "sections": [
+              "§2.1",
+              "Prototype of DSA",
+              "Eq.(1)"
+            ]
+          },
+          "paper_origin_v4": {
+            "paper": "arXiv:2606.19348",
+            "sections": [
+              "§2.3.1 Lightning Indexer for Sparse Selection",
+              "Eq.(15)-(16)"
+            ]
+          },
+          "notes": "逐头点积→ReLU→逐头权重加权求和。落地：q_fp8·k 的点积+ReLU+加权在 fp8_fp4_mqa_logits 核内；per-head weights=w^I，softmax_scale/q_scale 折进 weights。worked example：小 H^I（如 2 头）手算一个 I_{t,s}。"
+        },
+        {
+          "id": "topk-selection",
+          "name": "细粒度 top-k 选块（Eq.2/17）+ 写共享 topk_indices_buffer",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/layers/sparse_attn_indexer.py:L233-L258",
+            "vllm/model_executor/models/deepseek_v2.py:L1217-L1227"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2512.02556",
+            "sections": [
+              "§2.1",
+              "Prototype of DSA",
+              "Eq.(2)"
+            ]
+          },
+          "paper_origin_v4": {
+            "paper": "arXiv:2606.19348",
+            "sections": [
+              "Eq.(17)"
+            ]
+          },
+          "notes": "top_k_per_row_{prefill,decode}/persistent_topk 从 I_{t,:} 选前 k 索引写进全模型共享 buffer（-1 填充）。worked example：给一行 logits，手挑 top-k 索引。"
+        },
+        {
+          "id": "independent-small-heads",
+          "name": "独立小头架构（H^I 与主注意力头解耦，可 FP8）",
+          "kind": "config",
+          "source_anchors": [
+            "vllm/model_executor/models/deepseek_v2.py:L621-L659",
+            "vllm/model_executor/models/deepseek_v2.py:L986-L1005"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2512.02556",
+            "sections": [
+              "§2.1",
+              "Instantiate DSA Under MLA"
+            ]
+          },
+          "notes": "字面证据：n_head/head_dim/rope_dim 来自 config.index_* 前缀；indexer 有独立 wq_b/wk_weights_proj/k_norm/k_cache 与专属 RoPE。配 Fig.2（DSA 在 MLA-MQA 之下如何用独立小头挑 top-k、跨头共享 latent KV）。"
+        },
+        {
+          "id": "kl-alignment-separate-optimization",
+          "name": "分离优化：indexer 独立参数 + KL 对齐损失（detach）",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/model_executor/models/deepseek_v2.py:L740-L777",
+            "vllm/model_executor/models/deepseek_v2.py:L627-L644"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2512.02556",
+            "sections": [
+              "§2.1.1 Continued Pre-Training",
+              "Eq.(3)",
+              "Eq.(4)"
+            ]
+          },
+          "phase_note": "KL 损失 L^I 本身是训练期概念（Eq.3/4，vLLM 不含反向）；此处 source_anchors 落在推理侧的'分离参数'实证——indexer 有自己一套投影（wq_b/wk_weights_proj）+ 专门的 FP8 indexer 权重加载路径 _try_load_fp8_indexer_wk（正因 indexer 单独 detach 优化、常以独立 FP8 checkpoint 存放）。writer 讲清'为何打分可信'。"
+        },
+        {
+          "id": "complexity-honest-account",
+          "name": "复杂度诚实账 O(L²)→O(Lk)（indexer 自身仍 O(L²)）",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/layers/sparse_attn_indexer.py:L223-L258",
+            "vllm/v1/attention/backends/mla/indexer.py:L219-L229"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2512.02556",
+            "sections": [
+              "§2.3 Inference Costs"
+            ]
+          },
+          "notes": "主注意力 O(L²)→O(Lk)，indexer 打分仍 O(L²) 但常数远小（少头/低精度/无反向）。worked example：L≈128k、k≈2048 代入，量化主注意力省的核算量与 indexer 打分的相对开销；prefill logits 预算 M·N·4≤max_logits_bytes 的分块正是 O(L²) 内存的直接体现。"
+        },
+        {
+          "id": "indexcache-layout-independence",
+          "name": "IndexCache 张量布局与对主 KV cache 的独立性（K^IComp）",
+          "kind": "layout",
+          "source_anchors": [
+            "vllm/model_executor/models/deepseek_v2.py:L575-L601",
+            "vllm/model_executor/layers/deepseek_v4_attention.py:L1048-L1086"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2606.19348",
+            "sections": [
+              "§2.3.1",
+              "Compressed Key-Value Entries",
+              "Lightning Indexer for Sparse Selection",
+              "Eq.(9)-(19)"
+            ]
+          },
+          "paper_origin_v32": {
+            "paper": "arXiv:2512.02556",
+            "sections": [
+              "§2.1 Instantiate DSA Under MLA"
+            ]
+          },
+          "notes": "K^IComp∈R^{n/m×c^I} 与主 C^Comp 并行产出、各自缓存。落地：DeepseekV32/V4IndexerCache 各自 MLAAttentionSpec（num_kv_heads=1，head_size=132=128fp8+4scale），与主 KV cache 分开分配；V4 页对齐 576B。配 Fig.3（K^IComp 与 C^Comp 的空间关系）。"
+        },
+        {
+          "id": "kcache-build-quant-gather",
+          "name": "索引器 KV cache 的量化写入与 prefill/decode 收集",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/model_executor/layers/sparse_attn_indexer.py:L165-L205",
+            "vllm/model_executor/layers/sparse_attn_indexer.py:L260-L319"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting",
+          "paper_origin": {
+            "paper": "arXiv:2606.19348",
+            "sections": [
+              "§2.3.4 Efficiency Discussion"
+            ]
+          },
+          "notes": "本小节讲 vLLM 侧的 FP8 量化写入与 prefill/decode 收集内核，论文根基是 §2.3.4 的混合 FP8 存储（RoPE 维 BF16、其余 FP8）；压缩操作本身 Eq.(9)-(12) 归 indexcache-layout-independence 机制（正文 §五 独立性小节已引 Eq.(9)-(12)/(16)/(17)）。indexer_k_quant_and_cache（k FP8 量化+插入，与 q 分开）；prefill 逐 chunk cp_gather_indexer_k_quant_cache 从 paged cache 收集历史 key 到 workspace；decode 用 fp8_fp4_paged_mqa_logits 直接 paged 打分。V4 由 DeepseekCompressor 在插入前完成压缩（skip_k_cache_insert=True）。"
+        },
+        {
+          "id": "fp4-mxfp4-variant",
+          "name": "FP4/MXFP4 indexer 缓存变体（use_fp4_indexer_cache）",
+          "kind": "config",
+          "source_anchors": [
+            "vllm/model_executor/layers/sparse_attn_indexer.py:L39-L81",
+            "vllm/model_executor/layers/deepseek_v4_attention.py:L1113-L1117",
+            "vllm/v1/attention/backends/mla/indexer.py:L255-L278"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "supporting",
+          "paper_origin": {
+            "paper": "arXiv:2606.19348",
+            "sections": [
+              "§2.3.4 Efficiency Discussion",
+              "§5.2.1 FP4 Quantization-Aware Training"
+            ]
+          },
+          "notes": "MXFP4 布局=2 值/字节 + ue8m0 per-32 scale；index 分数 FP32→BF16；QAT 保 99.7% 召回、top-k 选择器 2x。仅 Blackwell 数据中心 GPU（sm_10x）。配 Fig.1 右（局部量化 → 整机 FLOPs/KV cache 对账）。"
+        },
+        {
+          "id": "customop-mla-wiring",
+          "name": "接线：SparseAttnIndexer CustomOp 如何被 MLA 消费",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/model_executor/layers/mla.py:L168-L169",
+            "vllm/model_executor/layers/sparse_attn_indexer.py:L404-L493",
+            "vllm/model_executor/models/deepseek_v2.py:L986-L1005"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting",
+          "paper_origin": {
+            "paper": "arXiv:2512.02556",
+            "sections": [
+              "§2.1",
+              "Instantiate DSA Under MLA"
+            ]
+          },
+          "notes": "SparseAttnIndexer 是 CustomOp（封装 mqa_logits/top_k_per_row 重核，多后端分派）；MLA 前向 mla.py:L168-169 先调 indexer 写 buffer（副作用），稀疏 MLA 后端再从同 buffer 取 top-k 做数值计算。is_v32 检测（hasattr index_topk）驱动是否建 indexer。skip_topk 支持 IndexCache 跨层复用。"
+        }
+      ]
+    },
+    {
+      "chapter_id": "ch28",
+      "title": "ch28",
+      "slug": "ch28-model-architecture",
+      "sections": [
+        "28.1 骨架：把 Llama 的 forward 和 V4 的并排放",
+        "28.2 Delta 一：MHA → MLA，把 KV cache 压成低秩潜变量",
+        "28.3 Delta 二：dense MLP → MoE，稀疏路由 + 一条共享 dense",
+        "28.4 Delta 三：add-norm → hc 多流残差",
+        "28.5 Delta 四：单 lm_head → 旁挂一个 MTP draft",
+        "28.6 收尾 delta：FP8 量化与 e8m0fnu 字节装载",
+        "28.7 把四摞 delta 合起来看"
+      ],
+      "key_classes": [
+        {
+          "name": "DeepseekV4ForCausalLM",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1507",
+          "responsibility": "顶层入口：持有 DeepseekV4Model + lm_head + logits_processor；forward 转发；compute_logits；get_mtp_target_hidden_states 暴露 pre-hc_head 残差给 MTP；load_weights 经 AutoWeightsLoader(skip mtp.) 装载并 finalize MegaMoE。对照 LlamaForCausalLM。"
+        },
+        {
+          "name": "DeepseekV4Model",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1220",
+          "responsibility": "主干：embed → repeat 成 hc_mult 条残差流 → 逐 DeepseekV4DecoderLayer → 暂存 _mtp_hidden_buffer → hc_head 压回单流 → norm。持有 topk_indices_buffer 与 3 条 aux_stream。对照 LlamaModel。"
+        },
+        {
+          "name": "DeepseekV4DecoderLayer",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1089",
+          "responsibility": "单层：attn(MLA) + ffn(MoE)，但残差用 hc_pre/hc_post 超连接(mhc_pre/mhc_post 算子)而非 Llama 的融合 add-norm。持有 hc_{attn,ffn}_{fn,base,scale} 学习参数。被主模型和 MTP 复用。"
+        },
+        {
+          "name": "DeepseekV4Attention",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L921",
+          "responsibility": "MLA 权重定义层：fused_wqa_wkv(低秩 q_lora_rank/压缩 kv)、q_norm/kv_norm、wq_b(q 升维)、wo_a/wo_b(输出低秩 o_lora_rank/o_groups)、attn_sink、解耦 RoPE(nope/rope 拆)，包成 wrapper。对照 LlamaAttention(qkv_proj/o_proj)。"
+        },
+        {
+          "name": "DeepseekV4MultiHeadLatentAttentionWrapper",
+          "file": "vllm/model_executor/layers/deepseek_v4_attention.py:L106",
+          "responsibility": "MLA 执行层(V4 专属)：forward 调 deepseek_v4_attention 自定义算子 + 输出端 inverse-RoPE/FP8 einsum/wo_b；attention_impl 做多 stream 并行输入 GEMM + fused RMSNorm；含稀疏 SWA/indexer/compressor。内核细节下放 ch25。"
+        },
+        {
+          "name": "DeepseekV4MoE",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L707",
+          "responsibility": "MoE 层：gate(GateLinear) 路由 + 可选 shared_experts(每 token 必走的 dense 残留) + 双后端(use_mega_moe ? DeepseekV4MegaMoEExperts : FusedMoE)。对照 LlamaMLP 单 dense。"
+        },
+        {
+          "name": "DeepseekV4MegaMoEExperts",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L392",
+          "responsibility": "MegaMoE 专家后端：FP4/FP8 量化 w13/w2 权重，finalize_weights 转 DeepGEMM scale 布局，forward 走单个 deepseek_v4_mega_moe_experts 自定义算子(对称缓冲, SM100)。一 kernel 跑全部专家。"
+        },
+        {
+          "name": "DeepseekV4MLP",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L70",
+          "responsibility": "SwiGLU MLP(gate_up_proj/down_proj，可选 swiglu_limit clamp)，作 shared_experts 复用。结构与 LlamaMLP 同构，是 MoE 里那条 dense 共享路径。"
+        },
+        {
+          "name": "DeepseekV4FP8Config",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L121",
+          "responsibility": "V4 量化配置：linear/attn 走 FP8 block；专家按 expert_dtype 惰性解析 fp4(MXFP4) 或 fp8(block FP8)，决定 scale e8m0/float32 与 weight 映射。回收'量化 delta'。"
+        },
+        {
+          "name": "hc_head",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1450",
+          "responsibility": "torch.compile 函数：把 hc_mult 条残差流经 RMSNorm + sigmoid 门控加权求和压回单流。主模型末尾与 MTP compute_logits 都用。"
+        },
+        {
+          "name": "DeepSeekV4MultiTokenPredictorLayer",
+          "file": "vllm/model_executor/models/deepseek_v4_mtp.py:L61",
+          "responsibility": "MTP draft 单层：enorm/hnorm + e_proj/h_proj 融合 token embedding 与 target 的 pre-hc_head 残差，跑一个 DeepseekV4DecoderLayer，输出新 pre-hc_head 残差(可多步串联)。"
+        },
+        {
+          "name": "DeepSeekV4MTP",
+          "file": "vllm/model_executor/models/deepseek_v4_mtp.py:L244",
+          "responsibility": "MTP draft 顶层：持有多 MTP 层 + embed + logits_processor；forward 按 spec_step 选层；compute_logits 补 hc_head 再过 shared_head。被投机解码(ch34)消费。"
+        },
+        {
+          "name": "LlamaDecoderLayer / LlamaAttention / LlamaMLP",
+          "file": "vllm/model_executor/models/llama.py:L253/L124/L81",
+          "responsibility": "基线对照(ch22)：标准 add-norm 残差 + QKV-MHA + dense SwiGLU。本章每个 delta 都回到这三处对照。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch29",
+      "title": "ch29",
+      "slug": "ch29-model-architecture",
+      "sections": [
+        "29.1 为什么需要一套「读法」，而不是凭感觉画",
+        "29.2 先在最简模型上跑一遍：LlamaDecoderLayer",
+        "29.3 P1 实战：从 `__init__` 读出 DeepSeek-V4 的模块树",
+        "29.4 P2 实战：从 `forward` 读出数据流与形状变化",
+        "29.5 P3 实战：用源码判据标出子系统边界",
+        "29.6 配置开关怎么读：可选框与双后端分叉",
+        "29.7 P4 与验证：把图钉死在源码上",
+        "29.8 这套程序为什么对任何 vLLM 模型都成立"
+      ],
+      "key_classes": [
+        {
+          "name": "DeepseekV4ForCausalLM",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1507",
+          "responsibility": "worked example 的画图入口：从它的 __init__（self.model/lm_head/logits_processor）与 forward 读出整张图的最外层框与顶层数据流主干。方法论里'永远从 *ForCausalLM 开始读'的锚点。"
+        },
+        {
+          "name": "DeepseekV4Model",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1220",
+          "responsibility": "主干模块树 + 主干数据流的来源：embed_tokens/make_layers([])/norm 三段框，forward 的 repeat(hc_mult)/for/copy_/hc_head/norm 即主干边与形状注记。带 @support_torch_compile（P3 编译区）与 aux_stream（P3 并行子系统）。"
+        },
+        {
+          "name": "DeepseekV4DecoderLayer",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1089",
+          "responsibility": "下钻一层的范本：__init__ 读出 attn/ffn/attn_norm/ffn_norm 子框，forward 读出 hc_pre→norm→attn/ffn→hc_post 层内数据流与残差回边；hc_pre/hc_post 是 P3 自定义算子框的判例。"
+        },
+        {
+          "name": "DeepseekV4Attention",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L921",
+          "responsibility": "叶子层模块树范本：连续 self.<name>=*ParallelLinear(prefix=f'{prefix}.<name>') 一行一框读出 MLA 投影子树，类名（Column/Row/Merged ParallelLinear）即 P3 并行子系统着色依据。"
+        },
+        {
+          "name": "DeepseekV4MoE",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L707",
+          "responsibility": "条件框/双后端分叉范本：__init__ 的 if n_shared_experts / if use_mega_moe 读出可选框与互斥后端；forward 的 if/return 与 += 读出数据流分支与旁路汇入边。"
+        },
+        {
+          "name": "hc_head",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1450",
+          "responsibility": "P3 编译区 + '函数也是框'范本：@torch.compile 装饰器即编译边界，flatten/view/sum 的形状坍缩即压回单流的边标注。"
+        },
+        {
+          "name": "hc_pre / hc_post",
+          "file": "vllm/model_executor/models/deepseek_v4.py:L1166",
+          "responsibility": "P3 自定义算子判例：dispatch 到 torch.ops.vllm.mhc_pre/mhc_post，示范'看它调 torch.ops.vllm.* 还是 self.子模块 来判定算子框'。"
+        },
+        {
+          "name": "make_layers",
+          "file": "vllm/model_executor/models/utils.py",
+          "responsibility": "P1 层堆叠信号：出现 make_layers/ModuleList 即画带 ×N 标注的复数框，而非展开 N 个框。"
+        },
+        {
+          "name": "LlamaDecoderLayer / LlamaAttention / LlamaMLP",
+          "file": "vllm/model_executor/models/llama.py:L253/L124/L81",
+          "responsibility": "基线 worked example：同一套四步程序先跑在最简 Llama 上，证明'读代码画图'与模型无关、可迁移到 V4（也是 ch22/ch28 的对照锚点）。"
+        },
+        {
+          "name": "svg-diagram skill",
+          "file": ".claude/skills/svg-diagram/SKILL.md",
+          "responsibility": "P4 真实渲染工具：Python 脚本生成 SVG → xmllint 校验 → ImageMagick/rsvg 转 PNG，处理 dense 多元素嵌套容器 + 有向箭头（正是模块树+数据流图的场景）。"
+        },
+        {
+          "name": "roadmap.py",
+          "file": "instances/vllm/book/assets/roadmap/roadmap.py",
+          "responsibility": "开场 Roadmap'你在这里'生成器，与本章其余架构图同源工具链。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch30",
+      "title": "ch30",
+      "slug": "ch30-sampling",
+      "sections": [
+        "30.1 9 步的全景图",
+        "30.2 入口 forward：先把原始概率抢救出来",
+        "30.3 第 3–6 步：四道能改 argmax 的工序",
+        "30.4 bad words：只在\"快补全成禁词\"时才动手",
+        "30.5 第 6 步：三种惩罚，照 OpenAI 的定义算",
+        "30.6 第 7 步：greedy 快路与随机路的分叉",
+        "30.7 第 7d 步：top-k/top-p 截断的多后端分发",
+        "30.8 第 7d 步内核：sort 截断与\"为什么不排序整个 vocab\"",
+        "30.9 第 7e 步：random_sample 与 flashinfer，两种避开同步的抽样",
+        "30.10 第 8 步：把原始概率的 top-k 收集回来",
+        "30.11 贯穿全章的载体：SamplingMetadata",
+        "30.12 小结：一条流水线，三个贯穿始终的设计"
+      ],
+      "key_classes": [
+        {
+          "name": "Sampler",
+          "file": "vllm/v1/sample/sampler.py",
+          "responsibility": "nn.Module，9 步采样流水线的编排者：forward 做 step1-2/8-9，apply_logits_processors 做 step3-6，sample 做 step7。全程吃 SamplingMetadata，输出 SamplerOutput（sampled_token_ids + logprobs_tensors）。"
+        },
+        {
+          "name": "SamplingMetadata",
+          "file": "vllm/v1/sample/metadata.py",
+          "responsibility": "dataclass，把整批逐请求采样参数批量张量化：temperature/top_k/top_p/penalties 张量、all_greedy/all_random 快路标志、generators、output_token_ids、allowed/bad_words、已分类的 logitsprocs 容器。"
+        },
+        {
+          "name": "TopKTopPSampler",
+          "file": "vllm/v1/sample/ops/topk_topp_sampler.py",
+          "responsibility": "nn.Module，构造时按 device/platform/logprobs_mode 把 self.forward 绑定到具体后端（forward_cuda/native/cpu/hip）。call 时执行 top-k/top-p 截断 + 随机采样，返回 (sampled, optional_processed_logprobs)。"
+        },
+        {
+          "name": "LogitsProcessors",
+          "file": "vllm/v1/sample/logits_processor/state.py",
+          "responsibility": "容器，构造时按 is_argmax_invariant() 把 processor 分进 argmax_invariant / non_argmax_invariant 两个 list，决定它在流水线 step5（greedy 前）还是 step7c（温度后随机路径）生效。"
+        },
+        {
+          "name": "MinPLogitsProcessor",
+          "file": "vllm/v1/sample/logits_processor/builtin.py",
+          "responsibility": "argmax-invariant=True。砍掉概率 < min_p*max_prob 的尾部 token；仅 min_p_count>0 时才 softmax。"
+        },
+        {
+          "name": "MinTokensLogitsProcessor",
+          "file": "vllm/v1/sample/logits_processor/builtin.py",
+          "responsibility": "argmax-invariant=False。未达 min_tokens 的请求屏蔽其 stop/EOS token（置 -inf）。"
+        },
+        {
+          "name": "LogitBiasLogitsProcessor",
+          "file": "vllm/v1/sample/logits_processor/builtin.py",
+          "responsibility": "argmax-invariant=False。把逐请求 logit_bias 加到对应 (req,token) 位置。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch31",
+      "title": "ch31",
+      "slug": "ch31-structured-output",
+      "sections": [
+        "31.1 约束不改采样，只加一层掩码",
+        "31.2 六种写法，一张标准面单",
+        "31.3 后端在进引擎之前就选好了",
+        "31.4 命门：编译扔进线程池，请求进等候区",
+        "31.5 契约：请求级六方法，引擎级三方法",
+        "31.6 xgrammar：契约的参考实现",
+        "31.7 同一份契约，四种活法",
+        "31.8 位掩码：便宜到能进热路径",
+        "31.9 交棒"
+      ],
+      "key_classes": [
+        {
+          "name": "StructuredOutputsParams",
+          "file": "vllm/sampling_params.py:41",
+          "responsibility": "用户面的约束描述：json/regex/choice/grammar/json_object/structural_tag 六选一（__post_init__ 强制互斥），外加 disable_any_whitespace / disable_additional_properties / whitespace_pattern 三个开关与私有 _backend/_backend_was_auto"
+        },
+        {
+          "name": "StructuredOutputRequest",
+          "file": "vllm/v1/structured_output/request.py:22",
+          "responsibility": "请求级容器：持有 params、语法对象或其 Future（_grammar）、structured_output_key 缓存，以及 reasoning 相关字段；grammar 属性对外屏蔽『Future 还是成品』的差别"
+        },
+        {
+          "name": "StructuredOutputManager",
+          "file": "vllm/v1/structured_output/__init__.py:35",
+          "responsibility": "引擎级单例：惰性构造唯一后端、把编译提交线程池（grammar_init/_create_grammar）、每步装配 bitmask（grammar_bitmask，归下一章）、推理模型门控（should_advance/should_fill_bitmask，归下一章）"
+        },
+        {
+          "name": "StructuredOutputGrammar (ABC)",
+          "file": "vllm/v1/structured_output/backend_types.py:31",
+          "responsibility": "请求级契约六方法：accept_tokens / validate_tokens / rollback / fill_bitmask / is_terminated / reset"
+        },
+        {
+          "name": "StructuredOutputBackend (ABC)",
+          "file": "vllm/v1/structured_output/backend_types.py:99",
+          "responsibility": "引擎级契约三方法：compile_grammar / allocate_token_bitmask / destroy；dataclass 字段 vllm_config / tokenizer / vocab_size 固定了所有后端的构造签名"
+        },
+        {
+          "name": "StructuredOutputOptions / StructuredOutputKey",
+          "file": "vllm/v1/structured_output/backend_types.py:19",
+          "responsibility": "六种约束形态的枚举，以及 (枚举, 规格字符串) 这个可哈希、可比较的编译键类型"
+        },
+        {
+          "name": "XgrammarBackend / XgrammarGrammar",
+          "file": "vllm/v1/structured_output/backend_xgrammar.py:35 / :132",
+          "responsibility": "默认后端：GrammarCompiler(cache_enabled=True) 编译出 CompiledGrammar，包一个 GrammarMatcher(max_rollback_tokens=num_speculative_tokens) 作为逐 token 状态机"
+        },
+        {
+          "name": "GuidanceBackend / GuidanceGrammar",
+          "file": "vllm/v1/structured_output/backend_guidance.py:87 / :138",
+          "responsibility": "llguidance 后端：LLMatcher 消费 token；额外维护 terminated 与 rollback_lag（EOS 后回滚要少退一格）"
+        },
+        {
+          "name": "OutlinesBackend / OutlinesGrammar",
+          "file": "vllm/v1/structured_output/backend_outlines.py:52 / :108",
+          "responsibility": "outlines_core 后端：一切先转成正则再编 DFA Index（自带 dict 缓存），Guide(max_rollback=…) 走状态；is_terminated 故意延迟一步以便 EOS 还能发出"
+        },
+        {
+          "name": "LMFormatEnforcerBackend / LMFormatEnforcerGrammar",
+          "file": "vllm/v1/structured_output/backend_lm_format_enforcer.py:94 / :43",
+          "responsibility": "lm-format-enforcer 后端：不持状态机，改持 current_tokens_prefix 前缀列表按需查 allowed_tokens；显式拒绝投机解码"
+        },
+        {
+          "name": "RequestStatus",
+          "file": "vllm/v1/request.py:316",
+          "responsibility": "请求状态枚举；WAITING_FOR_STRUCTURED_OUTPUT_GRAMMAR 是本章的『门』"
+        }
+      ],
+      "mechanisms": [
+        {
+          "id": "m01-mask-not-sample",
+          "name": "约束解码 = 采样前的合法性掩码（不改采样算法）",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_types.py:L72-L80",
+            "vllm/sampling_params.py:L40-L52"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core"
+        },
+        {
+          "id": "m02-async-grammar-compile-gate",
+          "name": "异步语法编译 + WAITING_FOR_STRUCTURED_OUTPUT_GRAMMAR 状态门（本章命门）",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/structured_output/__init__.py:L166-L170",
+            "vllm/v1/request.py:L107-L112",
+            "vllm/v1/core/sched/scheduler.py:L1516-L1521",
+            "vllm/v1/core/sched/scheduler.py:L2015-L2020"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m03-future-poll-100us",
+          "name": "Future.result(timeout=0.0001) 的『几乎非阻塞』就绪轮询与 Future→成品原地替换",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/structured_output/request.py:L42-L64"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m04-grammar-abc-six-methods",
+          "name": "请求级契约六方法：为什么恰好是这六个",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_types.py:L31-L96"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core"
+        },
+        {
+          "id": "m05-backend-abc-three-methods",
+          "name": "引擎级契约三方法 + 三个 dataclass 字段（编译器/词表这类重资源的归属）",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_types.py:L98-L136"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "core"
+        },
+        {
+          "id": "m06-rollback-for-spec-decode",
+          "name": "rollback 是为投机解码留的口子：max_rollback_tokens = num_speculative_tokens",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_xgrammar.py:L115-L119",
+            "vllm/v1/structured_output/backend_xgrammar.py:L186-L189",
+            "vllm/v1/structured_output/backend_lm_format_enforcer.py:L120-L129"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m07-accept-vs-validate",
+          "name": "accept_tokens（推进）与 validate_tokens（试走再回退）的语义分离",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_xgrammar.py:L148-L184",
+            "vllm/v1/structured_output/backend_types.py:L34-L60"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m08-structured-output-key",
+          "name": "structured_output_key：六种约束归一成 (枚举, 字符串) 的编译键",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/structured_output/request.py:L72-L98",
+            "vllm/v1/structured_output/backend_types.py:L19-L28"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m09-compile-cache-reuse",
+          "name": "编译复用是「各后端各自为政」：xgrammar 库内缓存 / outlines 自建 / guidance 无 / LMFE 仅 tokenizer",
+          "kind": "config",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_xgrammar.py:L64-L69",
+            "vllm/v1/structured_output/backend_outlines.py:L57-L67"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "note": "纠正常见误解：vLLM 侧不做跨请求编译去重（structured_output_key 只是每请求 cached_property）。worked example 建议：两个同 schema 请求在 xgrammar 下命中库内缓存 vs 在 guidance 下每次重编的对照。"
+        },
+        {
+          "id": "m10-xgrammar-compile-dispatch",
+          "name": "xgrammar 编译分派：**五**个分支（JSON/JSON_OBJECT/GRAMMAR/REGEX/STRUCTURAL_TAG）——**无 CHOICE 分支**",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_xgrammar.py:L77-L122"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "note": "关键：CHOICE 走不到这里。校验期 validate_xgrammar_grammar 已把 choice 原地改写成 EBNF grammar，到引擎侧 structured_output_key 已是 (GRAMMAR, ebnf串)。其余枚举落 else 分支 raise ValueError。"
+        },
+        {
+          "id": "m11-backend-selection-auto",
+          "name": "后端选择与 auto 回退阶梯（发生在前端校验期，落到 params._backend）",
+          "kind": "config",
+          "source_anchors": [
+            "vllm/sampling_params.py:L871-L901",
+            "vllm/v1/structured_output/__init__.py:L124-L138"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core"
+        },
+        {
+          "id": "m12-single-backend-per-engine",
+          "name": "全引擎单后端：惰性构造 + 请求级指定被拒（_backend / _backend_was_auto 记账）",
+          "kind": "config",
+          "source_anchors": [
+            "vllm/v1/structured_output/__init__.py:L124-L138",
+            "vllm/sampling_params.py:L786-L801"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m13-four-backend-contract-matrix",
+          "name": "四后端同契约对照：支持的约束形态、回滚能力、终态语义各自的取舍",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_xgrammar.py:L131-L199",
+            "vllm/v1/structured_output/backend_guidance.py:L137-L216",
+            "vllm/v1/structured_output/backend_outlines.py:L108-L165",
+            "vllm/v1/structured_output/backend_lm_format_enforcer.py:L43-L91"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core"
+        },
+        {
+          "id": "m14-terminated-semantics-divergence",
+          "name": "is_terminated 的语义分歧：xgrammar 缓存标志位 / guidance 用 EOS+rollback_lag / outlines 故意延迟一步 / LMFE 看前缀末位是否 EOS",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_xgrammar.py:L194-L195",
+            "vllm/v1/structured_output/backend_guidance.py:L160-L166",
+            "vllm/v1/structured_output/backend_outlines.py:L155-L160",
+            "vllm/v1/structured_output/backend_lm_format_enforcer.py:L81-L88"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m15-bitmask-layout",
+          "name": "位掩码的内存布局：(max_num_seqs, ceil(vocab/32)) 的 int32 行，-1 表全允许",
+          "kind": "layout",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_outlines.py:L95-L101",
+            "vllm/v1/structured_output/backend_lm_format_enforcer.py:L137-L143",
+            "vllm/v1/structured_output/backend_xgrammar.py:L124-L125"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m16-external-launcher-sync-fallback",
+          "name": "external_launcher 模式退回同步编译（多 rank 状态跃迁必须同步，否则死锁）",
+          "kind": "config",
+          "source_anchors": [
+            "vllm/v1/structured_output/__init__.py:L46-L58"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m17-thread-safety-invariant",
+          "name": "线程安全不变式：grammar_init 只在输入处理线程调用；就绪是单调的，调度器只做 Future→成品替换",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/engine/core.py:L783-L790",
+            "vllm/v1/structured_output/request.py:L46-L53"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m18-request-entry-and-handoff",
+          "name": "端到端接缝：SamplingParams → Request 初始状态 → grammar_init → 晋级 → get_grammar_bitmask（下一章起点）",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/request.py:L107-L112",
+            "vllm/v1/engine/core.py:L783-L790",
+            "vllm/v1/core/sched/scheduler.py:L1224-L1246"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core"
+        },
+        {
+          "id": "m19-capability-matrix-in-dispatch",
+          "name": "能力矩阵藏在编译分派里：outlines 只认 JSON/REGEX/CHOICE，LMFE 多一个 JSON_OBJECT，其余当场 ValueError",
+          "kind": "config",
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_outlines.py:L69-L83",
+            "vllm/v1/structured_output/backend_lm_format_enforcer.py:L100-L119"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m20-validation-rewrites-request",
+          "name": "校验期不只是选后端,还会**原地改写请求**:choice → EBNF grammar",
+          "kind": "dataflow",
+          "difficulty": "core",
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "source_anchors": [
+            "vllm/v1/structured_output/backend_xgrammar.py:L286-L295",
+            "vllm/v1/structured_output/utils.py:L451"
+          ],
+          "note": "validate_xgrammar_grammar 里:choice_grammar = choice_as_grammar(so_params.choice) → xgr.Grammar.from_ebnf 试编 → **so_params.choice = None; so_params.grammar = choice_grammar** 就地改写后 return。这解释了为什么 xgrammar 的 compile_grammar 不需要 CHOICE 分支,也是『六种入口枚举 → 引擎侧只见五种』的原因。读者若只看引擎侧会以为 CHOICE 不被支持——必须讲清这次改写。"
+        },
+        {
+          "id": "m21-who-advances-the-grammar",
+          "name": "谁在推进语法状态机:accept_tokens 的真实调用点在调度器 update_from_output",
+          "kind": "dataflow",
+          "difficulty": "core",
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "source_anchors": [
+            "vllm/v1/core/sched/scheduler.py:L1363",
+            "vllm/v1/core/sched/scheduler.py:L1620",
+            "vllm/v1/core/sched/scheduler.py:L1650"
+          ],
+          "note": "契约六方法里 accept_tokens 被定义为『推进状态机』,但读者必然要问『什么时候推进』——答案是调度器 update_from_output 用**这一步真正采样出的 token** 调 accept_tokens(scheduler.py:1363);validate_tokens(1620/1650)只喂 spec_token_ids 做『不推进的试走』,这也印证了 theory 里『等价性在投机 token 数以内成立』。本章只点清调用点与语义分工,bitmask 侧留下一章。"
+        }
+      ]
+    },
+    {
+      "chapter_id": "ch32",
+      "title": "ch32",
+      "slug": "ch32-structured-output",
+      "sections": [
+        "32.1 门控：这一步谁需要一行掩码",
+        "32.2 行序不变式与形状预算",
+        "32.3 装配之前：草稿先过一道安检",
+        "32.4 并行填充：三道门，第一道就可能封死",
+        "32.5 串行填充：为投机位置逐行推进，再整体倒带",
+        "32.6 两道推理门：思考的时候不受约束",
+        "32.7 掩码上路：先搭前向的车，再面对两条岔路",
+        "32.8 默认路径：先摊平，再交给库函数",
+        "32.9 V2 路径之一：掩码怎么搬上卡",
+        "32.10 V2 路径之二：紧凑掩码怎么找到自己的 logits 行",
+        "32.11 V2 路径之三：语法在这里变成一次位运算",
+        "32.12 为什么必须是负无穷"
+      ],
+      "key_classes": [
+        {
+          "name": "StructuredOutputManager.grammar_bitmask",
+          "file": "vllm/v1/structured_output/__init__.py",
+          "responsibility": "每步调度装配整批位掩码：按 structured_output_request_ids 顺序，每个请求（投机时每个草稿位置）占一行；返回 np.int32 二维数组，形状 [cumulative_index, ceil(V/32)]"
+        },
+        {
+          "name": "StructuredOutputManager._fill_bitmasks",
+          "file": "vllm/v1/structured_output/__init__.py",
+          "responsibility": "填一小批行：apply_bitmask 且语法未终止时调 grammar.fill_bitmask(bitmask, index)，否则整行填 _full_mask(-1) 表示不设限"
+        },
+        {
+          "name": "StructuredOutputManager.should_fill_bitmask / should_advance",
+          "file": "vllm/v1/structured_output/__init__.py",
+          "responsibility": "推理模型门控：推理段内不填掩码、不推进 FSM；enable_in_reasoning=True 时无条件约束"
+        },
+        {
+          "name": "GrammarOutput",
+          "file": "vllm/v1/core/sched/output.py",
+          "responsibility": "跨进程载荷：structured_output_request_ids（行序）+ grammar_bitmask（np.ndarray，便于序列化）"
+        },
+        {
+          "name": "StructuredOutputsWorker",
+          "file": "vllm/v1/worker/gpu/structured_outputs.py",
+          "responsibility": "worker 侧落地：预分配 [max_num_logits, ceil(V/32)] 卡上缓冲与独立 copy_stream，把掩码搬上卡、建行映射、启动 Triton kernel 原地改 logits"
+        },
+        {
+          "name": "_apply_grammar_bitmask_kernel",
+          "file": "vllm/v1/worker/gpu/structured_outputs.py",
+          "responsibility": "Triton kernel（改编自 xgrammar 的 apply_token_bitmask_inplace_triton）：解包位掩码，对 bit==0 的 token 把 logit 写成 -inf"
+        },
+        {
+          "name": "apply_grammar_bitmask（旧 gpu_model_runner 路径）",
+          "file": "vllm/v1/structured_output/utils.py",
+          "responsibility": "同一职责的另一实现：先把紧凑掩码重排成与 logits 同形的 sorted_bitmask（缺省 -1），再调 xgr.apply_token_bitmask_inplace；含 CPU dtype 兜底分支"
+        },
+        {
+          "name": "DraftTokensHandler",
+          "file": "vllm/v1/worker/gpu/spec_decode/utils.py",
+          "responsibility": "投机解码 + 结构化输出时把草稿 token D2H 回传调度器做语法校验；has_structured_output_reqs 为假则跳过回传"
+        },
+        {
+          "name": "AsyncScheduler._update_after_schedule",
+          "file": "vllm/v1/core/sched/async_scheduler.py",
+          "responsibility": "异步调度下置 pending_structured_output_tokens，告诉 engine core 本步必须等上一步输出落定后才能算掩码"
+        }
+      ],
+      "mechanisms": [
+        {
+          "id": "m01-schedule-gate",
+          "name": "调度侧门控：has_structured_output_requests 与 prefill chunk 排除",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/core/sched/scheduler.py:L942-L951",
+            "vllm/v1/core/sched/scheduler.py:L1229-L1239"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m02-row-order-invariant",
+          "name": "掩码行序不变式：GrammarOutput 携带 req_id 列表，worker 端重建映射",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/core/sched/scheduler.py:L1232-L1246",
+            "vllm/v1/core/sched/output.py:L259-L263",
+            "vllm/v1/worker/gpu/structured_outputs.py:L40-L48"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "note": "图合并 m03 的形状预算(行×列 + 谁占哪几行,一张讲清)。"
+        },
+        {
+          "id": "m03-bitmask-budget",
+          "name": "掩码缓冲的形状预算：max_num_seqs*(1+num_spec) 行 × ceil(V/32) 列",
+          "kind": "layout",
+          "source_anchors": [
+            "vllm/v1/structured_output/__init__.py:L219-L228",
+            "vllm/v1/worker/gpu/structured_outputs.py:L17-L19"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "note": "图与 m02 行序不变式合并为一张『行×列 + 谁占哪几行』。"
+        },
+        {
+          "id": "m04-parallel-fill",
+          "name": "并行填充：阈值 128 / 块 16 / 每行独写的线程安全边界",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/structured_output/__init__.py:L61-L68",
+            "vllm/v1/structured_output/__init__.py:L238-L264",
+            "vllm/v1/structured_output/__init__.py:L198-L201",
+            "vllm/v1/structured_output/__init__.py:L62"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "note": "结构性前提:__init__.py:62 `if self.fill_bitmask_parallel_threshold < max_batch_size:` 决定 executor_for_fillmask 是否被创建——**max_num_seqs ≤ 128 时并行分支是结构性死代码**;theory 用 B=256 举例,须先交代这个前提。"
+        },
+        {
+          "id": "m05-serial-fill-spec",
+          "name": "串行填充与投机展开：逐草稿位置填行 → accept_tokens 推进 → 整体 rollback 复位",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/structured_output/__init__.py:L265-L290"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m06-full-mask-reset",
+          "name": "不受约束的行整行填 -1：复用缓冲下的残留位清理",
+          "kind": "layout",
+          "source_anchors": [
+            "vllm/v1/structured_output/__init__.py:L185-L196",
+            "vllm/v1/structured_output/__init__.py:L58-L58"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m07-overlap-with-forward",
+          "name": "掩码计算与前向重叠：execute_model 非阻塞发车后才算掩码",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/engine/core.py:L417-L426"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m08-h2d-copy-stream",
+          "name": "worker 侧 H2D：独立 copy_stream 搬掩码与映射 + 双向 wait_stream",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/worker/gpu/structured_outputs.py:L34-L37",
+            "vllm/v1/worker/gpu/structured_outputs.py:L51-L61",
+            "vllm/v1/worker/gpu/structured_outputs.py:L78-L80",
+            "vllm/v1/worker/gpu/buffer_utils.py:L17-L33"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core"
+        },
+        {
+          "id": "m09-row-mapping",
+          "name": "bitmask 行 → logits 行映射的构造（cu_num_logits 展开 + assert 对账）",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/worker/gpu/structured_outputs.py:L40-L48",
+            "vllm/v1/worker/gpu/structured_outputs.py:L63-L64",
+            "vllm/v1/worker/gpu/input_batch.py:L79-L85"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m10-triton-kernel",
+          "name": "Triton kernel：位解包与 -inf 写回（本章高潮）",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/worker/gpu/structured_outputs.py:L86-L115",
+            "vllm/v1/worker/gpu/structured_outputs.py:L66-L76"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m11-legacy-path",
+          "name": "两条 worker 路径与 env 门控:默认 xgr.apply_token_bitmask_inplace,V2 才是自写 kernel",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/envs.py:L251",
+            "vllm/envs.py:L1711-L1713",
+            "vllm/v1/worker/gpu_worker.py:L316-L330",
+            "vllm/v1/worker/gpu_model_runner.py:L4245",
+            "vllm/v1/structured_output/utils.py:L44-L121"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "note": "本章路线诚实性的落点:先讲默认路径,再讲 V2 kernel(标明 opt-in/默认关)。"
+        },
+        {
+          "id": "m12-spec-prefilter",
+          "name": "投机耦合(装配前)本章独有部分:-1 补齐、num_invalid_spec_tokens、掩码行数与草稿位置对齐",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/core/sched/scheduler.py:L1642-L1659",
+            "vllm/v1/core/sched/scheduler.py:L1618-L1621",
+            "vllm/v1/core/sched/scheduler.py:L1906-L1914"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "note": "回滚上界与 validate_tokens 语义归上篇(见 cross_refs,只回指)。本章讲:过滤后如何用 -1 补齐、num_invalid_spec_tokens 如何被 scheduler.py:1906-1914 消费(num_draft_tokens -= ...)、以及这如何保证掩码行数与草稿位置严格对齐。"
+        },
+        {
+          "id": "m14-draft-writeback",
+          "name": "草稿 D2H 回传通道：DraftTokensHandler 与 has_structured_output_reqs 门控",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/worker/gpu/spec_decode/utils.py:L21-L38",
+            "vllm/v1/worker/gpu/model_runner.py:L876"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m15-async-deferral",
+          "name": "异步调度下的延后采样：pending_structured_output_tokens",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/core/sched/async_scheduler.py:L18-L28",
+            "vllm/v1/engine/core.py:L487-L494"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m16-reasoning-gate",
+          "name": "推理模型耦合：should_fill_bitmask / should_advance 让推理段不受约束",
+          "kind": "protocol",
+          "source_anchors": [
+            "vllm/v1/structured_output/__init__.py:L301-L319",
+            "vllm/v1/structured_output/__init__.py:L321-L357",
+            "vllm/v1/structured_output/__init__.py:L99-L112"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core"
+        },
+        {
+          "id": "m17-inf-vs-large-negative",
+          "name": "为什么写 -inf：与 ch30 全部采样变换正交",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/worker/gpu/structured_outputs.py:L110-L115"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "supporting"
+        },
+        {
+          "id": "m18-worker-callsite",
+          "name": "落地时机：compute_logits 之后、sampler 之前的原地改写",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/worker/gpu/model_runner.py:L906-L922",
+            "vllm/v1/worker/gpu/model_runner.py:L229-L233"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "core"
+        }
+      ]
+    },
+    {
+      "chapter_id": "ch33",
+      "title": "ch33",
+      "slug": "ch33-primer-eagle",
+      "sections": [
+        "33.1 动机：草稿的两个成本，和 token 层的天花板",
+        "33.2 特征级自回归：在半成品语义上接着画",
+        "33.3 特征不确定性：为什么非要「剧透」超前一步的 token",
+        "33.4 Autoregression Head：一层 FC 加一层 decoder，其余全借",
+        "33.5 草稿头怎么训出来：两把尺子，与 0.1 的权重",
+        "33.6 验收准则：接受、拒绝与残差分布",
+        "33.7 从链到树：树验证与 EAGLE-2 的动态草稿树",
+        "33.8 落地：vLLM v1 的 EAGLE 是一条链",
+        "33.9 这章解决了什么"
+      ],
+      "key_classes": [
+        {
+          "name": "EagleProposer",
+          "file": "vllm/v1/spec_decode/eagle.py",
+          "responsibility": "EAGLE 草稿器薄壳；仅设 pass_hidden_states_to_model=True，全部逻辑继承 SpecDecodeBaseProposer"
+        },
+        {
+          "name": "SpecDecodeBaseProposer",
+          "file": "vllm/v1/spec_decode/llm_base_proposer.py",
+          "responsibility": "eagle/eagle3/mtp/draft_model 共用基类：propose() 链式草稿循环、set_inputs_first_pass() 的 token 左移、缓冲/cudagraph/attn metadata 管理"
+        },
+        {
+          "name": "EagleLlamaForCausalLM / LlamaModel",
+          "file": "vllm/model_executor/models/llama_eagle.py",
+          "responsibility": "EAGLE-1 草稿模型：fc(2h→h) 融合 [token_embed⊕feature] + 单层 decoder 预测下一特征；复用目标模型的 embed/LM Head"
+        },
+        {
+          "name": "DraftModelProposer",
+          "file": "vllm/v1/spec_decode/draft_model.py",
+          "responsibility": "对照：传统「小目标模型作草稿」的 proposer（pass_hidden_states_to_model=False），用于凸显 EAGLE 靠特征而非独立小模型"
+        }
+      ],
+      "mechanisms": [
+        {
+          "id": "feature-level-autoregression",
+          "name": "特征级自回归：为什么在第二顶层特征上做草稿",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/models/llama_eagle.py:L100-L116",
+            "vllm/v1/spec_decode/llm_base_proposer.py:L461-L473"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2401.15077",
+            "sections": [
+              "§1",
+              "§2",
+              "§3.1",
+              "Fig.4"
+            ]
+          }
+        },
+        {
+          "id": "feature-uncertainty-shifted-token",
+          "name": "特征不确定性与「超前一步 token」的消解",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/spec_decode/llm_base_proposer.py:L656-L678"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2401.15077",
+            "sections": [
+              "§1",
+              "§3.1",
+              "Fig.3",
+              "§4.3.2"
+            ]
+          }
+        },
+        {
+          "id": "autoregression-head-structure",
+          "name": "Autoregression Head：FC(2h→h) 融合 + 单层 decoder + 共享 Embedding/LM Head",
+          "kind": "layout",
+          "source_anchors": [
+            "vllm/model_executor/models/llama_eagle.py:L87-L95",
+            "vllm/v1/spec_decode/eagle.py:L10-L22"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2401.15077",
+            "sections": [
+              "§3.1",
+              "Fig.6"
+            ]
+          }
+        },
+        {
+          "id": "draft-training-objective",
+          "name": "草稿头训练目标：Smooth-L1 特征回归 + 交叉熵分类（原理背景，不在推理路径）",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/model_executor/models/llama_eagle.py:L87-L95"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "supporting",
+          "paper_origin": {
+            "paper": "arXiv:2401.15077",
+            "sections": [
+              "§3.2"
+            ]
+          },
+          "paper_origin_note": "纯训练期机制——vLLM 推理仓无训练代码；锚点为 locus-proxy，落在被训练的 Autoregression Head（fc 层）定义处，真相源为论文 §3.2 的 L_reg/L_cls/L 三式。"
+        },
+        {
+          "id": "speculative-sampling-acceptance",
+          "name": "投机采样接受准则与残差分布（保分布定理——回指 ch34 不重复证明）",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/spec_decode/llm_base_proposer.py:L1601-L1638"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": true,
+          "difficulty": "supporting",
+          "paper_origin": {
+            "paper": "arXiv:2401.15077",
+            "sections": [
+              "§2",
+              "Appendix A.2 Alg.1"
+            ]
+          },
+          "prereq": "ch34"
+        },
+        {
+          "id": "tree-draft-verification",
+          "name": "树草稿 + 树注意力 + 树验证（多轮投机采样）",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/spec_decode/llm_base_proposer.py:L1394-L1447"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2401.15077",
+            "sections": [
+              "§3.1",
+              "§3.3",
+              "Appendix A.1",
+              "Appendix A.2"
+            ]
+          }
+        },
+        {
+          "id": "eagle2-dynamic-draft-tree",
+          "name": "EAGLE-2 动态草稿树：value V_i=∏置信度、扩展 top-k、重排 top-m",
+          "kind": "algorithm",
+          "source_anchors": [
+            "vllm/v1/spec_decode/llm_base_proposer.py:L525-L592"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": true,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2406.16858",
+            "sections": [
+              "§4.1",
+              "§4.2",
+              "Fig.7"
+            ]
+          }
+        },
+        {
+          "id": "eagle2-well-calibrated",
+          "name": "EAGLE-2 良好校准观察：草稿置信度 ≈ 接受率（动态树可行性依据）",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/spec_decode/llm_base_proposer.py:L386-L390"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "supporting",
+          "paper_origin": {
+            "paper": "arXiv:2406.16858",
+            "sections": [
+              "§3.1",
+              "§3.2",
+              "Fig.6"
+            ]
+          }
+        },
+        {
+          "id": "vllm-eagle-chain-drafting",
+          "name": "vLLM 落地：propose() 链式自回归草稿循环（token+特征逐步回喂）",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/spec_decode/llm_base_proposer.py:L392-L592",
+            "vllm/v1/spec_decode/llm_base_proposer.py:L646-L678"
+          ],
+          "needs_figure": true,
+          "needs_worked_example": false,
+          "difficulty": "core",
+          "paper_origin": {
+            "paper": "arXiv:2401.15077",
+            "sections": [
+              "§3.1"
+            ]
+          },
+          "paper_origin_note": "这是 EAGLE §3.1 drafting 的 vLLM 链式（chain）落地；论文的动态树属原理，vLLM 此路径为其 k=1 退化。"
+        },
+        {
+          "id": "eagle-proposer-call-surface",
+          "name": "运行器调用面：target_hidden_states 选取 + next_token_ids 准备 + propose() 入参",
+          "kind": "dataflow",
+          "source_anchors": [
+            "vllm/v1/worker/gpu_model_runner.py:L4710-L4836"
+          ],
+          "needs_figure": false,
+          "needs_worked_example": false,
+          "difficulty": "supporting",
+          "paper_origin": {
+            "paper": "arXiv:2401.15077",
+            "sections": [
+              "§3.1",
+              "§3.3"
+            ]
+          },
+          "paper_origin_note": "EAGLE 在 vLLM 里的宿主接线：把目标模型的特征/已接受 token 组织成草稿器入参。"
+        }
+      ]
+    },
+    {
+      "chapter_id": "ch34",
+      "title": "ch34",
+      "slug": "ch34-spec-decode",
+      "sections": [
+        "34.1 草稿从哪来：proposer 的统一契约",
+        "34.2 把变长草稿摊平进一批：index 间接",
+        "34.3 一次前向之后：切 logits、采 bonus",
+        "34.4 接受还是拒绝：rejection sampling 的两条 kernel",
+        "34.5 拒绝时采什么：残差分布与分布等价性",
+        "34.6 收尾：把紧凑输出还原成变长",
+        "34.7 这章解决了什么"
+      ],
+      "key_classes": [
+        {
+          "name": "SpecDecodeMetadata",
+          "file": "vllm/v1/spec_decode/metadata.py",
+          "responsibility": "摊平后的草稿 token + 三组 index（target/bonus/logits）+ 两个累积和（cu_num_draft/sampled_tokens）的容器。是 model_runner 与 rejection_sampler 之间传递『把变长草稿摊平进批』结构的契约。__post_init__ 暴露 max_spec_len；make_dummy 供 cudagraph 预热。"
+        },
+        {
+          "name": "NgramProposer",
+          "file": "vllm/v1/spec_decode/ngram_proposer.py",
+          "responsibility": "纯 CPU prompt-lookup proposer：用 KMP/LPS 找匹配后缀的最长 n-gram，复制其后续 k token 当草稿。无 draft_probs。numba 加速、batch 化。最易讲的 proposer 范例。"
+        },
+        {
+          "name": "NgramGPUKernel",
+          "file": "vllm/v1/spec_decode/ngram_proposer_gpu.py",
+          "responsibility": "同 n-gram 算法的全张量（unfold+argmax）GPU 版本，避免 D2H。正文短讲、与 CPU 版对照即可。"
+        },
+        {
+          "name": "SpecDecodeBaseProposer",
+          "file": "vllm/v1/spec_decode/llm_base_proposer.py",
+          "responsibility": "EAGLE/EAGLE3/DFlash/MTP/draft_model 等模型类 proposer 的统一基类。propose() 摆输入→跑草稿模型前向→采 k 个草稿。支持单步早退、并行 drafting（DFlash 一次出 k）、自回归多步链式（EAGLE）、tree attention。本章只讲对外契约（吃 target hidden_states、吐草稿），内部模型见 ch28。"
+        },
+        {
+          "name": "RejectionSampler",
+          "file": "vllm/v1/sample/rejection_sampler.py",
+          "responsibility": "投机解码的接受/拒绝采样器。forward 切 bonus/target logits、采 bonus、应用约束、调 rejection_sample；parse_output 还原变长输出。定义 accepted/recovered/bonus/output 四类 token 术语。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch35",
+      "title": "ch35",
+      "slug": "ch35-pd-disaggregation",
+      "sections": [
+        "35.1 为什么要把 prefill 和 decode 拆开",
+        "35.2 role-split：一个 connector，两副面孔",
+        "35.3 KVConnectorFactory：按 role 各造一份",
+        "35.4 调度器集成：查命中、隔离、不堵队头",
+        "35.5 KV 到位：提升回 WAITING，重新调度",
+        "35.6 亲手验证：状态机真的这么转吗",
+        "35.7 小结"
+      ],
+      "key_classes": [
+        {
+          "name": "KVConnectorRole",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/base.py",
+          "responsibility": "枚举 SCHEDULER=0 / WORKER=1。同一 connector 类被实例化两份、各持一个 role，决定它运行在调度器进程（决策侧）还是 worker 进程（搬运侧）。role-split 契约的根。"
+        },
+        {
+          "name": "KVConnectorBase_V1",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/base.py",
+          "responsibility": "所有 KV connector 的抽象基类。把方法显式切成两组：Scheduler-side（get_num_new_matched_tokens / update_state_after_alloc / build_connector_meta / update_connector_output / request_finished / take_events）与 Worker-side（start_load_kv / wait_for_layer_load / save_kv_layer / wait_for_save / get_finished / build_connector_worker_meta）。abstractmethod 强制子类实现六个核心方法。"
+        },
+        {
+          "name": "KVConnectorMetadata",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/base.py",
+          "responsibility": "Scheduler connector → Worker connector 的单向不透明信使。决策侧 build_connector_meta 产出、挂到 SchedulerOutput.kv_connector_metadata，worker 侧 bind_connector_metadata 取用。"
+        },
+        {
+          "name": "KVConnectorFactory",
+          "file": "vllm/distributed/kv_transfer/kv_connector/factory.py",
+          "responsibility": "懒加载注册表（name → loader）+ create_connector：按 role 单独构造 SCHEDULER 与 WORKER 两份实例，强制两进程严格隔离；校验 HMA 支持；兼容旧两参签名。"
+        },
+        {
+          "name": "ExampleConnector",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/example_connector.py",
+          "responsibility": "把 KV cache 存/取磁盘 safetensors 的调试参考实现。给出每个抽象方法最朴素的真实落地：决策侧靠文件夹是否存在判命中，搬运侧逐层 inject/extract KV。本章用它作『契约如何被填实』的范例。"
+        },
+        {
+          "name": "Scheduler (KV-connector 集成部分)",
+          "file": "vllm/v1/core/sched/scheduler.py",
+          "responsibility": "持有 SCHEDULER-role connector，在 WAITING 调度循环中查远程命中、把等远程 KV 的请求隔离到 skipped_waiting、KV 到位后提升回 WAITING/PREEMPTED；维护 waiting/skipped_waiting 双队列与 finished_recving_kv_req_ids/failed_recving_kv_req_ids 状态集。"
+        },
+        {
+          "name": "RequestStatus",
+          "file": "vllm/v1/request.py",
+          "responsibility": "请求状态枚举。WAITING_FOR_REMOTE_KVS 是本章核心阻塞态，介于 WAITING 与 RUNNING 之间，表示已分配 block 但 KV 还在远程传输中。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch36",
+      "title": "ch36",
+      "slug": "ch36-pd-disaggregation",
+      "sections": [
+        "36.1 forward 被夹在哪里",
+        "36.2 生命周期：一个 context manager 夹住整条搬运线",
+        "36.3 重叠是怎么发生的：start_load_kv 与逐层 hook 的配合",
+        "36.4 wait_for_save：一道不能省的围栏",
+        "36.5 两个特例：无 token 的步、与投机解码的推迟",
+        "36.6 同一套 worker 契约",
+        "36.7 P2P NCCL：点对点直发",
+        "36.8 NIXL：RDMA 单边读，与不对称的完成信号",
+        "36.9 Offloading：不是跨节点，是分级缓存",
+        "36.10 亲手验证：生命周期真的这么转吗",
+        "36.11 小结"
+      ],
+      "key_classes": [
+        {
+          "name": "KVConnectorModelRunnerMixin",
+          "file": "vllm/v1/worker/kv_connector_model_runner_mixin.py",
+          "responsibility": "给 GPU/TPU ModelRunner 混入 KV connector 能力的纯静态 mixin。核心是 _get_kv_connector_output：一个把 WORKER-role connector 整条生命周期（bind_connector_metadata→start_load_kv→[yield forward]→wait_for_save→get_finished→build_connector_worker_meta→clear）封装进 context manager，使 load 与 model forward 在物理上交织（compute 期间后台搬 KV）。还含 kv_connector_no_forward（无 token 也要收发 KV）、finalize_kv_connector（spec-decode 推迟收尾）、use_uniform_kv_cache/allocate_uniform_kv_caches（跨层统一 layout，便于整块多层一次性传）。"
+        },
+        {
+          "name": "maybe_transfer_kv_layer",
+          "file": "vllm/model_executor/layers/attention/kv_transfer_utils.py",
+          "responsibility": "装饰 attention 层 forward 的装饰器：进入层前 connector.wait_for_layer_load(layer_name)（确保该层 KV 已 load 到 paged buffer），离开层后 connector.save_kv_layer(...)（把该层 KV 异步搬出）。这是 start_load_kv 之外、forward 内部的逐层 hook —— 让 load/save 能按层流水线，与计算重叠到层粒度。未启用 connector 时是 no-op。"
+        },
+        {
+          "name": "KVConnectorBase_V1 (worker 侧契约)",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/base.py",
+          "responsibility": "定义所有 connector 必须实现的 worker 侧抽象方法：start_load_kv（forward 前异步发起 load）、wait_for_layer_load（层内阻塞等该层 load 完）、save_kv_layer（层内异步发起 save）、wait_for_save（forward 收尾前阻塞等所有 save 完，防 paged buffer 被覆盖）；以及非抽象默认的 get_finished（上报异步收/发完成的 req_id）、get_block_ids_with_load_errors、bind/clear_connector_metadata、build_connector_worker_meta。本章三类后端都在填这同一套契约。"
+        },
+        {
+          "name": "P2pNcclConnector",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/p2p/p2p_nccl_connector.py",
+          "responsibility": "点对点 NCCL 后端，单类自包含（不拆 scheduler/worker 子对象）。靠 is_producer 区分 P/D：producer 在 save_kv_layer 里 extract_kv_from_layer + send_tensor 发，consumer 在 start_load_kv 里逐请求逐层 recv_tensor + inject_kv_into_layer 写回 paged buffer。对端地址直接编码在 request_id 里（parse_request_id 正则解析）。底层 P2pNcclEngine 用 pynccl 建点对点 comm + ZMQ 控制面。"
+        },
+        {
+          "name": "P2pNcclEngine",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/p2p/p2p_nccl_engine.py",
+          "responsibility": "P2P 后端的实际收发引擎。send_tensor 三模式：PUT（同步发）、PUT_ASYNC（入 send_queue 后台 _send_thread 发）、GET（暂存 send_store 等对端拉，带 LRU 驱逐）。wait_for_sent 在 PUT_ASYNC 下阻塞等 send_queue 排空 —— 这正是 connector.wait_for_save 落到的实处。用 TensorMemoryPool 管缓冲、ZMQ listener 做握手/控制。"
+        },
+        {
+          "name": "NixlConnector / NixlConnectorWorker",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/nixl/connector.py + nixl/worker.py",
+          "responsibility": "高性能 RDMA 后端，facade 模式：顶层 NixlConnector 按 role 只建 NixlConnectorScheduler 或 NixlConnectorWorker 半边，worker 侧方法全转发给 connector_worker。worker.start_load_kv 对每个待收请求发非阻塞 RDMA READ（make_prepped_xfer('READ')+transfer），D 端主动从 P 端显存单边读 KV，P 端 CPU 不参与拷贝；首遇远端先后台握手交换内存注册元数据。get_finished 轮询：本地 xfer handle 转 DONE 算收完成、收到对端通知算发完成。wait_for_layer_load/save_kv_layer 为 no-op（NIXL 不做逐层、不显式 save）。"
+        },
+        {
+          "name": "OffloadingConnector / OffloadingConnectorWorker",
+          "file": "vllm/distributed/kv_transfer/kv_connector/v1/offloading_connector.py + offloading/worker.py",
+          "responsibility": "CPU/磁盘卸载后端，同样 facade。但语义有别：它不是 P/D 跨节点搬，而是把 GPU KV 卸到 CPU/磁盘当二级缓存（prefer_cross_layer_blocks=True，整块多层一次性传）。wait_for_save→prepare_store_kv 只把 store job 入队（不真等完成），推迟到下一步 start_kv_transfers 开头才 transfer_async 提交，避免拖慢本步采样。get_finished 只为 load 报 finished_recving，store 完成走 build_connector_worker_meta 的 completed_jobs + 调度侧 jobs_to_flush 围栏，而非 finished_sending。"
+        },
+        {
+          "name": "KVConnectorOutput",
+          "file": "vllm/v1/outputs.py",
+          "responsibility": "worker→scheduler 的回传载体（挂在 ModelRunnerOutput 上）。字段 finished_sending / finished_recving / invalid_block_ids / kv_connector_worker_meta / kv_connector_stats / kv_cache_events。_get_kv_connector_output 在 forward 收尾时由 get_finished 等填充，回到 scheduler 后驱动 ch35 的 _update_from_kv_xfer_finished（finished_recving 触发提升、finished_sending 释放块）。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch37",
+      "title": "ch37",
+      "slug": "ch37-entrypoints",
+      "sections": [
+        "37.1 一张总图：同步阻塞这条脊",
+        "37.2 构造期：参数 → EngineArgs → LLMEngine",
+        "37.3 LLMEngine 的两个客户端：硬分叉点",
+        "37.4 四个入口，一条脊",
+        "37.5 同步驱动的灵魂：_run_engine 与 step()",
+        "37.6 离线吞吐从哪来：一次提交一大批"
+      ],
+      "key_classes": [
+        {
+          "name": "LLM",
+          "file": "vllm/entrypoints/llm.py",
+          "responsibility": "离线推理门面。构造时拼 EngineArgs 起 LLMEngine；对外暴露 generate/chat/embed/encode/classify/score 等任务方法；内部把'渲染→批量提交→同步 _run_engine 驱动→按 request_id 排序'统一成一条流水。持有 request_counter（自增 id）、renderer、input_processor、pooling_io_processors。"
+        },
+        {
+          "name": "LLMEngine",
+          "file": "vllm/v1/engine/llm_engine.py",
+          "responsibility": "v1 同步引擎（注释为 'Legacy LLMEngine for backwards compatibility'，但仍是 LLM 离线默认引擎）。from_engine_args 建 VllmConfig 并据 VLLM_ENABLE_V1_MULTIPROCESSING 决定 multiprocess_mode（默认 True）；持有 renderer/InputProcessor/OutputProcessor/EngineCoreClient；核心方法 add_request() 和同步 step()（无 asyncio、无后台 output_handler 协程）。"
+        },
+        {
+          "name": "EngineCoreClient (make_client 工厂)",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "抽象客户端，make_client 按 (multiprocess_mode, asyncio_mode) 三分支选实现。离线默认 (True, False)→SyncMPClient（ZMQ+后台进程 EngineCore，get_output 阻塞取队列）；VLLM_ENABLE_V1_MULTIPROCESSING=0 回退 (False,False)→InprocClient（真进程内、无 ZMQ、直接 step_fn()）；(True,True)→AsyncMP（ch04）。"
+        },
+        {
+          "name": "SyncMPClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "【离线默认】EngineCore 客户端。__init__ 起后台 daemon 线程从 ZMQ output_socket 收 EngineCoreOutputs 入 outputs_queue；get_output() 同步阻塞 outputs_queue.get()；add_request 经 ZMQ 字节标签协议 _send_input(ADD,...) 送往后台 EngineCore 进程。是 ch04 AsyncMPClient 的同步对照面。"
+        },
+        {
+          "name": "InprocClient",
+          "file": "vllm/v1/engine/core_client.py",
+          "responsibility": "进程内 EngineCore 回退实现（V0 风格）。无 ZMQ/无后台进程：get_output 直接 engine_core.step_fn()+post_step()，add_request 直接 preprocess+add。仅在 VLLM_ENABLE_V1_MULTIPROCESSING=0（测试/调试）时使用，【非默认】——本章必须澄清的反直觉点。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch38",
+      "title": "ch38",
+      "slug": "ch38-entrypoints",
+      "sections": [
+        "38.2 顶层编排：一个 `async with` 框住引擎的一生",
+        "38.3 装配现场：FastAPI app、中间件与那一票 handler",
+        "38.4 请求的一生（上）：从 HTTP 到 token",
+        "38.5 请求的一生（下）：同一个生成器，两种姿态",
+        "38.6 lifespan 与启动序",
+        "38.7 优雅关停：信号、watchdog，与那个晚 await 的 `shutdown_task`",
+        "38.8 中间件这道门：鉴权与 X-Request-Id",
+        "38.9 小结：一条请求，两套生命周期"
+      ],
+      "key_classes": [
+        {
+          "name": "OpenAIServing",
+          "file": "vllm/entrypoints/openai/engine/serving.py",
+          "responsibility": "所有 OpenAI handler 的基类：持有 engine_client/models/renderer/input_processor；提供模型校验(_check_model)、request_id 解析(_base_request_id)、LoRA 适配(_maybe_get_adapters)、错误响应工厂(create_error_response/create_streaming_error_response)、GenerationError 触发(_raise_if_error)、trace headers、tool-call 提取(_parse_tool_calls_from_content)、token 解码(_get_decoded_token)、system_fingerprint。beam_search 也定义在此。"
+        },
+        {
+          "name": "OpenAIServingChat",
+          "file": "vllm/entrypoints/openai/chat_completion/serving.py",
+          "responsibility": "chat/completions handler：create_chat_completion 渲染请求、造 request_id、算 SamplingParams、调 engine_client.generate，按 request.stream 分流到 chat_completion_stream_generator（SSE DELTA）或 chat_completion_full_generator（聚合 JSON）。装配 reasoning/tool parser，构造 logprobs。"
+        },
+        {
+          "name": "OpenAIServingRender",
+          "file": "vllm/entrypoints/serve/render/serving.py",
+          "responsibility": "Renderer 适配层：render_chat 把 ChatCompletionRequest 的 messages + chat template 经 renderer.render_chat_async 渲染成 (conversation, engine_inputs=token prompt)；做 chat-template 信任校验、tool_choice 合法性校验、harmony(gpt_oss) 特例。OpenAIServingChat 委托给它。"
+        },
+        {
+          "name": "build_async_engine_client",
+          "file": "vllm/entrypoints/openai/api_server.py",
+          "responsibility": "@asynccontextmanager：从 CLI args 造 AsyncEngineArgs，经 build_async_engine_client_from_engine_args 用 AsyncLLM.from_vllm_config 起异步引擎（对接 ch04 三段式 + AsyncMPClient），退出时 shutdown。EngineClient 生命周期边界。"
+        },
+        {
+          "name": "serve_http",
+          "file": "vllm/entrypoints/launcher.py",
+          "responsibility": "uvicorn 启动与优雅关停：建 uvicorn.Config/Server、watchdog_task（监控引擎 errored）、server_task、handle_shutdown（SIGINT/SIGTERM → 关引擎 → server.should_exit）。返回 shutdown_task 供上层 await。"
+        },
+        {
+          "name": "lifespan",
+          "file": "vllm/entrypoints/openai/server_utils.py",
+          "responsibility": "FastAPI lifespan：启动期拉起周期性 do_log_stats 后台任务 + freeze_gc_heap，yield 期间服务，关停期 cancel 任务并 gc app.state。"
+        },
+        {
+          "name": "AuthenticationMiddleware / XRequestIdMiddleware",
+          "file": "vllm/entrypoints/openai/server_utils.py",
+          "responsibility": "纯 ASGI 中间件：Bearer token 鉴权（仅 /v1 路径、跳过 OPTIONS）；X-Request-Id 注入响应头。"
+        },
+        {
+          "name": "EngineClient",
+          "file": "vllm/engine/protocol.py",
+          "responsibility": "handler 依赖的协议：暴露 generate()(异步生成器)、renderer/input_processor/model_config/vllm_config、errored/dead_error/is_running、shutdown/get_supported_tasks/do_log_stats。AsyncLLM 是其 v1 实现（ch04）。"
+        }
+      ],
+      "mechanisms": []
+    },
+    {
+      "chapter_id": "ch39",
+      "title": "ch39",
+      "slug": "ch39-engine-core",
+      "sections": [
+        "39.1 你在这里",
+        "39.2 难题：busy loop 里塞不下一个阻塞的\"重建\"",
+        "39.3 状态机的骨架：四种角色，各一串状态",
+        "39.4 progress()：每轮只走一步的引擎",
+        "39.5 触发扩缩：reinitialize_distributed 与\"转非阻塞\"",
+        "39.6 scale_up 全程：存在引擎的 9 步与跨进程握手",
+        "39.7 两阶段 barrier：化解\"通知到得有先有后\"",
+        "39.8 新引擎的 4 步：把\"扩入\"提前到 KV cache 初始化之前",
+        "39.9 scale_down：余留与被裁，一减一退",
+        "39.10 换个战场：Responses API 的有状态多轮",
+        "39.11 非 harmony 拼接：把上一轮织进这一轮",
+        "39.12 harmony 路径与那个共享的 list",
+        "39.13 跑起来看一眼：状态推进与会话接续",
+        "39.14 收尾：两种\"原地变身\"，与全书代码之旅的终点"
+      ],
+      "key_classes": [
+        {
+          "name": "ElasticEPScalingState",
+          "file": "vllm/distributed/elastic_ep/elastic_state.py",
+          "responsibility": "弹性扩缩的确定性状态机。一个实例代表'本引擎在本次 reconfig 中的角色与进度'（worker_type×scale_type 决定状态枚举），每次 progress() 推进一步且非阻塞，靠 TCPStore eep_barrier_engine_count 计数 + 两阶段 barrier 跨 rank 同步。weakref 持有 executor/engine_core 避免循环引用。"
+        },
+        {
+          "name": "ScaleUpExistingEngineState / ScaleUpNewEngineState / ScaleDownRemainingEngineState / ScaleDownRemovingEngineState",
+          "file": "vllm/distributed/elastic_ep/elastic_state.py",
+          "responsibility": "四种角色各自的 IntEnum 状态序列。scale_up 把扩入拆成'存在引擎 9 态 / 新引擎 4 态'，scale_down 拆成'余留引擎 4 态 / 移除引擎 3 态'。"
+        },
+        {
+          "name": "DPEngineCoreProc",
+          "file": "vllm/v1/engine/core.py",
+          "responsibility": "数据并行的 EngineCore 进程（ch07/ch21）。本章新增视角：reinitialize_distributed 在 busy loop 里挂上 eep_scaling_state、置 process_input_queue_block=False 进入非阻塞推进；run_busy_loop 每轮调 progress()；_eep_scale_up_before_kv_init 用于'KV init 前扩'的新引擎；_eep_send_engine_core_notification/eep_handle_engine_core_notification 跨进程握手。"
+        },
+        {
+          "name": "ReconfigureDistributedRequest",
+          "file": "vllm/v1/engine/__init__.py",
+          "responsibility": "msgspec.Struct，携带新 DP 维度（new_data_parallel_size/rank/rank_local）与新 master ip/port/port_list/coord_store_port，是触发整套扩缩的指令载荷。"
+        },
+        {
+          "name": "EEPNotificationType",
+          "file": "vllm/v1/engine/__init__.py",
+          "responsibility": "扩缩跨进程通知枚举：NEW_CORE_ENGINES_INIT_READY / NEW_CORE_ENGINES_WEIGHTS_INIT_READY / RECONFIGURE_FINISHED / SHUTDOWN_COMPLETE。经 EngineCoreClient 转发，驱动 existing 引擎 handle_notification 推进 WAIT_* 状态。"
+        },
+        {
+          "name": "OpenAIServingResponses",
+          "file": "vllm/entrypoints/openai/responses/serving.py",
+          "responsibility": "Responses API handler。持有 response_store（id→ResponsesResponse）、msg_store（id→消息序列）、event_store、background_tasks。create_responses 据 previous_response_id 取回上轮、拼接历史、调度生成；多轮有状态会话的真相源。"
+        },
+        {
+          "name": "construct_input_messages",
+          "file": "vllm/entrypoints/openai/responses/utils.py",
+          "responsibility": "非 harmony 多轮拼接：滤掉上轮 system 消息后前置历史、上轮 output 转 assistant、再接本轮 input。"
+        },
+        {
+          "name": "HarmonyContext / StreamingHarmonyContext",
+          "file": "vllm/entrypoints/openai/responses/context.py",
+          "responsibility": "harmony 格式的会话上下文。_messages 与 msg_store 中的 list 共享同一对象；append_output 把 harmony parser 解出的输出消息 extend 进去，从而'本轮 output 自动留存供下一轮读取'。render_for_completion 把消息序列渲染回 token ids 喂引擎。"
+        },
+        {
+          "name": "_construct_input_messages_with_harmony",
+          "file": "vllm/entrypoints/openai/responses/serving.py",
+          "responsibility": "harmony 多轮拼接：新会话造 system(+developer) 消息，续轮直接取 msg_store[prev_id]（含上轮完整 harmony 序列）extend，再 append 本轮 input。"
+        }
+      ],
+      "mechanisms": []
+    }
+  ]
+}

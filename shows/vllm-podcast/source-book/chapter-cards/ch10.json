@@ -1,0 +1,49 @@
+{
+  "chapter_id": "ch10",
+  "title": "Logprobs 装配与字节回退修正：从张量到 OpenAI 容器",
+  "slug": "ch10-logprobs",
+  "sections": [
+    "10.1 一张总图：两条泳道，一个分派口",
+    "10.2 容器初始化：三个三元分支决定开关",
+    "10.3 sample logprobs：累计、sampled-first、非增量去 token",
+    "10.4 prompt logprobs：自己 Pythonize 一个二维张量",
+    "10.5 字节回退修正：把半截字节拼回完整字符",
+    "10.6 两种存储格式：FlatLogprobs 怎么降 GC",
+    "10.7 写入分叉与 rank 链：第一个为什么是被选中 token",
+    "10.8 下游取用：DELTA 切尾、prompt 一次性发完",
+    "10.9 小结"
+  ],
+  "key_classes": [
+    {
+      "name": "LogprobsProcessor",
+      "file": "vllm/v1/engine/logprobs.py",
+      "responsibility": "每请求的 logprobs 装配器：持有 tokenizer、sample/prompt logprobs 容器、cumulative_logprob 与 num_logprobs/num_prompt_logprobs。把 EngineCore 的张量装配成 OpenAI 兼容容器，含字节回退修正与累计跟踪。"
+    },
+    {
+      "name": "FlatLogprobs",
+      "file": "vllm/logprobs.py",
+      "responsibility": "扁平存储格式（6 条平行原生列表 + 每位置区间索引），对外仍实现 MutableSequence[LogprobsOnePosition] 接口；对象数恒定、显著降 GC。flat_logprobs=True 时启用。"
+    },
+    {
+      "name": "Logprob",
+      "file": "vllm/logprobs.py",
+      "responsibility": "单条 logprob 记录：logprob 值、vocab rank、decoded_token。nested 格式 list[dict[int, Logprob]] 的叶子。"
+    },
+    {
+      "name": "LogprobsLists",
+      "file": "vllm/v1/outputs.py",
+      "responsibility": "EngineCore 传给 sample logprobs 的 NamedTuple（logprob_token_ids/logprobs/sampled_token_ranks 三个 numpy 数组 + cu_num_generated_tokens），已是 list/numpy 形态。"
+    },
+    {
+      "name": "LogprobsTensors",
+      "file": "vllm/v1/outputs.py",
+      "responsibility": "EngineCore 传给 prompt logprobs 的 NamedTuple（三个 torch 张量），需在 _update_prompt_logprobs 内自行 Pythonize。"
+    },
+    {
+      "name": "RequestState",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "每请求状态容器，持有 logprobs_processor；在 _new_completion_output / _new_request_output 取 sample/prompt logprobs 装入 CompletionOutput/RequestOutput，按 DELTA/FINAL 区分。"
+    }
+  ],
+  "mechanisms": []
+}

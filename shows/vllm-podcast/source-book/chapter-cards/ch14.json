@@ -1,0 +1,42 @@
+{
+  "chapter_id": "ch14",
+  "title": "抢占与请求生命周期回流：分配失败之后",
+  "slug": "ch14-scheduler",
+  "sections": [
+    "14.1 要不到块：抢占循环",
+    "14.2 回流：被抢请求去哪了",
+    "14.3 抢占之后，本拍不再放新请求",
+    "14.4 双队列：别让一个阻塞请求饿死整队",
+    "14.5 回流闭环：update_from_output",
+    "14.6 停止判定：check_stop，以及它不是 stop string",
+    "14.7 状态机：一次整型比较判完成"
+  ],
+  "key_classes": [
+    {
+      "name": "Scheduler",
+      "file": "vllm/v1/core/sched/scheduler.py",
+      "responsibility": "持有 running/waiting/skipped_waiting 三队列；schedule() 内嵌抢占循环；_preempt_request 执行抢占副作用；update_from_output 驱动请求生命周期回流（追加 token/停止/完成/spec 回退）"
+    },
+    {
+      "name": "AsyncScheduler",
+      "file": "vllm/v1/core/sched/async_scheduler.py",
+      "responsibility": "Scheduler 子类；覆写 _update_request_with_output 处理 num_output_placeholders 回扣与强制抢占下的异步 token 丢弃；spec 占位簿记"
+    },
+    {
+      "name": "RequestStatus",
+      "file": "vllm/v1/request.py",
+      "responsibility": "IntEnum 请求状态机；WAITING/RUNNING/PREEMPTED + 6 个 FINISHED_* 态；is_finished 用 > PREEMPTED 判定"
+    },
+    {
+      "name": "FCFSRequestQueue / PriorityRequestQueue",
+      "file": "vllm/v1/core/sched/request_queue.py",
+      "responsibility": "队列抽象。FCFS 是 deque，prepend_request=appendleft（抢占回队头、skipped 重排靠它）；PRIORITY 是 heap，prepend 退化为按 (priority, arrival_time) 入堆"
+    },
+    {
+      "name": "SchedulerOutput",
+      "file": "vllm/v1/core/sched/output.py",
+      "responsibility": "本章相关字段：preempted_req_ids（本拍被抢占的请求集，给 v2 model runner）、finished_req_ids（通知 worker 释放）"
+    }
+  ],
+  "mechanisms": []
+}

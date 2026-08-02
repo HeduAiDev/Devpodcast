@@ -1,0 +1,51 @@
+{
+  "chapter_id": "ch04",
+  "title": "AsyncLLM：三段式异步解耦",
+  "slug": "ch04-async-llm",
+  "sections": [
+    "4.1 一句话钩子：为什么要拆成三段",
+    "4.2 三段在哪里诞生：`__init__` 的构造与背景任务",
+    "4.3 一个请求进来：`generate()` 异步生成器",
+    "4.4 三段解耦的扇出点：`add_request` 与 `_add_request`",
+    "4.5 结果怎么回来：`output_handler` 背景任务（生产者）",
+    "4.6 队列的真身：`RequestOutputCollector`",
+    "4.7 解多路复用：一批输出怎么分回 N 个队列",
+    "4.8 IPC 上流动的是什么：两种跨进程消息",
+    "4.9 把三段串起来：完整时序",
+    "4.10 跑起来看数值：交叉验证",
+    "4.11 小结：你现在掌握了什么"
+  ],
+  "key_classes": [
+    {
+      "name": "AsyncLLM",
+      "file": "vllm/v1/engine/async_llm.py:L70",
+      "responsibility": "三段式异步 facade(继承 EngineClient)。__init__ 构造三段并急切/懒启 output_handler；对外暴露 generate()(异步生成器)与 add_request()/abort()；持有 input_processor/output_processor/engine_core/output_handler 四个核心成员。"
+    },
+    {
+      "name": "RequestOutputCollector",
+      "file": "vllm/v1/engine/output_processor.py:L45",
+      "responsibility": "每个请求一个的输出收集器(f1)。单槽 self.output + asyncio.Event self.ready 实现 put(生产者, output_handler 调)/get(消费者, generate 调)/get_nowait(消费者快路径)；生产者超前时 merge(支持 DELTA 聚合)。是连接背景任务与 per-request generate 协程的解耦队列。"
+    },
+    {
+      "name": "OutputProcessor",
+      "file": "vllm/v1/engine/output_processor.py:L413",
+      "responsibility": "Stage3 后处理与 per-request 队列登记/分发。add_request 把 queue 存入 req_id->RequestState 表；process_outputs 按 req_id 把 EngineCoreOutput 解多路复用、生成 RequestOutput 并 put 回各请求队列。(去 tokenize/累积细节留 ch08, 本章只用其'登记+分发'骨架。)"
+    },
+    {
+      "name": "InputProcessor",
+      "file": "vllm/v1/engine/input_processor.py:L36 (process_inputs L234, assign_request_id L215)",
+      "responsibility": "Stage1 前处理。process_inputs(prompt,params,...) 把原始 prompt + 采样参数转成已 tokenize 的 EngineCoreRequest。本章只把它当作 add_request 的第一步黑盒；内部 tokenize/校验留 ch05。"
+    },
+    {
+      "name": "EngineCoreClient / AsyncMPClient",
+      "file": "vllm/v1/engine/core_client.py:L69 / L887",
+      "responsibility": "Stage2 的进程边界客户端(f2)。make_async_mp_client 启动独立进程的 EngineCore；add_request_async 经 ZMQ 投递 EngineCoreRequest, get_output_async 经 asyncio 队列收 EngineCoreOutputs。本章只用这两个异步方法标 IPC 接缝；ZMQ/msgpack/进程编排留 ch07。"
+    },
+    {
+      "name": "EngineCoreRequest / EngineCoreOutput",
+      "file": "vllm/v1/engine/__init__.py:L80 / L161",
+      "responsibility": "跨进程边界的 msgspec 消息。前者承载已 tokenize 的请求进入引擎, 后者承载 new_token_ids + finish_reason 返回；EngineCoreOutput.finished 是 generate() 判停依据。"
+    }
+  ],
+  "mechanisms": []
+}

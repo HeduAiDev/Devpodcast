@@ -1,0 +1,61 @@
+{
+  "chapter_id": "ch25",
+  "title": "ch25",
+  "slug": "ch25-attention",
+  "sections": [
+    "25.1 一张总图：抽象、注册、选择",
+    "25.2 后端的身份证：四个抽象 staticmethod",
+    "25.3 KV cache 的形状与布局约定",
+    "25.4 注册表：枚举值就是一段类路径",
+    "25.5 validate_configuration：把\"不行\"的理由列成清单",
+    "25.6 get_attn_backend：打包成键，缓存一次",
+    "25.7 平台层：显式优先，否则按 capability 自动挑",
+    "25.8 两层 metadata：一份共享，各自翻译",
+    "25.9 PagedAttention：照表读写 KV 显存",
+    "25.10 按 layer_name 分发：先写后算",
+    "25.11 小结：一份 metadata，喂饱所有 kernel"
+  ],
+  "key_classes": [
+    {
+      "name": "AttentionBackend",
+      "file": "vllm/v1/attention/backend.py",
+      "responsibility": "所有注意力后端的抽象基类。六个抽象 staticmethod 是后端身份证：get_name / get_impl_cls / get_builder_cls / get_kv_cache_shape（+ 默认的 get_kv_cache_stride_order / get_kv_cache_block_dim）；外加一组 supports_*/is_* 能力探针与聚合器 validate_configuration（返回不合法原因列表，空=合法）。"
+    },
+    {
+      "name": "CommonAttentionMetadata",
+      "file": "vllm/v1/attention/backend.py",
+      "responsibility": "跨层、跨后端共享的 per-batch 元数据 dataclass。核心 8 字段：query_start_loc(+cpu)/seq_lens/num_reqs/num_actual_tokens/max_query_len/max_seq_len/block_table_tensor/slot_mapping。model_runner 在 _prepare_inputs 后组装它一次，喂给每个 KV 组的 builder。f14 的 block_table_tensor 与 slot_mapping 即在此作为接口字段被接住。"
+    },
+    {
+      "name": "AttentionMetadataBuilder",
+      "file": "vllm/v1/attention/backend.py",
+      "responsibility": "抽象 builder（泛型 M=后端专属 metadata 类型）。build(common_prefix_len, common_attn_metadata, fast_build) 是把 CommonAttentionMetadata 翻译成后端专属 metadata 的唯一中心入口；另有 update_block_table（多 KV 组复用元数据时只换块表）、cudagraph 支持级别 AttentionCGSupport。"
+    },
+    {
+      "name": "AttentionImpl",
+      "file": "vllm/v1/attention/backend.py",
+      "responsibility": "后端具体计算的抽象（泛型 T=metadata 类型）。抽象 forward(layer, query, key, value, kv_cache, attn_metadata, output, ...) 是算注意力的落点；do_kv_cache_update / fused_* 为可选钩子。MLAAttentionImpl/SparseMLAAttentionImpl 是 MLA 变体（本章只点名、不展开）。"
+    },
+    {
+      "name": "AttentionBackendEnum",
+      "file": "vllm/v1/attention/backends/registry.py",
+      "responsibility": "后端注册表枚举：每个成员的值就是一段默认类路径字符串（FLASH_ATTN/FLASHINFER/TRITON_ATTN/...）。get_class() = 查覆盖表 _ATTN_OVERRIDES → 回退枚举值 → resolve_obj_by_qualname 懒加载真正 import；register_backend 可运行时覆盖或注册第三方 CUSTOM 后端。"
+    },
+    {
+      "name": "AttentionSelectorConfig",
+      "file": "vllm/v1/attention/selector.py",
+      "responsibility": "NamedTuple，把选后端要看的所有维度（head_size/dtype/kv_cache_dtype/block_size/use_mla/has_sink/use_sparse/attn_type/...）打成一个可哈希的键，供 @cache 缓存命中。"
+    },
+    {
+      "name": "FlashAttentionBackend / FlashAttentionMetadata / FlashAttentionMetadataBuilder / FlashAttentionImpl",
+      "file": "vllm/v1/attention/backends/flash_attn.py",
+      "responsibility": "FlashAttention 后端四件套样板：Backend 声明 KV cache shape=(2,num_blocks,block_size,num_kv_heads,head_size) 与能力探针；Metadata 是专属 dataclass（block_table/slot_mapping/scheduler_metadata/cascade）；Builder.build 把 Common 翻译成它；Impl.forward 用 flash_attn_varlen_func 照 block_table 读 paged KV，do_kv_cache_update 用 reshape_and_cache_flash 照 slot_mapping 写。"
+    },
+    {
+      "name": "Attention（v1 统一注意力层）",
+      "file": "vllm/model_executor/layers/attention/attention.py",
+      "responsibility": "模型里每个注意力层的封装。__init__ 调 get_attn_backend 选后端、get_impl_cls 实例化 impl，并以 prefix(=layer_name) 注册进 compilation_config.static_forward_context。forward 把 q/k/v reshape 后经 unified_kv_cache_update / unified_attention_with_output 两个自定义算子分发；后者经 get_attention_context(layer_name) 从 forward_context 按 layer_name 取本层 kv_cache/attn_metadata/slot_mapping（f18 回收）。"
+    }
+  ],
+  "mechanisms": []
+}

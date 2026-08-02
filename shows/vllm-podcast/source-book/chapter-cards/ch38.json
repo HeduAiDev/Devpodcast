@@ -1,0 +1,58 @@
+{
+  "chapter_id": "ch38",
+  "title": "ch38",
+  "slug": "ch38-entrypoints",
+  "sections": [
+    "38.2 顶层编排：一个 `async with` 框住引擎的一生",
+    "38.3 装配现场：FastAPI app、中间件与那一票 handler",
+    "38.4 请求的一生（上）：从 HTTP 到 token",
+    "38.5 请求的一生（下）：同一个生成器，两种姿态",
+    "38.6 lifespan 与启动序",
+    "38.7 优雅关停：信号、watchdog，与那个晚 await 的 `shutdown_task`",
+    "38.8 中间件这道门：鉴权与 X-Request-Id",
+    "38.9 小结：一条请求，两套生命周期"
+  ],
+  "key_classes": [
+    {
+      "name": "OpenAIServing",
+      "file": "vllm/entrypoints/openai/engine/serving.py",
+      "responsibility": "所有 OpenAI handler 的基类：持有 engine_client/models/renderer/input_processor；提供模型校验(_check_model)、request_id 解析(_base_request_id)、LoRA 适配(_maybe_get_adapters)、错误响应工厂(create_error_response/create_streaming_error_response)、GenerationError 触发(_raise_if_error)、trace headers、tool-call 提取(_parse_tool_calls_from_content)、token 解码(_get_decoded_token)、system_fingerprint。beam_search 也定义在此。"
+    },
+    {
+      "name": "OpenAIServingChat",
+      "file": "vllm/entrypoints/openai/chat_completion/serving.py",
+      "responsibility": "chat/completions handler：create_chat_completion 渲染请求、造 request_id、算 SamplingParams、调 engine_client.generate，按 request.stream 分流到 chat_completion_stream_generator（SSE DELTA）或 chat_completion_full_generator（聚合 JSON）。装配 reasoning/tool parser，构造 logprobs。"
+    },
+    {
+      "name": "OpenAIServingRender",
+      "file": "vllm/entrypoints/serve/render/serving.py",
+      "responsibility": "Renderer 适配层：render_chat 把 ChatCompletionRequest 的 messages + chat template 经 renderer.render_chat_async 渲染成 (conversation, engine_inputs=token prompt)；做 chat-template 信任校验、tool_choice 合法性校验、harmony(gpt_oss) 特例。OpenAIServingChat 委托给它。"
+    },
+    {
+      "name": "build_async_engine_client",
+      "file": "vllm/entrypoints/openai/api_server.py",
+      "responsibility": "@asynccontextmanager：从 CLI args 造 AsyncEngineArgs，经 build_async_engine_client_from_engine_args 用 AsyncLLM.from_vllm_config 起异步引擎（对接 ch04 三段式 + AsyncMPClient），退出时 shutdown。EngineClient 生命周期边界。"
+    },
+    {
+      "name": "serve_http",
+      "file": "vllm/entrypoints/launcher.py",
+      "responsibility": "uvicorn 启动与优雅关停：建 uvicorn.Config/Server、watchdog_task（监控引擎 errored）、server_task、handle_shutdown（SIGINT/SIGTERM → 关引擎 → server.should_exit）。返回 shutdown_task 供上层 await。"
+    },
+    {
+      "name": "lifespan",
+      "file": "vllm/entrypoints/openai/server_utils.py",
+      "responsibility": "FastAPI lifespan：启动期拉起周期性 do_log_stats 后台任务 + freeze_gc_heap，yield 期间服务，关停期 cancel 任务并 gc app.state。"
+    },
+    {
+      "name": "AuthenticationMiddleware / XRequestIdMiddleware",
+      "file": "vllm/entrypoints/openai/server_utils.py",
+      "responsibility": "纯 ASGI 中间件：Bearer token 鉴权（仅 /v1 路径、跳过 OPTIONS）；X-Request-Id 注入响应头。"
+    },
+    {
+      "name": "EngineClient",
+      "file": "vllm/engine/protocol.py",
+      "responsibility": "handler 依赖的协议：暴露 generate()(异步生成器)、renderer/input_processor/model_config/vllm_config、errored/dead_error/is_running、shutdown/get_supported_tasks/do_log_stats。AsyncLLM 是其 v1 实现（ch04）。"
+    }
+  ],
+  "mechanisms": []
+}

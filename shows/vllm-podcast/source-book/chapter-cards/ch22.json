@@ -1,0 +1,82 @@
+{
+  "chapter_id": "ch22",
+  "title": "模型契约与权重装载：以 Llama 为最简参考",
+  "slug": "ch22-model-definitions",
+  "sections": [
+    "22.1 一张图看懂模型的四级嵌套",
+    "22.2 `(vllm_config, prefix)`：一份统一的构造契约",
+    "22.3 TP 线性层：列切分接行切分",
+    "22.4 QKV fuse：把三次小 GEMM 合成一次",
+    "22.5 权重装载三段式：建空壳 → 流式切填 → 后处理",
+    "22.6 Attention 统一封装：模型对后端无感",
+    "22.7 把它串起来：一层 block 的前向"
+  ],
+  "key_classes": [
+    {
+      "name": "LlamaForCausalLM",
+      "file": "vllm/model_executor/models/llama.py",
+      "responsibility": "顶层模型契约入口：(vllm_config, prefix) 构造，持有类属性 packed_modules_mapping，建 self.model + lm_head + logits_processor；forward 透传给 self.model，compute_logits 经 lm_head 出 logits；load_weights 用 AutoWeightsLoader 分发"
+    },
+    {
+      "name": "LlamaModel",
+      "file": "vllm/model_executor/models/llama.py",
+      "responsibility": "embedding + make_layers 堆叠 N 个 LlamaDecoderLayer + 末段 RMSNorm；前向 embed→逐层→norm；load_weights 持有 stacked_params_mapping 把 q/k/v、gate/up fuse 装载；被 @support_torch_compile 包裹"
+    },
+    {
+      "name": "LlamaDecoderLayer",
+      "file": "vllm/model_executor/models/llama.py",
+      "responsibility": "单层 transformer block：self_attn(LlamaAttention)+mlp(LlamaMLP)+两个 RMSNorm；forward 走 pre-norm + 显式 residual 穿针；从 vllm_config 解包 config/cache/quant"
+    },
+    {
+      "name": "LlamaAttention",
+      "file": "vllm/model_executor/models/llama.py",
+      "responsibility": "注意力子模块：TP 切头数学，构造 qkv_proj(QKVParallelLinear)+o_proj(RowParallelLinear)+rotary_emb(get_rope)+attn(Attention 统一封装)；forward: qkv→split→rope→attn→o_proj"
+    },
+    {
+      "name": "LlamaMLP",
+      "file": "vllm/model_executor/models/llama.py",
+      "responsibility": "前馈子模块：gate_up_proj(MergedColumnParallelLinear)+down_proj(RowParallelLinear)+SiluAndMul；列并行升维→SiLU 门控→行并行降维归约"
+    },
+    {
+      "name": "Attention",
+      "file": "vllm/model_executor/layers/attention/attention.py",
+      "responsibility": "统一注意力封装：吸收 backend 选择(get_attn_backend)、KV cache 存储/量化、按 prefix 注册进 static_forward_context；forward 经自定义算子 unified_attention_with_output 经 forward_context 取 attn_metadata/kv_cache，对模型定义透明"
+    },
+    {
+      "name": "ColumnParallelLinear",
+      "file": "vllm/model_executor/layers/linear.py",
+      "responsibility": "列并行线性层：权重沿 output 维按 tp_size 切，output_size_per_partition=output_size//tp_size，input 不切；weight_loader 按 tp_rank narrow 出本 rank 列切片；forward 可选 gather_output"
+    },
+    {
+      "name": "MergedColumnParallelLinear",
+      "file": "vllm/model_executor/layers/linear.py",
+      "responsibility": "ColumnParallel 子类：把多段(gate,up)沿 output 维 fuse，按 output_sizes 各自切分；weight_loader 带 shard_id(0/1) 定位段 offset 再按 rank narrow"
+    },
+    {
+      "name": "QKVParallelLinear",
+      "file": "vllm/model_executor/layers/linear.py",
+      "responsibility": "ColumnParallel 子类：把 q/k/v fuse 成一个权重；GQA 下 KV 头数<tp 时复制(num_kv_head_replicas)否则切分；weight_loader 按 shard_id(q/k/v) 定位段，q 用 tp_rank、k/v 用 tp_rank//replicas"
+    },
+    {
+      "name": "RowParallelLinear",
+      "file": "vllm/model_executor/layers/linear.py",
+      "responsibility": "行并行线性层：权重沿 input 维按 tp_size 切，input_size_per_partition=input_size//tp_size；forward 后 all_reduce 归约各 rank 部分和；bias 只在 rank0 加避免重复"
+    },
+    {
+      "name": "LinearBase",
+      "file": "vllm/model_executor/layers/linear.py",
+      "responsibility": "线性层基类：持 quant_method(默认 UnquantizedLinearMethod)，统一 forward 经 quant_method.apply 做 GEMM；记 tp_rank/tp_size"
+    },
+    {
+      "name": "DefaultModelLoader / BaseModelLoader",
+      "file": "vllm/model_executor/model_loader/default_loader.py, base_loader.py",
+      "responsibility": "load_model 编排：initialize_model 建空壳→load_weights(get_all_weights 流式喂 checkpoint)→process_weights_after_loading→eval；load_weights 调 model.load_weights 并可 track 已加载参数集"
+    },
+    {
+      "name": "AutoWeightsLoader",
+      "file": "vllm/model_executor/models/utils.py",
+      "responsibility": "递归权重分发器：按子模块名匹配，遇到自带 load_weights 的子模块(如 LlamaModel)就委派；支持 skip_prefixes(tie 时跳 lm_head)"
+    }
+  ],
+  "mechanisms": []
+}

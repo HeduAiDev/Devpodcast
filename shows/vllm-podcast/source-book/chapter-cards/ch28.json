@@ -1,0 +1,82 @@
+{
+  "chapter_id": "ch28",
+  "title": "ch28",
+  "slug": "ch28-model-architecture",
+  "sections": [
+    "28.1 骨架：把 Llama 的 forward 和 V4 的并排放",
+    "28.2 Delta 一：MHA → MLA，把 KV cache 压成低秩潜变量",
+    "28.3 Delta 二：dense MLP → MoE，稀疏路由 + 一条共享 dense",
+    "28.4 Delta 三：add-norm → hc 多流残差",
+    "28.5 Delta 四：单 lm_head → 旁挂一个 MTP draft",
+    "28.6 收尾 delta：FP8 量化与 e8m0fnu 字节装载",
+    "28.7 把四摞 delta 合起来看"
+  ],
+  "key_classes": [
+    {
+      "name": "DeepseekV4ForCausalLM",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1507",
+      "responsibility": "顶层入口：持有 DeepseekV4Model + lm_head + logits_processor；forward 转发；compute_logits；get_mtp_target_hidden_states 暴露 pre-hc_head 残差给 MTP；load_weights 经 AutoWeightsLoader(skip mtp.) 装载并 finalize MegaMoE。对照 LlamaForCausalLM。"
+    },
+    {
+      "name": "DeepseekV4Model",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1220",
+      "responsibility": "主干：embed → repeat 成 hc_mult 条残差流 → 逐 DeepseekV4DecoderLayer → 暂存 _mtp_hidden_buffer → hc_head 压回单流 → norm。持有 topk_indices_buffer 与 3 条 aux_stream。对照 LlamaModel。"
+    },
+    {
+      "name": "DeepseekV4DecoderLayer",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1089",
+      "responsibility": "单层：attn(MLA) + ffn(MoE)，但残差用 hc_pre/hc_post 超连接(mhc_pre/mhc_post 算子)而非 Llama 的融合 add-norm。持有 hc_{attn,ffn}_{fn,base,scale} 学习参数。被主模型和 MTP 复用。"
+    },
+    {
+      "name": "DeepseekV4Attention",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L921",
+      "responsibility": "MLA 权重定义层：fused_wqa_wkv(低秩 q_lora_rank/压缩 kv)、q_norm/kv_norm、wq_b(q 升维)、wo_a/wo_b(输出低秩 o_lora_rank/o_groups)、attn_sink、解耦 RoPE(nope/rope 拆)，包成 wrapper。对照 LlamaAttention(qkv_proj/o_proj)。"
+    },
+    {
+      "name": "DeepseekV4MultiHeadLatentAttentionWrapper",
+      "file": "vllm/model_executor/layers/deepseek_v4_attention.py:L106",
+      "responsibility": "MLA 执行层(V4 专属)：forward 调 deepseek_v4_attention 自定义算子 + 输出端 inverse-RoPE/FP8 einsum/wo_b；attention_impl 做多 stream 并行输入 GEMM + fused RMSNorm；含稀疏 SWA/indexer/compressor。内核细节下放 ch25。"
+    },
+    {
+      "name": "DeepseekV4MoE",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L707",
+      "responsibility": "MoE 层：gate(GateLinear) 路由 + 可选 shared_experts(每 token 必走的 dense 残留) + 双后端(use_mega_moe ? DeepseekV4MegaMoEExperts : FusedMoE)。对照 LlamaMLP 单 dense。"
+    },
+    {
+      "name": "DeepseekV4MegaMoEExperts",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L392",
+      "responsibility": "MegaMoE 专家后端：FP4/FP8 量化 w13/w2 权重，finalize_weights 转 DeepGEMM scale 布局，forward 走单个 deepseek_v4_mega_moe_experts 自定义算子(对称缓冲, SM100)。一 kernel 跑全部专家。"
+    },
+    {
+      "name": "DeepseekV4MLP",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L70",
+      "responsibility": "SwiGLU MLP(gate_up_proj/down_proj，可选 swiglu_limit clamp)，作 shared_experts 复用。结构与 LlamaMLP 同构，是 MoE 里那条 dense 共享路径。"
+    },
+    {
+      "name": "DeepseekV4FP8Config",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L121",
+      "responsibility": "V4 量化配置：linear/attn 走 FP8 block；专家按 expert_dtype 惰性解析 fp4(MXFP4) 或 fp8(block FP8)，决定 scale e8m0/float32 与 weight 映射。回收'量化 delta'。"
+    },
+    {
+      "name": "hc_head",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1450",
+      "responsibility": "torch.compile 函数：把 hc_mult 条残差流经 RMSNorm + sigmoid 门控加权求和压回单流。主模型末尾与 MTP compute_logits 都用。"
+    },
+    {
+      "name": "DeepSeekV4MultiTokenPredictorLayer",
+      "file": "vllm/model_executor/models/deepseek_v4_mtp.py:L61",
+      "responsibility": "MTP draft 单层：enorm/hnorm + e_proj/h_proj 融合 token embedding 与 target 的 pre-hc_head 残差，跑一个 DeepseekV4DecoderLayer，输出新 pre-hc_head 残差(可多步串联)。"
+    },
+    {
+      "name": "DeepSeekV4MTP",
+      "file": "vllm/model_executor/models/deepseek_v4_mtp.py:L244",
+      "responsibility": "MTP draft 顶层：持有多 MTP 层 + embed + logits_processor；forward 按 spec_step 选层；compute_logits 补 hc_head 再过 shared_head。被投机解码(ch34)消费。"
+    },
+    {
+      "name": "LlamaDecoderLayer / LlamaAttention / LlamaMLP",
+      "file": "vllm/model_executor/models/llama.py:L253/L124/L81",
+      "responsibility": "基线对照(ch22)：标准 add-norm 残差 + QKV-MHA + dense SwiGLU。本章每个 delta 都回到这三处对照。"
+    }
+  ],
+  "mechanisms": []
+}

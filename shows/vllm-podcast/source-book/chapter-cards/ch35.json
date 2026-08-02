@@ -1,0 +1,52 @@
+{
+  "chapter_id": "ch35",
+  "title": "ch35",
+  "slug": "ch35-pd-disaggregation",
+  "sections": [
+    "35.1 为什么要把 prefill 和 decode 拆开",
+    "35.2 role-split：一个 connector，两副面孔",
+    "35.3 KVConnectorFactory：按 role 各造一份",
+    "35.4 调度器集成：查命中、隔离、不堵队头",
+    "35.5 KV 到位：提升回 WAITING，重新调度",
+    "35.6 亲手验证：状态机真的这么转吗",
+    "35.7 小结"
+  ],
+  "key_classes": [
+    {
+      "name": "KVConnectorRole",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/base.py",
+      "responsibility": "枚举 SCHEDULER=0 / WORKER=1。同一 connector 类被实例化两份、各持一个 role，决定它运行在调度器进程（决策侧）还是 worker 进程（搬运侧）。role-split 契约的根。"
+    },
+    {
+      "name": "KVConnectorBase_V1",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/base.py",
+      "responsibility": "所有 KV connector 的抽象基类。把方法显式切成两组：Scheduler-side（get_num_new_matched_tokens / update_state_after_alloc / build_connector_meta / update_connector_output / request_finished / take_events）与 Worker-side（start_load_kv / wait_for_layer_load / save_kv_layer / wait_for_save / get_finished / build_connector_worker_meta）。abstractmethod 强制子类实现六个核心方法。"
+    },
+    {
+      "name": "KVConnectorMetadata",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/base.py",
+      "responsibility": "Scheduler connector → Worker connector 的单向不透明信使。决策侧 build_connector_meta 产出、挂到 SchedulerOutput.kv_connector_metadata，worker 侧 bind_connector_metadata 取用。"
+    },
+    {
+      "name": "KVConnectorFactory",
+      "file": "vllm/distributed/kv_transfer/kv_connector/factory.py",
+      "responsibility": "懒加载注册表（name → loader）+ create_connector：按 role 单独构造 SCHEDULER 与 WORKER 两份实例，强制两进程严格隔离；校验 HMA 支持；兼容旧两参签名。"
+    },
+    {
+      "name": "ExampleConnector",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/example_connector.py",
+      "responsibility": "把 KV cache 存/取磁盘 safetensors 的调试参考实现。给出每个抽象方法最朴素的真实落地：决策侧靠文件夹是否存在判命中，搬运侧逐层 inject/extract KV。本章用它作『契约如何被填实』的范例。"
+    },
+    {
+      "name": "Scheduler (KV-connector 集成部分)",
+      "file": "vllm/v1/core/sched/scheduler.py",
+      "responsibility": "持有 SCHEDULER-role connector，在 WAITING 调度循环中查远程命中、把等远程 KV 的请求隔离到 skipped_waiting、KV 到位后提升回 WAITING/PREEMPTED；维护 waiting/skipped_waiting 双队列与 finished_recving_kv_req_ids/failed_recving_kv_req_ids 状态集。"
+    },
+    {
+      "name": "RequestStatus",
+      "file": "vllm/v1/request.py",
+      "responsibility": "请求状态枚举。WAITING_FOR_REMOTE_KVS 是本章核心阻塞态，介于 WAITING 与 RUNNING 之间，表示已分配 block 但 KV 还在远程传输中。"
+    }
+  ],
+  "mechanisms": []
+}

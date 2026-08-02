@@ -1,0 +1,73 @@
+{
+  "chapter_id": "ch29",
+  "title": "ch29",
+  "slug": "ch29-model-architecture",
+  "sections": [
+    "29.1 为什么需要一套「读法」，而不是凭感觉画",
+    "29.2 先在最简模型上跑一遍：LlamaDecoderLayer",
+    "29.3 P1 实战：从 `__init__` 读出 DeepSeek-V4 的模块树",
+    "29.4 P2 实战：从 `forward` 读出数据流与形状变化",
+    "29.5 P3 实战：用源码判据标出子系统边界",
+    "29.6 配置开关怎么读：可选框与双后端分叉",
+    "29.7 P4 与验证：把图钉死在源码上",
+    "29.8 这套程序为什么对任何 vLLM 模型都成立"
+  ],
+  "key_classes": [
+    {
+      "name": "DeepseekV4ForCausalLM",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1507",
+      "responsibility": "worked example 的画图入口：从它的 __init__（self.model/lm_head/logits_processor）与 forward 读出整张图的最外层框与顶层数据流主干。方法论里'永远从 *ForCausalLM 开始读'的锚点。"
+    },
+    {
+      "name": "DeepseekV4Model",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1220",
+      "responsibility": "主干模块树 + 主干数据流的来源：embed_tokens/make_layers([])/norm 三段框，forward 的 repeat(hc_mult)/for/copy_/hc_head/norm 即主干边与形状注记。带 @support_torch_compile（P3 编译区）与 aux_stream（P3 并行子系统）。"
+    },
+    {
+      "name": "DeepseekV4DecoderLayer",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1089",
+      "responsibility": "下钻一层的范本：__init__ 读出 attn/ffn/attn_norm/ffn_norm 子框，forward 读出 hc_pre→norm→attn/ffn→hc_post 层内数据流与残差回边；hc_pre/hc_post 是 P3 自定义算子框的判例。"
+    },
+    {
+      "name": "DeepseekV4Attention",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L921",
+      "responsibility": "叶子层模块树范本：连续 self.<name>=*ParallelLinear(prefix=f'{prefix}.<name>') 一行一框读出 MLA 投影子树，类名（Column/Row/Merged ParallelLinear）即 P3 并行子系统着色依据。"
+    },
+    {
+      "name": "DeepseekV4MoE",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L707",
+      "responsibility": "条件框/双后端分叉范本：__init__ 的 if n_shared_experts / if use_mega_moe 读出可选框与互斥后端；forward 的 if/return 与 += 读出数据流分支与旁路汇入边。"
+    },
+    {
+      "name": "hc_head",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1450",
+      "responsibility": "P3 编译区 + '函数也是框'范本：@torch.compile 装饰器即编译边界，flatten/view/sum 的形状坍缩即压回单流的边标注。"
+    },
+    {
+      "name": "hc_pre / hc_post",
+      "file": "vllm/model_executor/models/deepseek_v4.py:L1166",
+      "responsibility": "P3 自定义算子判例：dispatch 到 torch.ops.vllm.mhc_pre/mhc_post，示范'看它调 torch.ops.vllm.* 还是 self.子模块 来判定算子框'。"
+    },
+    {
+      "name": "make_layers",
+      "file": "vllm/model_executor/models/utils.py",
+      "responsibility": "P1 层堆叠信号：出现 make_layers/ModuleList 即画带 ×N 标注的复数框，而非展开 N 个框。"
+    },
+    {
+      "name": "LlamaDecoderLayer / LlamaAttention / LlamaMLP",
+      "file": "vllm/model_executor/models/llama.py:L253/L124/L81",
+      "responsibility": "基线 worked example：同一套四步程序先跑在最简 Llama 上，证明'读代码画图'与模型无关、可迁移到 V4（也是 ch22/ch28 的对照锚点）。"
+    },
+    {
+      "name": "svg-diagram skill",
+      "file": ".claude/skills/svg-diagram/SKILL.md",
+      "responsibility": "P4 真实渲染工具：Python 脚本生成 SVG → xmllint 校验 → ImageMagick/rsvg 转 PNG，处理 dense 多元素嵌套容器 + 有向箭头（正是模块树+数据流图的场景）。"
+    },
+    {
+      "name": "roadmap.py",
+      "file": "instances/vllm/book/assets/roadmap/roadmap.py",
+      "responsibility": "开场 Roadmap'你在这里'生成器，与本章其余架构图同源工具链。"
+    }
+  ],
+  "mechanisms": []
+}

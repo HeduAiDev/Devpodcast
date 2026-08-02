@@ -1,0 +1,48 @@
+{
+  "chapter_id": "ch20",
+  "title": "分布式并行的群组与集合通信",
+  "slug": "ch20-distributed-parallelism",
+  "sections": [
+    "20.1 一个并行维度 = 一对进程组 + 一个 communicator",
+    "20.2 三大集合原语，与「后端选择」的下沉",
+    "20.3 让集合通信进 torch.compile 图：custom-op",
+    "20.4 双群组分工：metadata 走 CPU，张量走 device",
+    "20.5 PP 的 P2P：把流水线一段的输出传给下一段",
+    "20.6 5 维 rank 张量：一套变换切出所有群组",
+    "20.7 谁把群组拉起来：MultiprocExecutor",
+    "20.8 小结：一个抽象统一了所有并行维度"
+  ],
+  "key_classes": [
+    {
+      "name": "GroupCoordinator",
+      "file": "vllm/distributed/parallel_state.py",
+      "responsibility": "单个并行维度（TP/PP/DP/EP/...）的统一抽象。持有该维度的一对进程组 cpu_group(gloo) + device_group(NCCL 等) 和一个可选 device_communicator；对外提供 all_reduce/all_gather/reduce_scatter/gather/broadcast/broadcast_tensor_dict 与 P2P send/recv/barrier。集合算子按 use_custom_op_call 走 torch.ops.vllm.* 或直接落 device_communicator。"
+    },
+    {
+      "name": "DeviceCommunicatorBase",
+      "file": "vllm/distributed/device_communicators/base_device_communicator.py",
+      "responsibility": "device 端集合通信的抽象基类，提供基于 torch.distributed（作用于 device_group）的默认 all_reduce/all_gather/reduce_scatter/gather/send/recv/broadcast。各平台子类（CudaCommunicator）覆写以接入 NCCL/自研内核。"
+    },
+    {
+      "name": "CudaCommunicator",
+      "file": "vllm/distributed/device_communicators/cuda_communicator.py",
+      "responsibility": "CUDA/ROCm 平台的 device communicator。内部持有 pynccl 与 CustomAllreduce（及若干可选加速后端），all_reduce 走一条优先级回退链；send/recv/broadcast 优先走 pynccl。GroupCoordinator 的 graph_capture 也依赖它的 ca_comm.capture()。"
+    },
+    {
+      "name": "MultiprocExecutor",
+      "file": "vllm/v1/executor/multiproc_executor.py",
+      "responsibility": "多进程编排层：每 GPU spawn 一个 WorkerProc，持有控制面输入队列 rpc_broadcast_mq 与各 worker 的输出队列 response_mqs；collective_rpc 把方法广播给所有 worker、按 output_rank 收结果，用 FutureWrapper 支持非阻塞。是把 GroupCoordinator 在各 worker 真正拉起来的容器。"
+    },
+    {
+      "name": "WorkerProc",
+      "file": "vllm/v1/executor/multiproc_executor.py",
+      "responsibility": "运行在 worker 进程内的包装：init_worker→init_device（内部调 init_distributed_environment + initialize_model_parallel 建群组）→load_model→建 MQ→发 READY，然后 worker_busy_loop 从 rpc_broadcast_mq 取 RPC、反射调用 worker 方法、按 output_rank 回传。"
+    },
+    {
+      "name": "FutureWrapper",
+      "file": "vllm/v1/executor/multiproc_executor.py",
+      "responsibility": "concurrent.futures.Future 子类，配合 futures_queue 实现 RPC 响应的 FIFO 有序排空（result() 时先把队列里排在前面的 future 全部消费），支撑异步调度下的非阻塞 collective_rpc。"
+    }
+  ],
+  "mechanisms": []
+}

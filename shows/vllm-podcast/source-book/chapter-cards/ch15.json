@@ -1,0 +1,53 @@
+{
+  "chapter_id": "ch15",
+  "title": "分页 KV 缓存机制：块池与前缀缓存",
+  "slug": "ch15-kv-cache",
+  "sections": [
+    "15.1 分页：为什么 KV 缓存要切块",
+    "15.2 一个块：KVCacheBlock",
+    "15.3 空闲块怎么排队：FreeKVCacheBlockQueue",
+    "15.4 引用计数：谁在用这块",
+    "15.5 块哈希：前缀缓存的钥匙",
+    "15.6 查表与命中：从 block_hashes 到物理块",
+    "15.7 三段式分配：allocate_slots",
+    "15.8 小结：一张图看懂分页 KV 缓存"
+  ],
+  "key_classes": [
+    {
+      "name": "KVCacheBlock",
+      "file": "vllm/v1/core/kv_cache_utils.py",
+      "responsibility": "单个 KV 块的元数据：block_id、ref_cnt 引用计数、_block_hash（满块且被缓存时的 hash+group_id 键）、prev/next_free_block（构成 free 链表的指针）、is_null（占位块标记）。@dataclass(slots=True)。"
+    },
+    {
+      "name": "FreeKVCacheBlockQueue",
+      "file": "vllm/v1/core/kv_cache_utils.py",
+      "responsibility": "空闲块的双向链表，用 fake head/tail 哨兵；前端=LRU 最先驱逐，尾端=最近释放。直接操作块上的 prev/next 指针不分配 Python 对象，支持 O(1) 中间删除（remove）以便 touch 时把命中块从驱逐候选中摘除。"
+    },
+    {
+      "name": "BlockHashToBlockMap",
+      "file": "vllm/v1/core/block_pool.py",
+      "responsibility": "前缀缓存的查找表：{BlockHashWithGroupId -> KVCacheBlock | dict[block_id, KVCacheBlock]}。同一 hash 可对应多块（不去重内容、保证 block_id 不变以维持 block table append-only），union 类型省 GC。"
+    },
+    {
+      "name": "BlockPool",
+      "file": "vllm/v1/core/block_pool.py",
+      "responsibility": "全局块管家：持有 blocks 列表、free_block_queue、cached_block_hash_to_block、null_block。提供 get_new_blocks（取块+惰性驱逐+引用计数）、touch、free_blocks、cache_full_blocks、get_cached_block、_maybe_evict_cached_block。"
+    },
+    {
+      "name": "SingleTypeKVCacheManager / FullAttentionManager",
+      "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+      "responsibility": "单一注意力类型的块账本：req_to_blocks（请求→已分配块）、num_cached_block（请求→已缓存满块数）。负责 get_num_blocks_to_allocate、allocate_new_(computed_)blocks、cache_blocks、free，以及类方法 find_longest_cache_hit（沿哈希链查最长前缀命中）。"
+    },
+    {
+      "name": "UnitaryKVCacheCoordinator",
+      "file": "vllm/v1/core/kv_cache_coordinator.py",
+      "responsibility": "单 KV cache group 的协调器（本章主路径）：直接把请求委派给唯一的 single_type_manager；find_longest_cache_hit 返回命中块与命中 token 数。HybridKVCacheCoordinator（多组）为可省略分支。"
+    },
+    {
+      "name": "KVCacheManager / KVCacheBlocks",
+      "file": "vllm/v1/core/kv_cache_manager.py",
+      "responsibility": "对 Scheduler 的门面：get_computed_blocks（查前缀命中）、allocate_slots（三段式分配）、free、reset_prefix_cache。KVCacheBlocks 是隐藏内部结构的分配结果（按 group 分组的块序列）。"
+    }
+  ],
+  "mechanisms": []
+}

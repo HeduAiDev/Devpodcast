@@ -17,3 +17,5 @@ Task 13: complete (commits 9de8837..444522e, review clean) — minor 3 项(同�
 Task 14: complete (commits 444522e..c9a8b62, review clean after 1 fix round) — r1 Important×2 (season_bible register CLI 静默 no-op / writer.md lint_punct 缺参数) 已修复并复审通过; Minor×2 全清; 8 提示词 spec 契约点全对齐
 Task 15: complete (commits 349214d..e7c4362, review clean after 1 fix round) — season-pipeline.js + episode-pipeline.js 骨架; r1 Important×2 (Review 产物命名对齐 reviewer 契约 / voices_coverage 显式落盘) 已修复并复审通过; Minor×2 全清
 Task 16: complete (commit 731dac6) — CLAUDE.md + docs/superpowers/ARCHITECT-RUNBOOK.md + README.md（工厂操作手册三件套）
+Task 17: partial (commit 72774e7) — Step 1 (SSL 修复/sitecustomize.py) + Step 2 (F5-TTS 试金石 通过) + Step 5 (pyproject.toml + ta_compat.py + vllm-podcast scaffold + voice-samples/README.md) 已提交; Step 3-4 (MOSS-TTSD 8B 权重下载+样例合成) 已委派子 agent 持续监控; 额外修复: Windows 证书库 ASN1 损坏 / MOSS-TTSD processing_moss_tts.py Path→str 路径 bug
+Task 18: partial (commit 待提交) — Step 1 (scaffold show) 已于 Task 17 完成; Step 3 (书源摄入) 完成: 39 章+115 术语+outline→source-book 快照; Step 2 (Lead 落笔 voice-guide) 待 Lead 手动; Step 4 (Phase A workflow) 待 Task 17 MOSS-TTSD 就绪 + agent type 注册

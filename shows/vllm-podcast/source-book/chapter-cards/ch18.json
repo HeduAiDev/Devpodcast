@@ -1,0 +1,50 @@
+{
+  "chapter_id": "ch18",
+  "title": "持久化批次与输入准备：把一张工单翻译成张量",
+  "slug": "ch18-model-runner",
+  "sections": [
+    "18.1 每拍的入口：先调和状态，再准备输入",
+    "18.2 为什么不每拍重建：持久批次的赌注",
+    "18.3 _update_states 之一：用 SchedulerOutput 当差量",
+    "18.4 _update_states 之二：在途请求就地更新 + 统一并入",
+    "18.5 slot 的回收与复用：打洞、复用、压实",
+    "18.6 _prepare_inputs：二维坐标拍扁成一维收集",
+    "18.7 位置、序列长与 slot_mapping：装配 attention 输入",
+    "18.8 block_table 的 CPU/GPU 双镜像与 position→slot 映射",
+    "18.9 交叉验证：在数值上看持久批次收敛",
+    "18.10 本章总结：持久批次，把工单翻译成张量"
+  ],
+  "key_classes": [
+    {
+      "name": "GPUModelRunner",
+      "file": "vllm/v1/worker/gpu_model_runner.py",
+      "responsibility": "每拍编排器：execute_model 在 synchronize_input_prep 上下文里先 _update_states(用 SchedulerOutput 调和持久批次)、再 _prepare_inputs(收集 input_ids/positions/slot_mapping)、_build_attention_metadata(装配 attn 输入)，然后前向。持有 self.requests(req_id→CachedRequestState 全量缓存) 与 self.input_batch(持久批次)。"
+    },
+    {
+      "name": "InputBatch",
+      "file": "vllm/v1/worker/gpu_input_batch.py",
+      "responsibility": "跨迭代存活的多请求容器：token_ids_cpu(max_num_reqs × max_model_len 的 int32 全长缓冲，一行一请求)、num_prompt_tokens/num_computed_tokens_cpu/num_tokens_no_spec 等 CPU 镜像、block_table(MultiGroupBlockTable)、全套采样参数列、req_id_to_index 映射。增删通过 add_request/remove_request+condense，靠 batch_update_builder 复用空 slot。"
+    },
+    {
+      "name": "CachedRequestState",
+      "file": "vllm/v1/worker/gpu_input_batch.py",
+      "responsibility": "worker 端单请求快照(dataclass)：prompt_token_ids、output_token_ids、block_ids(每 KV group 一个 list)、num_computed_tokens、sampling_params、generator、(可选) mrope/xdrope positions。num_tokens = num_prompt_tokens + len(output_token_ids)。让 worker 缓存请求、调度器后续只发差量。"
+    },
+    {
+      "name": "BatchUpdateBuilder",
+      "file": "vllm/v1/sample/logits_processor/state.py",
+      "responsibility": "记录本拍持久批次的 removed(降序)/added/moved 变更。pop_removed() 返回当前最小空 slot 供复用，peek_removed() 配合 condense 找最小空洞；get_and_reset 生成 logitsprocs 的 BatchUpdate。slot 复用的真正实现者。"
+    },
+    {
+      "name": "MultiGroupBlockTable / BlockTable",
+      "file": "vllm/v1/worker/block_table.py",
+      "responsibility": "MultiGroupBlockTable 按 KV cache group 持有多个 BlockTable。BlockTable 维护 block_table(CpuGpuBuffer, max_num_reqs × max_num_blocks_per_req)：append_row/add_row 改 CPU 镜像，commit_block_table 批量拷到 GPU，compute_slot_mapping 启动 Triton kernel 把 position 映射成物理 slot；支持 hybrid kernel block 细分与 CP/DCP 分片。"
+    },
+    {
+      "name": "_compute_slot_mapping_kernel",
+      "file": "vllm/v1/worker/block_table.py",
+      "responsibility": "Triton JIT kernel：每个 program 处理一请求，slot_id = block_table[req, pos//block_size] * block_size + pos%block_size（非 CP 简化形态）；最后一 program 把尾部 padding 成 PAD_SLOT_ID 以适配 CUDA graph。"
+    }
+  ],
+  "mechanisms": []
+}

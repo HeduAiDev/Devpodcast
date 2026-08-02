@@ -1,0 +1,39 @@
+{
+  "chapter_id": "ch06",
+  "title": "Parallel Sampling：把一个 n=3 请求扇成三个独立请求",
+  "slug": "ch06-input-processor",
+  "sections": [
+    "6.1 一句话钩子：n 不是一个引擎参数",
+    "6.2 扇出的入口：`add_request` 的两条岔路",
+    "6.3 为什么独立调度优于「引擎内批量 n」",
+    "6.4 子请求的身份：唯一 id 与确定性种子",
+    "6.5 双进程登记：本进程一份 RequestState，跨进程一个独立请求",
+    "6.6 归并：n 路结果怎么合回一路",
+    "6.7 取消：一个对外 id 牵出 n 个内部 child",
+    "6.8 跑起来看数值：扇出、种子、归并、级联取消",
+    "6.9 小结：复杂度被关进了一个类"
+  ],
+  "key_classes": [
+    {
+      "name": "ParentRequest",
+      "file": "vllm/v1/engine/parallel_sampling.py",
+      "responsibility": "封装 n>1 父请求的状态与处理：保存父 request_id/external_req_id/sampling_params；通过 get_child_info(idx) 派生唯一 child id 与 n=1 child 采样参数（seed 递进/无 seed 复用）；通过 child_requests 集合跟踪 n 路完成；通过 get_outputs 把 n 路 child 输出归并（流式逐条转发 / FINAL_ONLY 按 index 聚合）。"
+    },
+    {
+      "name": "AsyncLLM.add_request",
+      "file": "vllm/v1/engine/async_llm.py",
+      "responsibility": "请求入口：先 assign_request_id 内部化 id、起 output_handler、建 RequestOutputCollector；n==1/pooling 走单请求 fast path；n>1 时建 ParentRequest 并循环扇出 n 个独立 child EngineCoreRequest 下发。是 ch04 三段式 add_request 延迟讲解的 n>1 分支兑现处。"
+    },
+    {
+      "name": "OutputProcessor.add_request",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "本进程侧为每个 child 建独立 RequestState（独立 detokenizer/logprobs，request_index=idx）；登记 parent_requests[parent_id]=parent 与 external_req_ids[external] -> [internal...] 反查表，使输出归并与级联 abort 成为可能。"
+    },
+    {
+      "name": "EngineCoreRequest",
+      "file": "vllm/v1/engine/__init__.py",
+      "responsibility": "跨进程 IPC 载荷。本章关注其 request_id（child 唯一内部 id）、external_req_id（n 路共享的对外 id）、sampling_params（child 被强制 n=1，可能带 seed+index）三字段在扇出/归并中的角色。"
+    }
+  ],
+  "mechanisms": []
+}

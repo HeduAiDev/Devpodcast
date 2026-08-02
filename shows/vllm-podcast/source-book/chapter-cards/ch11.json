@@ -1,0 +1,57 @@
+{
+  "chapter_id": "ch11",
+  "title": "EngineCore 与忙循环：一次推理迭代到底做了什么",
+  "slug": "ch11-engine-core",
+  "sections": [
+    "11.1 一句话钩子：引擎的一次「心跳」",
+    "11.2 采样为什么从前向里拆出来",
+    "11.3 执行期到达的中止，为什么要排队",
+    "11.4 run_busy_loop：引擎的心跳",
+    "11.5 关停：怎么叫醒一个睡着的引擎",
+    "11.6 生命周期：停调度 vs 让出显存",
+    "11.7 两条尾线：batch queue 接入点与进程内对照"
+  ],
+  "key_classes": [
+    {
+      "name": "EngineCore",
+      "file": "vllm/v1/engine/core.py:L91",
+      "responsibility": "推理引擎的'内循环'：持有 model_executor + scheduler + structured_output_manager，提供 step()/step_with_batch_queue() 单步编排、add_request/abort_requests、以及 pause/resume/sleep/wake_up 生命周期。无 IPC，可被 InprocClient 直接驱动。"
+    },
+    {
+      "name": "EngineCoreProc",
+      "file": "vllm/v1/engine/core.py:L806",
+      "responsibility": "EngineCore 的 ZMQ 子进程包装。新增 input_queue/output_queue 两个线程安全队列 + 两个守护 IO 线程（process_input_sockets / process_output_sockets），实现 run_busy_loop：取请求→step→出输出。处理握手、关停、信号。"
+    },
+    {
+      "name": "DPEngineCoreProc",
+      "file": "vllm/v1/engine/core.py:L1622",
+      "responsibility": "数据并行版 EngineCoreProc。覆写 run_busy_loop，加入 wave 机制、execute_dummy_batch（让空闲 rank 与忙 rank 对齐）、每 32 步一次全局 all-reduce 判断 global unfinished。本章只需高层提及，不展开。"
+    },
+    {
+      "name": "InprocClient",
+      "file": "vllm/v1/engine/core_client.py:L274",
+      "responsibility": "进程内客户端：直接持有一个 EngineCore，add_request 直推、get_output 调 step_fn()。是 LLMEngine 同步路径，用来对照'没有忙循环/没有 ZMQ 时 step() 怎么被驱动'。"
+    },
+    {
+      "name": "AsyncMPClient",
+      "file": "vllm/v1/engine/core_client.py:L887",
+      "responsibility": "异步多进程客户端：经 ZMQ DEALER/PULL 把 add_request_async 发到子进程 input_queue，并以后台 task 把子进程 output_queue 的 EngineCoreOutputs 搬进 asyncio outputs_queue 供 get_output_async 消费。是 ch04 AsyncLLM 三段式与本章 step() 之间的桥。"
+    },
+    {
+      "name": "EngineCoreRequestType",
+      "file": "vllm/v1/engine/__init__.py:L237",
+      "responsibility": "input_queue 里 (type, payload) 的类型枚举：ADD/ABORT/START_DP_WAVE/UTILITY，以及进程内哨兵 EXECUTOR_FAILED/WAKEUP。十六进制字节串，便于直接走 socket。"
+    },
+    {
+      "name": "EngineShutdownState",
+      "file": "vllm/v1/engine/core.py:L800",
+      "responsibility": "IntEnum：RUNNING / REQUESTED / SHUTTING_DOWN。_handle_shutdown 据此决定继续、开始排空、还是退出。"
+    },
+    {
+      "name": "PauseState",
+      "file": "vllm/v1/core/sched/interface.py:L22",
+      "responsibility": "IntEnum：UNPAUSED=0 / PAUSED_NEW=1（排队新增、可继续 step 现有）/ PAUSED_ALL=2（全停）。pause/sleep 通过 scheduler.set_pause_state 写入。"
+    }
+  ],
+  "mechanisms": []
+}

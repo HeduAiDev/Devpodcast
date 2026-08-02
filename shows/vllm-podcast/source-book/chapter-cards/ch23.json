@@ -1,0 +1,54 @@
+{
+  "chapter_id": "ch23",
+  "title": "模型层如何变成融合、图捕获的 kernel：CustomOp 两级 dispatch 与 piecewise 编译",
+  "slug": "ch23-custom-ops-and-compilation",
+  "sections": [
+    "23.1 CustomOp：构造期把 forward 定死",
+    "23.2 enabled() 与 default_on()：编译路径为什么默认走纯 torch",
+    "23.3 RMSNorm：一个 CustomOp 长什么样",
+    "23.4 @support_torch_compile：给模型套上可编译的外壳",
+    "23.5 首次前向：触发 VllmBackend，之后走缓存",
+    "23.6 split_graph：在 attention 处把图切开",
+    "23.7 逐段处理：规整段编译 + 图捕获，attention 段 eager",
+    "23.8 还债：attention 算子怎么进 torch.compile 图",
+    "23.9 两级合一"
+  ],
+  "key_classes": [
+    {
+      "name": "CustomOp",
+      "file": "vllm/model_executor/custom_op.py",
+      "responsibility": "所有可切换 native/平台 kernel 的算子基类。__init__ 时一次性 dispatch_forward 选定 self._forward_method（forward_cuda 或 forward_native...），之后 forward 零开销转发。enabled()/default_on() 决定走融合 kernel 还是纯 torch（让 Inductor 融合）"
+    },
+    {
+      "name": "RMSNorm",
+      "file": "vllm/model_executor/layers/layernorm.py",
+      "responsibility": "本章 CustomOp 的范例实例。@CustomOp.register('rms_norm')；forward_native 用一串纯 torch 算子（可被 Inductor 看见/融合），forward_cuda 调用预编译融合 kernel ir.ops.rms_norm/fused_add_rms_norm（对编译器不透明）"
+    },
+    {
+      "name": "support_torch_compile / _support_torch_compile",
+      "file": "vllm/compilation/decorators.py",
+      "responsibility": "类装饰器，把一个 nn.Module 变成可编译：从 forward 注解推断动态维、注入 TorchCompileWithNoGuardsWrapper、改写 __init__（定 do_not_compile）与 __call__（首次触发 VllmBackend、后续走缓存）"
+    },
+    {
+      "name": "VllmBackend",
+      "file": "vllm/compilation/backends.py",
+      "responsibility": "torch.compile 的 vLLM 自定义后端（CompilationMode.VLLM_COMPILE）。核心工作：split_graph 把整图按 splitting_ops 切成 piecewise 子图，PiecewiseCompileInterpreter 逐段送 Inductor 编译并按需包 CUDA graph"
+    },
+    {
+      "name": "PiecewiseCompileInterpreter",
+      "file": "vllm/compilation/backends.py",
+      "responsibility": "遍历切分后的 split_gm，对非切分子图建 PiecewiseBackend 编译、对其加 CUDA graph wrapper；切分算子(attention)所在子图保持 eager"
+    },
+    {
+      "name": "should_split / splitting_ops(_attention_ops)",
+      "file": "vllm/compilation/partition_rules.py + vllm/config/compilation.py",
+      "responsibility": "决定在哪些算子处切图：node 的 namespace::name 在 splitting_ops 即切。默认 splitting_ops=_attention_ops（unified_attention_with_output 等），即在 attention 处切图"
+    },
+    {
+      "name": "unified_attention_with_output + direct_register_custom_op",
+      "file": "vllm/model_executor/layers/attention/attention.py + vllm/utils/torch_utils.py",
+      "responsibility": "f17 回收：Attention.forward 调用的 torch.ops.vllm.unified_attention_with_output 是用 direct_register_custom_op 注册的不透明 torch 自定义算子（带 fake_impl）。它让 Dynamo 不 graph break，并成为 split_graph 的稳定切点"
+    }
+  ],
+  "mechanisms": []
+}
