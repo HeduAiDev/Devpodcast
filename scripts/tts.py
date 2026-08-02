@@ -129,6 +129,52 @@ class DialogueTTSProvider(LocalTTSProvider):
     def warmup(self) -> None:
         self._load()
 
+    def _calibrated_decode(self, dedelayed, start_length, n_vq, pad_code, target_sr):
+        """网格搜索最佳 (通道移位, 时间偏移) 解码组合，pitch 自相关评分。
+
+        背景：MOSS-TTSD 的 de-delay 通道布局与 start_length 裁剪边界在本环境
+        （Windows/torch 2.11/SDPA）与模型训练时存在偏差，固定常量会导致解码出
+        噪声。pitch 自相关是「是否像语音」的强指标（浊音 >0.4，噪声 <0.25），
+        网格搜索自动对齐。约 16×5=80 次短解码，<1 分钟，对长音频合成可接受。
+        """
+        import numpy as np
+        import torch as _t
+
+        def _pitch(wav):
+            frame = wav[:min(len(wav), target_sr * 10)]
+            if len(frame) < target_sr // 2:
+                return 0.0
+            lag_lo, lag_hi = target_sr // 400, target_sr // 80
+            ac = np.correlate(
+                frame[:target_sr] - frame[:target_sr].mean(),
+                frame[:target_sr] - frame[:target_sr].mean(),
+                "full",
+            )[len(frame[:target_sr]) - 1:]
+            return float((ac / (ac[0] + 1e-9))[lag_lo:lag_hi].max())
+
+        best = (0.0, None)
+        for shift in range(n_vq):
+            for t_off in range(-2, 3):
+                trim_from = max(0, start_length - n_vq + 1 + t_off)
+                trimmed = dedelayed[trim_from:]
+                valid = trimmed[~(trimmed == pad_code).all(dim=1)]
+                if valid.shape[0] < 5:
+                    continue
+                shifted = _t.roll(valid, shift, dims=1)
+                try:
+                    wavs = self._processor.decode_audio_codes(shifted)
+                    if not wavs:
+                        continue
+                    wav = _t.cat(wavs, dim=-1).numpy()
+                    p = _pitch(wav)
+                    if p > best[0]:
+                        best = (p, wav)
+                except Exception:
+                    continue
+        if best[1] is None:
+            raise RuntimeError("自校准解码失败：无任何可解码组合")
+        return [best[1]]
+
     def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
         self._load()
         import torch
@@ -191,32 +237,32 @@ class DialogueTTSProvider(LocalTTSProvider):
                 audio_repetition_penalty=1.1,
             )
 
-        # 5. decode → 音频波形（官方用法：message.audio_codes_list 已是波形，
-        #    不要再过 decode_audio_codes——那是对未解码 codes 的二次解码，时长会 ×n_vq）
-        outputs_cpu = [(int(s.item()), t.cpu()) for s, t in outputs]
-        decoded = processor.decode(outputs_cpu)
+        # 5. 解码：绕过 processor.decode 的缺陷裁剪路径（波形域按比例裁剪会留下
+        #    prompt 音频的错误截断尾巴 → 听感噪声），改为 codes 域精确处理：
+        #    de-delay → 裁 prompt 帧 → 通道移位修正 → 丢 pad → decode_audio_codes。
+        #    通道移位：模型输出的通道布局与 tokenizer 不一致（粗层不在通道 0），
+        #    且延迟基线与 start_length 语义有偏差——两者都随输入变化，故用
+        #    pitch 自校准网格搜索（shift × 时间偏移）选最优解码组合。
+        audio_codes = outputs[0][1][:, 1:].cpu()
+        dedelayed = processor.apply_de_delay_pattern(audio_codes)
+        start_length = int(outputs[0][0].item())
+        pad_code = processor.model_config.audio_pad_code
+        decoded_audio = self._calibrated_decode(dedelayed, start_length, n_vq, pad_code, target_sr)
 
         segments_dir = Path(opts.output_dir) / "segments"
         segments_dir.mkdir(parents=True, exist_ok=True)
         segments: list[Path] = []
         total_frames = 0
 
-        for j, msg in enumerate(decoded):
-            for k, audio in enumerate(msg.audio_codes_list):
-                if isinstance(audio, (list, tuple)):
-                    audio = torch.cat([a if isinstance(a, torch.Tensor) else torch.as_tensor(a) for a in audio], dim=-1)
-                if not isinstance(audio, torch.Tensor):
-                    audio = torch.as_tensor(audio)
-                wav_np = audio.cpu().numpy()
-                if wav_np.ndim == 2 and wav_np.shape[0] == 1:
-                    wav_np = wav_np[0]  # (1, T) → (T,)
-                if wav_np.ndim > 1:
-                    wav_np = wav_np[:, 0] if wav_np.shape[0] > 1 else wav_np[0]
-                seg_path = segments_dir / f"segment_{j:03d}_{k:03d}.wav"
-                import soundfile as sf
-                sf.write(str(seg_path), wav_np.astype("float32"), target_sr)
-                segments.append(seg_path)
-                total_frames += wav_np.shape[0]
+        for j, wav in enumerate(decoded_audio):
+            wav_np = wav.cpu().numpy() if hasattr(wav, "cpu") else wav
+            if wav_np.ndim == 1:
+                wav_np = wav_np.reshape(-1, 1)
+            seg_path = segments_dir / f"segment_{j:03d}.wav"
+            import soundfile as sf
+            sf.write(str(seg_path), wav_np.astype("float32"), target_sr)
+            segments.append(seg_path)
+            total_frames += wav_np.shape[0]
 
         # 6. 拼接总音频
         import soundfile as sf
