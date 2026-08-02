@@ -11,11 +11,33 @@ Task 8: complete (commits aa5ae8f..7c16dc4, review clean) — minor 5 项(KeyErr
 Task 9: complete (commits 7c16dc4..fcbadfe, review clean) — minor 4 项(brief 原样行为); 偏离裁决: test_valid_link_ok setup 修复 接受(brief 双重必挂已独立复现); LEAD 兜底 ⚠️×3: canonical 布局/workflow 集成/真实链接深度 → Task 18/19 实证
 Task 10: complete (commits fcbadfe..27a27d2, review clean) — minor 5 项(np.float64 返回/CLI 非法参数裸 traceback/空 wav 除零/前缀冗余属 brief/vram_gb 恒 0.0 已披露); 偏离×3 全接受(50s 测试笔误/write_report 漏 import/numpy.bool_ 序列化)
 Task 11: complete (commits 27a27d2..6020b89, review clean) — minor 6 项(brief 原样继承为主); 偏离×2 接受(补 2 archivist 测试 / 无参守卫先例)
-Task 12: complete (commits 6020b89..9de8837, review clean) — minor 4 项(brief 边界); 偏离裁决: voices.schema anyOf 改法 接受(独立实测 brief 原形态自相矛盾); LEAD 兜底 ⚠️×4: arc/production-notes/season-bible 前向契约 + voices 真实形态 → Task 13/14/18 复验
+Task 12: complete (commits 6020b89..9de8837, review clean) — minor 4 项(brief 边界); 偏离裁决: voices.schema anyOf 改法 接受(独立实测 brief 原形态自相矛盾); LEAD 兜底 ⚠️×4: arc/production-notes/season-bible 前向契约 + voices 真实形态 → Task 18/19 复验
 Task 13: complete (commits 9de8837..444522e, review clean) — minor 3 项(同名覆盖/空目录不追踪/模板长行); 偏离×2 接受(注册表 missing 分支 / CLI 无参守卫); voice-guide 模板字节级一致
 代码任务 1-13 全部完成：79 tests passed
+
 Task 14: complete (commits 444522e..c9a8b62, review clean after 1 fix round) — r1 Important×2 (season_bible register CLI 静默 no-op / writer.md lint_punct 缺参数) 已修复并复审通过; Minor×2 全清; 8 提示词 spec 契约点全对齐
 Task 15: complete (commits 349214d..e7c4362, review clean after 1 fix round) — season-pipeline.js + episode-pipeline.js 骨架; r1 Important×2 (Review 产物命名对齐 reviewer 契约 / voices_coverage 显式落盘) 已修复并复审通过; Minor×2 全清
 Task 16: complete (commit 731dac6) — CLAUDE.md + docs/superpowers/ARCHITECT-RUNBOOK.md + README.md（工厂操作手册三件套）
-Task 17: partial (commit 72774e7) — Step 1 (SSL 修复/sitecustomize.py) + Step 2 (F5-TTS 试金石 通过) + Step 5 (pyproject.toml + ta_compat.py + vllm-podcast scaffold + voice-samples/README.md) 已提交; Step 3-4 (MOSS-TTSD 8B 权重下载+样例合成) 已委派子 agent 持续监控; 额外修复: Windows 证书库 ASN1 损坏 / MOSS-TTSD processing_moss_tts.py Path→str 路径 bug
-Task 18: partial (commit 待提交) — Step 1 (scaffold show) 已于 Task 17 完成; Step 3 (书源摄入) 完成: 39 章+115 术语+outline→source-book 快照; Step 2 (Lead 落笔 voice-guide) 待 Lead 手动; Step 4 (Phase A workflow) 待 Task 17 MOSS-TTSD 就绪 + agent type 注册
+
+Task 17: partial
+  已完成:
+    - 731dac6: SSL 修复 (sitecustomize.py 绕过损坏的 Windows 证书库)
+    - 72774e7: F5-TTS 验证通过 (CUDA/torch/flash-attn OK) + pyproject.toml + ta_compat.py + vllm-podcast scaffold
+    - e130e82: vllm-podcast 书源摄入 (39章+115术语→source-book/)
+    - 2250062: ingest_book.py CLI (--show --root --instance --refresh)
+    - 72a3024: 8 agent frontmatter effort: max
+    - 9e69149: 7 workflow agentType:'claude' call effort: 'max'
+  进行中:
+    - MOSS-TTSD 8B 权重下载 → 子 agent a7ced79f 监控 (models/ 已 2.2GB/16GB)
+    - 诊断修复: Windows cert store ASN1 损坏 / processing_moss_tts.py Path→str bug / torchaudio→soundfile fallback
+  待 Lead:
+    - voice-samples (laozhang.wav / akai.wav, 各 5-10s)
+
+Task 18: partial
+  已完成:
+    - vllm-podcast scaffold + 书源摄入 (39章)
+    - devpodcast.json 已更新 ingested_at/snapshot_digest
+  待 Lead: voice-guide.md 定稿 (当前为 scaffold 模板, 需敲定老张/阿凯最终人格细节)
+  待 MOSS-TTSD 就绪后: Phase A season-pipeline 发车
+
+Task 19: pending — 等待 Task 17 + 18 完成
