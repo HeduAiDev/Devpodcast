@@ -107,7 +107,7 @@ async function runLints(cmds, label, phaseName) {
     cmds.join('\n') + '\n' +
     '把每条命令的退出码与完整输出带回 note（命令不存在/报错也照实记录）。\n' +
     '判定：全部退出码 0 → status=OK；任一条退出码 ≠ 0（linter 找到 BLOCKING 级问题，或命令本身失败）→ status=BLOCKED，blocker_reason 写清是哪条命令、退出码多少。',
-    { schema: STATUS_SCHEMA, label: label, phase: phaseName, agentType: 'claude', model: MODELS.runner },
+    { schema: STATUS_SCHEMA, label: label, phase: phaseName, agentType: 'claude', model: MODELS.runner, effort: 'max' },
   )
 }
 
@@ -192,7 +192,7 @@ const voicesCov = await agent(
   COV_CMD + '\n' +
   '然后 cat ' + SEASON + '/voices-coverage.json，把 coverage / total_voices / job_seeker_voices 如实填回返回字段。\n' +
   '判定：命令退出码 0 → status=OK；命令失败（voices.json 缺失/解析错等）→ status=BLOCKED，blocker_reason 写清退出码与错误输出。',
-  { schema: COVERAGE_SCHEMA, label: 'voices-coverage', phase: 'Research', agentType: 'claude', model: MODELS.runner },
+  { schema: COVERAGE_SCHEMA, label: 'voices-coverage', phase: 'Research', agentType: 'claude', model: MODELS.runner, effort: 'max' },
 )
 if (!voicesCov) return { show: A.show, escalated: 'voices-coverage-failed', stage: 'Research', note: 'coverage 执行 agent 失败（限流/崩溃）——voices_coverage 未落盘不放行（spec §11.3 不许静默）' }
 if (voicesCov.status === 'BLOCKED') return { show: A.show, escalated: 'voices-coverage', stage: 'Research', reason: voicesCov.blocker_reason }

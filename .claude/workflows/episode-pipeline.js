@@ -89,7 +89,7 @@ async function runLints(cmds, label, phaseName) {
     cmds.join('\n') + '\n' +
     '把每条命令的退出码与完整输出带回 note（命令不存在/报错也照实记录）。\n' +
     '判定：全部退出码 0 → status=OK；任一条退出码 ≠ 0（linter 找到 BLOCKING 级问题，或命令本身失败）→ status=BLOCKED，blocker_reason 写清是哪条命令、退出码多少。',
-    { schema: STATUS_SCHEMA, label: label, phase: phaseName, agentType: 'claude', model: MODELS.runner },
+    { schema: STATUS_SCHEMA, label: label, phase: phaseName, agentType: 'claude', model: MODELS.runner, effort: 'max' },
   )
 }
 
@@ -112,7 +112,7 @@ const epResolve = await agent(
   '  1. 输出里恰好有名为 ' + A.ep_id + ' 的目录 → OK，dir 填它；\n' +
   '  2. 否则找以 ' + A.ep_id + '- 开头的目录：唯一一个 → OK，dir 填它；多个 → BLOCKED（blocker_reason 写「ambiguous」，note 列出全部候选）；\n' +
   '  3. 一个都没有 → BLOCKED（blocker_reason 写「not-found」，note 写 ls 的实际输出——可能是 Phase A 未跑，或 ep_id 拼错）。',
-  { schema: EP_RESOLVE_SCHEMA, label: 'ep-resolve', phase: 'Write', agentType: 'claude', model: MODELS.runner },
+  { schema: EP_RESOLVE_SCHEMA, label: 'ep-resolve', phase: 'Write', agentType: 'claude', model: MODELS.runner, effort: 'max' },
 )
 if (!epResolve) return { show: A.show, ep_id: A.ep_id, escalated: 'ep-resolve-failed', stage: 'Write', note: '目录解析 agent 失败（限流/崩溃）' }
 if (epResolve.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'ep-not-found', stage: 'Write', reason: epResolve.blocker_reason, note: epResolve.note }
@@ -199,7 +199,7 @@ const tts = await agent(
     '目标时长：' + TARGET + ' 分钟（超过 20% 余量会被 audio-qa BLOCKING）。',
     '拉闸（spec §11.1）：音色样本质量不足 / 显存不够 / 模型加载失败 → status=BLOCKED。**TTS 是必经站**（spec §11.3）：环境没配好 = BLOCKED，不给「先出脚本、音频待补」的后门。',
   ]),
-  { schema: STATUS_SCHEMA, label: 'tts', phase: 'TTS', agentType: 'claude', model: MODELS.tts },
+  { schema: STATUS_SCHEMA, label: 'tts', phase: 'TTS', agentType: 'claude', model: MODELS.tts, effort: 'max' },
 )
 if (!tts) return { show: A.show, ep_id: A.ep_id, escalated: 'tts-failed', stage: 'TTS', note: 'tts 执行 agent 失败（限流/崩溃）' }
 if (tts.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'tts', stage: 'TTS', reason: tts.blocker_reason }
@@ -224,7 +224,7 @@ async function runAudioQA(qaRound) {
     '然后 Read ' + AUDIO + '/audio-qa.json，把 issues 数组逐条原样转述到 issues 字段。\n' +
     'route 判定（机械规则，勿加判断）：issues 里「时长」开头的 BLOCKING → route 含 writer；「削波」开头的 BLOCKING → route 含 tts；两者都有 → both；无 BLOCKING → none。\n' +
     '无 BLOCKING → status=OK；有 BLOCKING → status=BLOCKED（blocker_reason 写哪类问题）。',
-    { schema: QA_SCHEMA, label: 'audio-qa r' + qaRound, phase: 'AudioQA', agentType: 'claude', model: MODELS.runner },
+    { schema: QA_SCHEMA, label: 'audio-qa r' + qaRound, phase: 'AudioQA', agentType: 'claude', model: MODELS.runner, effort: 'max' },
   )
 }
 let qaFixes = 0
@@ -249,7 +249,7 @@ for (;;) {
       head(null, [
         '任务：audio-qa BLOCKING（削波/静音/响度类）。重合成 ' + AUDIO + '/episode.wav：按上轮参数调整（削波 → 降增益/检查响度归一；时长 → 检查 tokens 换算），重新产出 ' + AUDIO + '/episode.wav + ' + AUDIO + '/segments/。\n质检 issues：' + JSON.stringify(qa.issues),
       ]),
-      { schema: STATUS_SCHEMA, label: 'audio-qa-fix-tts r' + qaFixes, phase: 'AudioQA', agentType: 'claude', model: MODELS.tts },
+      { schema: STATUS_SCHEMA, label: 'audio-qa-fix-tts r' + qaFixes, phase: 'AudioQA', agentType: 'claude', model: MODELS.tts, effort: 'max' },
     )
     if (!fixT || fixT.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'audio-qa-fix-tts', stage: 'AudioQA', round: qaFixes, reason: (fixT && fixT.blocker_reason) || '重合成 agent 失败（限流/崩溃）' }
   }
