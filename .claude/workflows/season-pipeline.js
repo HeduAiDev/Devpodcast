@@ -151,7 +151,7 @@ let voicesLint = null
 let voicesFixes = 0
 for (;;) {
   voicesLint = await runLints(
-    ['python3 ' + REPO + '/scripts/lint_voices.py ' + SEASON + '/voices.json'],
+    ['python ' + REPO + '/scripts/lint_voices.py ' + SEASON + '/voices.json'],
     'voices-lint r' + (voicesFixes + 1), 'Research',
   )
   if (!voicesLint) return { show: A.show, escalated: 'voices-lint-failed', stage: 'Research', note: '门禁执行 agent 失败（限流/崩溃）——lint_voices 未执行不放行' }
@@ -160,7 +160,7 @@ for (;;) {
   voicesFixes++
   const fix = await agent(
     head('researcher', [
-      '任务：修复 lint_voices 的 BLOCKING 后重写 ' + SEASON + '/voices.json。上一轮门禁输出（逐条修复，修完自跑 `python3 ' + REPO + '/scripts/lint_voices.py ' + SEASON + '/voices.json` 确认 BLOCKING 清零）：\n' + voicesLint.note,
+      '任务：修复 lint_voices 的 BLOCKING 后重写 ' + SEASON + '/voices.json。上一轮门禁输出（逐条修复，修完自跑 `python ' + REPO + '/scripts/lint_voices.py ' + SEASON + '/voices.json` 确认 BLOCKING 清零）：\n' + voicesLint.note,
     ]),
     { schema: STATUS_SCHEMA, label: 'voices-fix r' + voicesFixes, phase: 'Research', agentType: 'researcher', ...mo('researcher') },
   )
@@ -174,7 +174,7 @@ log('Research 完成：voices.json 过 lint_voices 门禁')
 // coverage=partial），但缺口必须显式落盘 voices-coverage.json 并在 log/返回对象标注——
 // 不许静默截断（静默截断读起来像全覆盖，实际没有，reviewer 会按全覆盖评审求职者维度）。
 // 判定：job-seeker ≥1 且 total ≥3 → full；job-seeker ≥1 → partial；job-seeker = 0 → none。
-// M0 用 python3 -c 内联（不新建脚本文件），正式化留给 M3。
+// M0 用 python -c 内联（不新建脚本文件），正式化留给 M3。
 const COVERAGE_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['status', 'note', 'coverage'],
   properties: {
@@ -186,7 +186,7 @@ const COVERAGE_SCHEMA = {
     job_seeker_voices: { type: 'integer' },
   },
 }
-const COV_CMD = 'python3 -c \'import sys,json,datetime; d=json.load(open(sys.argv[1])); vs=list(d.values()) if isinstance(d,dict) else [d]; js=sum(1 for v in vs if v.get("category")=="job-seeker"); cov="none" if js==0 else ("full" if len(vs)>=3 else "partial"); out=dict(checked_at=datetime.date.today().isoformat(), total_voices=len(vs), job_seeker_voices=js, coverage=cov, note="voice 总数 %d 条，其中求职者声音 %d 条" % (len(vs), js)); json.dump(out, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=2)\' ' + SEASON + '/voices.json ' + SEASON + '/voices-coverage.json'
+const COV_CMD = 'python -c \'import sys,json,datetime; d=json.load(open(sys.argv[1])); vs=list(d.values()) if isinstance(d,dict) else [d]; js=sum(1 for v in vs if v.get("category")=="job-seeker"); cov="none" if js==0 else ("full" if len(vs)>=3 else "partial"); out=dict(checked_at=datetime.date.today().isoformat(), total_voices=len(vs), job_seeker_voices=js, coverage=cov, note="voice 总数 %d 条，其中求职者声音 %d 条" % (len(vs), js)); json.dump(out, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=2)\' ' + SEASON + '/voices.json ' + SEASON + '/voices-coverage.json'
 const voicesCov = await agent(
   '你是门禁执行员。只做一件事：运行下面 1 条命令并如实转述结果（不要修改任何文件、不要评价、不要重写）：\n' +
   COV_CMD + '\n' +

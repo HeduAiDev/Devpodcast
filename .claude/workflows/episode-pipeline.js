@@ -120,10 +120,10 @@ const EP = SHOW + '/episodes/' + epResolve.dir
 const AUDIO = EP + '/audio'
 const WRITER_INPUTS = '四份素材（缺一不写）：' + EP + '/episode-card.json、' + SEASON + '/voices.json、' + SEASON + '/arc.json、' + SEASON + '/bible/（voice-guide.md ★强制复用 + glossary.json + arc-map.json）'
 const LINT_CMDS = [
-  'python3 ' + REPO + '/scripts/lint_script.py ' + EP + '/script.md --voices ' + SEASON + '/voices.json --target-minutes ' + TARGET,
-  'python3 ' + REPO + '/scripts/lint_punct.py ' + EP + '/script.md',
-  'python3 ' + REPO + '/scripts/lint_anchors.py ' + EP + ' ' + SHOW,
-  'python3 ' + REPO + '/scripts/lint_trace.py ' + EP + ' ' + SEASON + '/voices.json',
+  'python ' + REPO + '/scripts/lint_script.py ' + EP + '/script.md --voices ' + SEASON + '/voices.json --target-minutes ' + TARGET,
+  'python ' + REPO + '/scripts/lint_punct.py ' + EP + '/script.md',
+  'python ' + REPO + '/scripts/lint_anchors.py ' + EP + ' ' + SHOW,
+  'python ' + REPO + '/scripts/lint_trace.py ' + EP + ' ' + SEASON + '/voices.json',
 ]
 
 // ---------- Write：writer 主笔（唯一有权写 script.md）+ 四 linter 门禁（回环 ≤2 轮修复） ----------
@@ -206,7 +206,7 @@ if (tts.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 
 
 // ---------- AudioQA：audio_qa.py 质检，BLOCKING 回环 ≤2 轮（时长超 → writer 改稿；削波等 → tts 重合成） ----------
 phase('AudioQA')
-const QA_CMD = 'python3 ' + REPO + '/scripts/audio_qa.py ' + AUDIO + '/episode.wav ' + AUDIO + '/audio-qa.json ' + TARGET
+const QA_CMD = 'python ' + REPO + '/scripts/audio_qa.py ' + AUDIO + '/episode.wav ' + AUDIO + '/audio-qa.json ' + TARGET
 const QA_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['status', 'note', 'issues', 'route'],
   properties: {
@@ -333,12 +333,12 @@ const archive = await agent(
     '归档对象：' + EP + '/ 全部产物（episode-card / script.md / production-notes / audio/audio-qa.json / reviews/）',
     'Season Bible：' + SEASON + '/bible/（arc-map.json / voices-index.json / glossary.json）；trace：' + SHOW + '/trace',
     '任务（按你契约的「工作流程」）：\n' +
-    '1. 核对伏笔：先 Read ' + EP + '/episode-card.json 取 episode_id 字段（arc-map 的键，如 ep01）；跑 `python3 ' + REPO + '/scripts/season_bible.py due ' + SEASON + '/bible/arc-map.json <episode_id>` 取本期应回收项，逐一在 script.md 确认回收；未回收的点名记录；连续两期欠账 → status=BLOCKED。\n' +
-    '2. 回写 arc-map：`python3 ' + REPO + '/scripts/season_bible.py register ' + SEASON + '/bible/arc-map.json <episode_id> \'{"payoff_due": [...]}\'`（字段按契约；先读现状，只增量）。\n' +
+    '1. 核对伏笔：先 Read ' + EP + '/episode-card.json 取 episode_id 字段（arc-map 的键，如 ep01）；跑 `python ' + REPO + '/scripts/season_bible.py due ' + SEASON + '/bible/arc-map.json <episode_id>` 取本期应回收项，逐一在 script.md 确认回收；未回收的点名记录；连续两期欠账 → status=BLOCKED。\n' +
+    '2. 回写 arc-map：`python ' + REPO + '/scripts/season_bible.py register ' + SEASON + '/bible/arc-map.json <episode_id> \'{"payoff_due": [...]}\'`（字段按契约；先读现状，只增量）。\n' +
     '3. 回写 voices-index：解析 script.md 的 {{voice:...}} 全部引用追加台账（先读现状只增量）。\n' +
     '4. 补录 glossary：本期新术语口播译名。\n' +
     '5. 写 shownotes.md：' + EP + '/shownotes.md。\n' +
-    '6. 写 trace：`python3 ' + REPO + '/scripts/archivist.py ' + SHOW + '/trace log "<msg>" <kind>`（本期归档 + 跨期经验）。\n' +
+    '6. 写 trace：`python ' + REPO + '/scripts/archivist.py ' + SHOW + '/trace log "<msg>" <kind>`（本期归档 + 跨期经验）。\n' +
     '铁律：只回写 bible 与 trace，**不改任何 episode 产物**（script / episode-card / production-notes 都是别人的领土）。',
   ]),
   { schema: STATUS_SCHEMA, label: 'archive', phase: 'Archive', agentType: 'archivist', ...mo('archivist') },
