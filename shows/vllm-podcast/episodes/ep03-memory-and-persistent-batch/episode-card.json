@@ -1,0 +1,103 @@
+{
+  "episode_id": "ep03",
+  "slug": "ep03-memory-and-persistent-batch",
+  "topic": "显存是主角：分页 KV 缓存、前缀缓存与跨迭代存活的持久批次",
+  "cross_chapter_threads": [
+    {
+      "chapter_id": "ch15",
+      "mechanism": "PagedAttention：KV cache 切成固定大小 block（block_size=16），每个 block 是 GPU 上一段连续的显存。KVCacheBlock 是单个块的元数据（block_id、ref_cnt 引用计数、_block_hash、prev/next_free_block 链表指针），BlockPool 全局持有 blocks 列表 + free_block_queue + cached_block_hash_to_block。为什么切块——不切的话每个请求按 max_model_len 预分配整段显存，造成严重浪费（类比 OS 虚拟内存的分页）。"
+    },
+    {
+      "chapter_id": "ch15",
+      "mechanism": "FreeKVCacheBlockQueue 空闲块 LRU 双向链表：用 fake head/tail 哨兵，前端是 LRU 最先驱逐、尾端是最近释放。直接操作块上的 prev/next 指针不分配 Python 对象，支持 O(1) 中间删除（remove）——当块被前缀缓存命中时，BlockPool.touch() 调用 remove 把命中块从驱逐候选中摘除。get_new_blocks 取块时走惰性驱逐：先取空闲块，不够才从 LRU 头端驱逐缓存块。"
+    },
+    {
+      "chapter_id": "ch15",
+      "mechanism": "前缀缓存（prefix caching）：块级哈希——满块的 token 内容计算 hash，与 group_id 构成 BlockHashWithGroupId 键，存入 BlockHashToBlockMap 查找表。同一 hash 可对应多个物理块（不去重内容以保证 block_id 不变、block table append-only）。find_longest_cache_hit 沿哈希链查找请求最长前缀命中。引用计数 ref_cnt——同一物理块被多个请求共享时 ref_cnt>1，free 时减计数，归零才真正归还空闲队列。"
+    },
+    {
+      "chapter_id": "ch16",
+      "mechanism": "allocate_slots 三段式分配：阶段一释放 skipped block（滑动窗口外的旧块换 null 归还）；阶段二挂前缀命中块（get_computed_blocks 查缓存命中 + 外部 PD connector 命中，引用计数 touch）；阶段三新建块 + lookahead 预留（为即将生成的 token 提前占位）。分配失败时 Budget 检查返回 None 触发调度器抢占循环。"
+    },
+    {
+      "chapter_id": "ch18",
+      "mechanism": "持久批次（persistent batch）：InputBatch 是跨调度拍存活的二维容器——token_ids_cpu 是 (max_num_reqs × max_model_len) 的全长 int32 缓冲，一行一请求。不每拍重建：新请求 add_request 装入空 slot，旧请求通过 _update_states 用 SchedulerOutput 的 CachedRequestData（增量 diff：new_block_ids + num_computed_tokens + num_output_tokens）就地更新。完成请求 remove_request 留洞，BatchUpdateBuilder 记录 removed/added/moved 变更，slot 通过 pop_removed() 回收复用，condense 压实填洞。"
+    },
+    {
+      "chapter_id": "ch14",
+      "mechanism": "KV cache 分配失败时的抢占循环与 skipped_waiting 双队列隔离：schedule() 内嵌 while 循环——allocate_slots 返回 None 时调用 _preempt_request 把当前 RUNNING 请求抢占、KV 块归还、请求状态回 PREEMPTED、重新插入 waiting 队头（prepend_request = appendleft）。skipped_waiting 队列独立于 waiting——当某请求因 token budget 无法继续但未触发抢占时，移入 skipped_waiting 而非 waiting，避免它在 waiting 队头反复阻塞后续请求（队头阻塞避免）。"
+    },
+    {
+      "chapter_id": "ch18",
+      "mechanism": "block_table 的 CPU/GPU 双镜像与 Triton slot_mapping：BlockTable 维护 CPU 侧 block_table 矩阵 (max_num_reqs × max_num_blocks_per_req)，append_row/add_row 改 CPU 镜像，commit_block_table 批量拷到 GPU。_compute_slot_mapping_kernel（Triton JIT kernel）在高性能路径上把每个 token 的 (position, 逻辑块号) 映射为 GPU 物理 slot id：slot_id = block_table[req, pos // block_size] * block_size + pos % block_size。尾部 padding 填 PAD_SLOT_ID 适配 CUDA graph 固定 launch grid。"
+    }
+  ],
+  "key_mechanisms": [
+    "PagedAttention — KV cache 切块与 BlockPool 全局块池管理",
+    "FreeKVCacheBlockQueue LRU 空闲块双向链表与惰性驱逐",
+    "前缀缓存 — block hashing 与 BlockHashToBlockMap 跨请求引用计数共享",
+    "allocate_slots 三段式分配（释放 skipped → 挂前缀命中 → 新建+lookahead）",
+    "持久批次 — InputBatch 跨迭代存活、_update_states 差量更新与 slot 回收复用",
+    "分配失败抢占循环与 skipped_waiting 双队列队头阻塞避免",
+    "block_table Triton kernel position→slot 逻辑块号到 GPU 物理 slot 的映射"
+  ],
+  "voices_refs": [
+    "voice-006",
+    "voice-007",
+    "voice-008",
+    "voice-022",
+    "voice-026",
+    "voice-029",
+    "voice-030"
+  ],
+  "narrative_anchors": [
+    {
+      "chapter_id": "ch15",
+      "section": "15.1 分页：为什么 KV 缓存要切块"
+    },
+    {
+      "chapter_id": "ch15",
+      "section": "15.3 空闲块怎么排队：FreeKVCacheBlockQueue"
+    },
+    {
+      "chapter_id": "ch15",
+      "section": "15.4 引用计数：谁在用这块"
+    },
+    {
+      "chapter_id": "ch15",
+      "section": "15.5 块哈希：前缀缓存的钥匙"
+    },
+    {
+      "chapter_id": "ch15",
+      "section": "15.6 查表与命中：从 block_hashes 到物理块"
+    },
+    {
+      "chapter_id": "ch16",
+      "section": "16.1 三阶段的全貌：allocate_slots 摊开看"
+    },
+    {
+      "chapter_id": "ch16",
+      "section": "16.4 阶段二、三：挂命中块、新建、缓存"
+    },
+    {
+      "chapter_id": "ch18",
+      "section": "18.2 为什么不每拍重建：持久批次的赌注"
+    },
+    {
+      "chapter_id": "ch18",
+      "section": "18.5 slot 的回收与复用：打洞、复用、压实"
+    },
+    {
+      "chapter_id": "ch18",
+      "section": "18.8 block_table 的 CPU/GPU 双镜像与 position→slot 映射"
+    },
+    {
+      "chapter_id": "ch14",
+      "section": "14.1 要不到块：抢占循环"
+    },
+    {
+      "chapter_id": "ch14",
+      "section": "14.4 双队列：别让一个阻塞请求饿死整队"
+    }
+  ]
+}

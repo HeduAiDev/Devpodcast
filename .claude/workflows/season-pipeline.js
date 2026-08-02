@@ -251,7 +251,7 @@ const bible = await agent(
     '输入：' + SEASON + '/season-plan.json + arc.json + voices.json + 全部 episodes/<slug>/episode-card.json',
     '书源快照（只读，glossary 提炼来源）：' + SRC + '/',
     '产出：' + SEASON + '/bible/ 四件套（glossary.json / voice-guide.md / arc-map.json / voices-index.json，对齐 schemas/season-bible.schema.json）+ trace 记录',
-    '任务（Phase A 建季）：glossary 从书源快照 + episode-cards 提炼口播译名；arc-map 从 season-plan + arc 汇总伏笔登记（每期 foreshadow_due/payoff_due）；voices-index 初始为空；voice-guide.md **由 Lead 落笔**（spec §5）——你只核对其存在，绝不建占位/改内容（空占位会废掉缺失检查，writer 照读空 guide 无从退稿），若缺失 → status=BLOCKED。trace 至少一条 entry（建季 + 经验）。',
+    '任务（Phase A 建季）：glossary 从书源快照 + episode-cards 提炼口播译名；arc-map 从 season-plan + arc 汇总伏笔登记（每期 foreshadow_due/payoff_due）；voices-index 初始为空；voice-guide.md **由 Lead 落笔**（spec §5）——你只核对其存在，绝不建占位/改内容（空占位会废掉缺失检查，writer 照读空 guide 无从退稿），若缺失 → status=BLOCKED。trace 至少一条 entry（建季 + 经验）。\n[裁定]：若 season-plan.json 与 episodes/ 目录/arc.json 期数或 slug 不一致，**以目录与 arc 为准**登记（Bible 不为无素材的期数背书），并在 note 中说明差异；不要因编排文件的历史残迹而拉闸。',
   ]),
   { schema: STATUS_SCHEMA, label: 'bible', phase: 'Bible', agentType: 'archivist', ...mo('archivist') },
 )

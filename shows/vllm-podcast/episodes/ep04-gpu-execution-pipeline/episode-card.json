@@ -1,0 +1,106 @@
+{
+  "episode_id": "ep04",
+  "slug": "ep04-gpu-execution-pipeline",
+  "topic": "从 PyTorch 模型定义到 GPU 上的融合 kernel：Worker 生命周期、CustomOp 两级 dispatch 与 torch.compile 分片编译",
+  "cross_chapter_threads": [
+    {
+      "chapter_id": "ch22",
+      "mechanism": "模型定义契约（起点）：(vllm_config, prefix) 统一构造，四级模块嵌套 LlamaForCausalLM → LlamaModel → LlamaDecoderLayer → {LlamaAttention(qkv_proj+rotary_emb+Attention), LlamaMLP(gate_up+down)}，Attention 统一封装对后端无感——这就是你在 Python 里写的 attention 层"
+    },
+    {
+      "chapter_id": "ch23",
+      "mechanism": "CustomOp 两级 dispatch（构造期定死）：CustomOp 基类在 __init__ 时一次性调用 dispatch_forward() 根据 current_platform 选定 self._forward_method 为 forward_cuda（预编译融合 kernel，对编译器不透明）或 forward_native（纯 torch 算子链，让 Inductor 可见可融合），之后 forward() 零开销转发；enabled()/default_on() 控制编译路径下默认走 forward_native，仅在用户显式 +name 开启或非编译路径才走 forward_cuda；以 RMSNorm 为范例：forward_native 用 torch.pow/mean/rsqrt 等纯 torch 算子，forward_cuda 调用 ir.ops.rms_norm 单次融合 kernel"
+    },
+    {
+      "chapter_id": "ch23",
+      "mechanism": "torch.compile 分片编译管道：@support_torch_compile 类装饰器包裹模型（从 forward 注解推断动态维、注入 TorchCompileWithNoGuardsWrapper 丢弃 guard）→ 首次前向触发 VllmBackend → split_graph 按 splitting_ops（默认 _attention_ops，即 unified_attention_with_output 等）在 attention 算子处将整张 FX 图切开 → PiecewiseCompileInterpreter 逐段遍历：非 attention 子图经 PiecewiseBackend 送 Inductor 编译并包 CUDAGraphWrapper 图捕获，attention 子图保持 eager 执行；后续前向走缓存不触发编译"
+    },
+    {
+      "chapter_id": "ch17",
+      "mechanism": "Worker 生命周期与控制平面：Executor.get_class() 工厂按 distributed_executor_backend 字符串三态分发（uni/mp/ray）；MultiprocExecutor spawn N 个 WorkerProc 子进程，每个经 init_worker → init_device（建分布式环境 + 构造 model_runner）→ load_model → 发 READY 后进入 worker_busy_loop；EngineCore 所有引擎指令（execute_model/sample_tokens 等）统一抽象为 collective_rpc——MultiprocExecutor 将其实现为广播 MessageQueue 一次性发给所有 worker、FutureWrapper FIFO 异步收回复；三级关停（优雅排空 → SIGTERM → SIGKILL）"
+    },
+    {
+      "chapter_id": "ch19",
+      "mechanism": "execute_model 两阶段解耦与 CUDA graph 重播：阶段一 execute_model() 完成 _update_states + _prepare_inputs + _build_attention_metadata 后发起模型前向，将 logits/hidden_states/slot_mappings 等 10 字段缓存进 ExecuteModelState 后 return None（不等待采样）；阶段二 sample_tokens() 解包 state 完成采样后置 None——入口断言 state 必须为 None 强制两阶段严格配对；_bookkeeping_sync 把新 token 写回持久批次使其活到下一拍；CudagraphDispatcher 按 BatchDescriptor（num_tokens/uniform_decode/has_lora）先查 FULL（精确 num_reqs 匹配）、再查 relaxed PIECEWISE（num_reqs=None）、超 max_cudagraph_capture_size 回退 NONE（eager 逐算子执行）"
+    },
+    {
+      "chapter_id": "ch18",
+      "mechanism": "block_table 的 _compute_slot_mapping_kernel（payoff）：InputBatch 跨迭代存活（token_ids_cpu 为 max_num_reqs × max_model_len int32 全长缓冲），BatchUpdateBuilder 管理 slot 复用（pop_removed 返回最小空 slot）；BlockTable 维护 CPU/GPU 双镜像，commit_block_table 批量拷到 GPU，compute_slot_mapping 启动 Triton JIT kernel——每 program 处理一个请求，slot_id = block_table[req, pos // block_size] * block_size + pos % block_size，尾部 padding 成 PAD_SLOT_ID 适配 CUDA graph 固定 shape 要求"
+    }
+  ],
+  "key_mechanisms": [
+    "模型定义契约：四级嵌套 + (vllm_config, prefix) 统一构造",
+    "CustomOp 两级 dispatch（forward_cuda vs forward_native，构造期一次性绑定）",
+    "torch.compile 分片编译（split_graph 切图 → PiecewiseBackend Inductor 编译 → CUDAGraphWrapper 图捕获）",
+    "Worker 生命周期与 collective_rpc 广播控制平面",
+    "execute_model 两阶段解耦（ExecuteModelState 桥，返回 None + 缓存 state 后置 None）",
+    "CUDA graph 三级分派（FULL/PIECEWISE/NONE + BatchDescriptor 键匹配）",
+    "block_table Triton kernel（position → physical slot 映射 + PAD_SLOT_ID 补齐）"
+  ],
+  "voices_refs": [
+    "voice-012",
+    "voice-013",
+    "voice-031",
+    "voice-014",
+    "voice-015",
+    "voice-032"
+  ],
+  "narrative_anchors": [
+    {
+      "chapter_id": "ch22",
+      "section": "22.1 一张图看懂模型的四级嵌套"
+    },
+    {
+      "chapter_id": "ch22",
+      "section": "22.2 `(vllm_config, prefix)`：一份统一的构造契约"
+    },
+    {
+      "chapter_id": "ch23",
+      "section": "23.1 CustomOp：构造期把 forward 定死"
+    },
+    {
+      "chapter_id": "ch23",
+      "section": "23.2 enabled() 与 default_on()：编译路径为什么默认走纯 torch"
+    },
+    {
+      "chapter_id": "ch23",
+      "section": "23.4 @support_torch_compile：给模型套上可编译的外壳"
+    },
+    {
+      "chapter_id": "ch23",
+      "section": "23.6 split_graph：在 attention 处把图切开"
+    },
+    {
+      "chapter_id": "ch23",
+      "section": "23.7 逐段处理：规整段编译 + 图捕获，attention 段 eager"
+    },
+    {
+      "chapter_id": "ch17",
+      "section": "17.2 工厂：一个字符串挑出执行器"
+    },
+    {
+      "chapter_id": "ch17",
+      "section": "17.6 collective_rpc 的 mp 实现：广播一次，按需收回"
+    },
+    {
+      "chapter_id": "ch17",
+      "section": "17.8 WorkerWrapperBase：延迟出生"
+    },
+    {
+      "chapter_id": "ch19",
+      "section": "19.1 一个反直觉的方法：发起前向，却不等结果"
+    },
+    {
+      "chapter_id": "ch19",
+      "section": "19.2 两阶段的桥：ExecuteModelState 与单槽断言"
+    },
+    {
+      "chapter_id": "ch19",
+      "section": "19.6 CUDA graph 分派：FULL/PIECEWISE/NONE 的分级取舍"
+    },
+    {
+      "chapter_id": "ch18",
+      "section": "18.8 block_table 的 CPU/GPU 双镜像与 position→slot 映射"
+    }
+  ]
+}
