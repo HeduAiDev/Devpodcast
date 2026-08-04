@@ -356,6 +356,43 @@ class DialogueTTSProvider(LocalTTSProvider):
         return AudioBundle(wav_path=bundle_path, segments=segments, duration_s=round(duration_s, 2), vram_gb=vram_gb)
 
 
+def _synthesize_turns(
+    model_dir: str | Path,
+    turns: list[tuple[int, str, str]],
+    speaker_voice: dict[str, str],
+) -> dict:
+    """进程内合成指定 turns（multiprocessing worker）。返回 {turn_idx: (wav, sr)}。"""
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    _enable_sdpa_backends()
+    import numpy as np
+    import torch
+    from qwen_tts import Qwen3TTSModel
+
+    model = Qwen3TTSModel.from_pretrained(
+        str(model_dir),
+        device_map="cuda:0",
+        dtype=torch.bfloat16,
+        attn_implementation="sdpa",
+    )
+    # 按说话人分组批量合成
+    from collections import defaultdict
+    by_speaker: dict[str, list[tuple[int, str]]] = defaultdict(list)
+    for idx, spk, text in turns:
+        by_speaker[spk].append((idx, text))
+
+    result: dict[int, tuple[np.ndarray, int]] = {}
+    for spk, items in by_speaker.items():
+        voice = speaker_voice.get(spk, "dylan")
+        texts = [t for _, t in items]
+        wavs, sr = model.generate_custom_voice(
+            texts, speaker=voice, language="chinese", do_sample=True,
+        )
+        for (idx, _), wav in zip(items, wavs):
+            result[idx] = (np.asarray(wav, dtype=np.float32), sr)
+    return result
+
+
 class SegmentedTTSProvider(LocalTTSProvider):
     """Qwen3-TTS（逐句合成 + 规则插静音拼接）。
 
@@ -394,16 +431,20 @@ class SegmentedTTSProvider(LocalTTSProvider):
         self._load()
 
     def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
-        """逐句合成 + 拼接。script.turns → 每 turn 一个音频，中间插停顿。"""
-        self._load()
+        """逐句合成 + 拼接。script.turns → 每 turn 一个音频，中间插停顿。
+
+        GPU 利用率实测仅 20-39%（1.7B 模型太小，PRO 6000 算力闲置）。
+        用多进程并行：N 个进程各加载一个 Qwen3-TTS 实例，分配 1/N 的 turns，
+        并行合成 → 利用率拉满、3-4x 提速（95.6GB 显存装 4 个 ~10GB 实例绰绰有余）。
+        """
         import numpy as np
         import soundfile as sf
         import torch
+        from collections import defaultdict
 
-        model = self._model
-        # voice_map 传音色名（dylan/aiden），不是路径
+        # voice_map 传音色名（dylan/ryan），不是路径
         s1_voice = str(voice_map.get("S1", "dylan"))
-        s2_voice = str(voice_map.get("S2", "aiden"))
+        s2_voice = str(voice_map.get("S2", "ryan"))
         speaker_voice = {"S1": s1_voice, "S2": s2_voice}
 
         segments_dir = Path(opts.output_dir) / "segments"
@@ -411,26 +452,57 @@ class SegmentedTTSProvider(LocalTTSProvider):
         segments: list[Path] = []
         total_frames = 0
 
-        # 逐 turn 合成（Qwen3-TTS 批量接口一次可合成多句，但说话人不同需分批）
-        # 按说话人分组批量，同组一次合成（加速）
-        from collections import defaultdict
-        by_speaker: dict[str, list[tuple[int, str]]] = defaultdict(list)
-        for i, turn in enumerate(script.turns):
-            text = (turn.text or "").strip()
-            if text:
-                by_speaker[turn.speaker].append((i, text))
+        # 收集有效 turns（保留原顺序）
+        valid_turns = [(i, t.speaker, (t.text or "").strip())
+                       for i, t in enumerate(script.turns) if (t.text or "").strip()]
 
-        # 记录每个 turn 的音频（顺序由 turn idx 决定）
-        turn_wavs: dict[int, tuple[np.ndarray, int]] = {}
-        for spk, items in by_speaker.items():
-            voice = speaker_voice.get(spk, "dylan")
-            texts = [t for _, t in items]
-            print(f"  [tts] {spk}({voice}) 合成 {len(texts)} 句...", flush=True)
-            wavs, sr = model.generate_custom_voice(
-                texts, speaker=voice, language="chinese", do_sample=True,
-            )
-            for (idx, _), wav in zip(items, wavs):
-                turn_wavs[idx] = (wav, sr)
+        # 并行合成：N 进程（95.6GB / 每实例 ~12GB → 4-6 实例安全）
+        import multiprocessing as mp
+        n_proc = min(4, max(1, len(valid_turns) // 2))
+        if n_proc <= 1 or len(valid_turns) < 4:
+            # 少量 turn 直接单进程
+            turn_wavs = _synthesize_turns(self.model_dir, valid_turns, speaker_voice)
+        else:
+            # 按 turn 索引轮转分配（保证相邻 turn 在不同进程，负载均衡）
+            chunks: list[list[tuple[int, str, str]]] = [[] for _ in range(n_proc)]
+            for k, item in enumerate(valid_turns):
+                chunks[k % n_proc].append(item)
+            ctx = mp.get_context("spawn")
+            results: dict[int, tuple[np.ndarray, int]] = {}
+            with ctx.Pool(n_proc) as pool:
+                partials = pool.starmap(
+                    _synthesize_turns,
+                    [(self.model_dir, ch, speaker_voice) for ch in chunks],
+                )
+                for partial in partials:
+                    results.update(partial)
+            turn_wavs = results
+
+        # 按顺序拼接，说话人切换插 350-500ms，同人句间 150-250ms
+        import random
+        rng = random.Random(42)
+        all_frames: list[np.ndarray] = []
+        prev_spk = None
+        sr = None
+        for i, spk, text in valid_turns:
+            if i not in turn_wavs:
+                continue
+            wav, sr = turn_wavs[i]
+            # 停顿：切换 350-500ms，同人 150-250ms
+            if prev_spk is not None:
+                if spk != prev_spk:
+                    pause_ms = rng.randint(*self.PAUSE_SPEAKER_SWITCH_MS)
+                else:
+                    pause_ms = rng.randint(*self.PAUSE_SAME_SPEAKER_MS)
+                all_frames.append(np.zeros(int(sr * pause_ms / 1000), dtype=np.float32))
+            all_frames.append(np.asarray(wav, dtype=np.float32))
+            prev_spk = spk
+
+            # 保存分段
+            seg_path = segments_dir / f"turn{i:03d}.wav"
+            sf.write(str(seg_path), wav.astype("float32"), sr)
+            segments.append(seg_path)
+            total_frames += len(wav)
 
         # 按顺序拼接，说话人切换插 350-500ms，同人句间 150-250ms
         import random
