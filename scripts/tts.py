@@ -456,9 +456,11 @@ class SegmentedTTSProvider(LocalTTSProvider):
         valid_turns = [(i, t.speaker, (t.text or "").strip())
                        for i, t in enumerate(script.turns) if (t.text or "").strip()]
 
-        # 并行合成：N 进程（95.6GB / 每实例 ~12GB → 4-6 实例安全）
+        # 并行合成：N 进程（默认 2，防 CPU/内存过载——4 进程同时加载模型实测卡死）
+        # 教训：每个进程 from_pretrained 读 7GB 权重 + CPU 初始化，同时起 4 个会打满
+        # CPU/内存。降到 2 进程，且 spawn 天然错开加载（进程逐个初始化）。
         import multiprocessing as mp
-        n_proc = min(4, max(1, len(valid_turns) // 2))
+        n_proc = 1  # 单进程（内存受限，多进程卡死）
         if n_proc <= 1 or len(valid_turns) < 4:
             # 少量 turn 直接单进程
             turn_wavs = _synthesize_turns(self.model_dir, valid_turns, speaker_voice)
@@ -547,12 +549,110 @@ class SegmentedTTSProvider(LocalTTSProvider):
         return AudioBundle(wav_path=bundle_path, segments=segments, duration_s=round(duration_s, 2), vram_gb=vram_gb)
 
 
+class VLLMTTSProvider(LocalTTSProvider):
+    """vLLM-Omni 后端（HTTP 调用，2026-08-05 部署成功）。
+
+    vLLM-Omni 连续批处理：RTF 2.0 → 0.14（14x），单进程吃满 GPU，
+    无多进程 CPU/内存过载问题。35 分钟一期 ~5 分钟合成。
+    Server: docker run vllm/vllm-omni:latest（见 _diag/run_vllm_tts.sh）
+    """
+    native_dialogue = False
+    PAUSE_SPEAKER_SWITCH_MS = (350, 500)
+    PAUSE_SAME_SPEAKER_MS = (150, 250)
+
+    def __init__(self, model_dir: str | Path = "vllm", device: str = "", dtype: str = "",
+                 base_url: str = "http://localhost:8000"):
+        super().__init__(model_dir, device, dtype)
+        self.base_url = base_url.rstrip("/")
+
+    def _synthesize_one(self, text: str, voice: str):
+        """调用 vLLM-Omni /v1/audio/speech 合成一句。返回 (wav, sr)。"""
+        import json
+        import numpy as np
+        import urllib.request
+
+        payload = json.dumps({
+            "model": "/models/qwen3-tts",
+            "input": text,
+            "voice": voice,
+            "language": "chinese",
+            "response_format": "wav",
+            "task_type": "CustomVoice",
+            "non_streaming_mode": True,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            f"{self.base_url}/v1/audio/speech",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            wav_bytes = resp.read()
+        import io
+        import soundfile as sf
+        wav, sr = sf.read(io.BytesIO(wav_bytes), dtype="float32")
+        return np.asarray(wav, dtype=np.float32), sr
+
+    def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
+        """逐句合成 + 拼接（HTTP 到 vLLM-Omni server）。"""
+        import numpy as np
+        import soundfile as sf
+
+        s1_voice = str(voice_map.get("S1", "dylan"))
+        s2_voice = str(voice_map.get("S2", "ryan"))
+        speaker_voice = {"S1": s1_voice, "S2": s2_voice}
+
+        segments_dir = Path(opts.output_dir) / "segments"
+        segments_dir.mkdir(parents=True, exist_ok=True)
+        segments: list[Path] = []
+        total_frames = 0
+
+        valid_turns = [(i, t.speaker, (t.text or "").strip())
+                       for i, t in enumerate(script.turns) if (t.text or "").strip()]
+
+        # 逐句合成（HTTP，server 端连续批处理）
+        turn_wavs: dict[int, tuple[np.ndarray, int]] = {}
+        for i, spk, text in valid_turns:
+            voice = speaker_voice.get(spk, "dylan")
+            wav, sr = self._synthesize_one(text, voice)
+            turn_wavs[i] = (wav, sr)
+
+        # 按顺序拼接（同 SegmentedTTSProvider）
+        import random
+        rng = random.Random(42)
+        all_frames: list[np.ndarray] = []
+        prev_spk = None
+        for i, spk, _ in valid_turns:
+            wav, sr = turn_wavs[i]
+            if prev_spk is not None:
+                if spk != prev_spk:
+                    pause_ms = rng.randint(*self.PAUSE_SPEAKER_SWITCH_MS)
+                else:
+                    pause_ms = rng.randint(*self.PAUSE_SAME_SPEAKER_MS)
+                all_frames.append(np.zeros(int(sr * pause_ms / 1000), dtype=np.float32))
+            all_frames.append(wav)
+            prev_spk = spk
+
+            seg_path = segments_dir / f"turn{i:03d}.wav"
+            sf.write(str(seg_path), wav.astype("float32"), sr)
+            segments.append(seg_path)
+            total_frames += len(wav)
+
+        combined = np.concatenate(all_frames, axis=0) if all_frames else np.zeros(1, dtype=np.float32)
+        bundle_path = Path(opts.output_dir) / "episode.wav"
+        sf.write(str(bundle_path), combined.astype("float32"), sr)
+
+        return AudioBundle(wav_path=bundle_path, segments=segments,
+                           duration_s=round(len(combined) / sr, 2), vram_gb=0.0)
+
+
 def load_provider(config: dict) -> TTSProvider:
     kind = config.get("provider", "")
     if kind == "moss-ttsd":
         return DialogueTTSProvider(model_dir=config.get("model_dir", "models/moss-ttsd"))
     if kind == "qwen3-tts":
         return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/qwen3-tts-customvoice"))
+    if kind == "vllm-omni":
+        return VLLMTTSProvider(base_url=config.get("base_url", "http://localhost:8000"))
     if kind == "cosyvoice3":
         return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/cosyvoice3"))
     raise ValueError(f"未知 TTS provider: {kind!r}")
@@ -610,7 +710,8 @@ def _cli_synthesize(argv: list[str]) -> int:
         "cosyvoice3": "models/cosyvoice3",
     }.get(provider_name, "models/qwen3-tts-customvoice")
     provider = load_provider({"provider": provider_name, "model_dir": model_dir})
-    provider.warmup()
+    if provider_name != "vllm-omni":
+        provider.warmup()
     opts = TTSOpts()
     opts.output_dir = str(output_dir)
     # 官方换算 1s ≈ 12.5 tokens；目标分钟数 × 60s × 12.5 tokens/s，加 30% 余量
