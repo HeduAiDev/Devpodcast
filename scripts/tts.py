@@ -120,7 +120,7 @@ class DialogueTTSProvider(LocalTTSProvider):
         self._model = AutoModel.from_pretrained(
             self.model_dir,
             trust_remote_code=True,
-            attn_implementation="sdpa",
+            attn_implementation="eager",
             torch_dtype=dtype,
             device_map="auto",
             low_cpu_mem_usage=True,
@@ -277,20 +277,24 @@ class DialogueTTSProvider(LocalTTSProvider):
                     break
             outputs = best_out
 
-            # 解码（自校准）
-            audio_codes = outputs[0][1][:, 1:].cpu()
-            dedelayed = processor.apply_de_delay_pattern(audio_codes)
-            start_length = int(outputs[0][0].item())
-            decoded_audio = self._calibrated_decode(dedelayed, start_length, n_vq, pad_code, target_sr)
-
-            for wav in decoded_audio:
-                wav_np = wav.cpu().numpy() if hasattr(wav, "cpu") else wav
-                if wav_np.ndim == 1:
-                    wav_np = wav_np.reshape(-1, 1)
-                seg_path = segments_dir / f"chunk{ci:02d}_{len(segments):03d}.wav"
-                sf.write(str(seg_path), wav_np.astype("float32"), target_sr)
-                segments.append(seg_path)
-                total_frames += wav_np.shape[0]
+            # 解码：官方 processor.decode() 路径（de-delay → 分段 → 解码 → 按
+            # start_length 比例在波形层裁剪，保留 codec 因果上下文）。
+            # 自校准网格搜索（_calibrated_decode）已废弃：往返测试证明 codec
+            # 不需要通道移位/时间偏移，网格搜索只会把正常码搅成噪声。
+            decoded_messages = processor.decode(outputs)
+            for msg in decoded_messages:
+                if msg is None:
+                    continue
+                for wav in msg.audio_codes_list:
+                    if not isinstance(wav, torch.Tensor) or wav.numel() == 0:
+                        continue
+                    wav_np = wav.detach().float().cpu().numpy()
+                    if wav_np.ndim == 1:
+                        wav_np = wav_np.reshape(-1, 1)
+                    seg_path = segments_dir / f"chunk{ci:02d}_{len(segments):03d}.wav"
+                    sf.write(str(seg_path), wav_np.astype("float32"), target_sr)
+                    segments.append(seg_path)
+                    total_frames += wav_np.shape[0]
 
         # 6. 拼接总音频
         bundle_path = Path(opts.output_dir) / "episode.wav"
