@@ -357,19 +357,130 @@ class DialogueTTSProvider(LocalTTSProvider):
 
 
 class SegmentedTTSProvider(LocalTTSProvider):
-    """CosyVoice3：逐句合成 + 规则插静音拼接。"""
+    """Qwen3-TTS（逐句合成 + 规则插静音拼接）。
+
+    2026-08-05 调研选定：MOSS-TTSD 中文长文本生成不稳定（>200字退化），
+    业界第一梯队调研结论主选 Qwen3-TTS-12Hz-1.7B-CustomVoice：
+    - Apache-2.0 全开放，9 个内置音色免克隆（dylan 做老张 / aiden 做阿凯）
+    - 逐句合成 + 拼接天然支持任意长度
+    - RTF≈2.0（35 分钟一期约 70 分钟合成，可接受）
+
+    voice_map 传音色名（如 S1=dylan,S2=aiden），不是 wav 路径。
+    """
     native_dialogue = False
     PAUSE_SPEAKER_SWITCH_MS = (350, 500)
     PAUSE_SAME_SPEAKER_MS = (150, 250)
 
+    def __init__(self, model_dir: str | Path, device: str = "cuda:0", dtype: str = "bfloat16"):
+        super().__init__(model_dir, device, dtype)
+        self._model = None
+
+    def _load(self):
+        if self._model is not None:
+            return
+        _enable_sdpa_backends()
+        import torch
+        from qwen_tts import Qwen3TTSModel
+
+        self._model = Qwen3TTSModel.from_pretrained(
+            self.model_dir,
+            device_map=self.device,
+            dtype=torch.bfloat16,
+            attn_implementation="sdpa",
+        )
+
+    def warmup(self) -> None:
+        """加载模型（Qwen3-TTS 无需预热，加载即就绪）。"""
+        self._load()
+
     def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
-        raise NotImplementedError("CosyVoice3 模型接入在 fallback 任务")
+        """逐句合成 + 拼接。script.turns → 每 turn 一个音频，中间插停顿。"""
+        self._load()
+        import numpy as np
+        import soundfile as sf
+        import torch
+
+        model = self._model
+        # voice_map 传音色名（dylan/aiden），不是路径
+        s1_voice = str(voice_map.get("S1", "dylan"))
+        s2_voice = str(voice_map.get("S2", "aiden"))
+        speaker_voice = {"S1": s1_voice, "S2": s2_voice}
+
+        segments_dir = Path(opts.output_dir) / "segments"
+        segments_dir.mkdir(parents=True, exist_ok=True)
+        segments: list[Path] = []
+        total_frames = 0
+
+        # 逐 turn 合成（Qwen3-TTS 批量接口一次可合成多句，但说话人不同需分批）
+        # 按说话人分组批量，同组一次合成（加速）
+        from collections import defaultdict
+        by_speaker: dict[str, list[tuple[int, str]]] = defaultdict(list)
+        for i, turn in enumerate(script.turns):
+            text = (turn.text or "").strip()
+            if text:
+                by_speaker[turn.speaker].append((i, text))
+
+        # 记录每个 turn 的音频（顺序由 turn idx 决定）
+        turn_wavs: dict[int, tuple[np.ndarray, int]] = {}
+        for spk, items in by_speaker.items():
+            voice = speaker_voice.get(spk, "dylan")
+            texts = [t for _, t in items]
+            print(f"  [tts] {spk}({voice}) 合成 {len(texts)} 句...", flush=True)
+            wavs, sr = model.generate_custom_voice(
+                texts, speaker=voice, language="chinese", do_sample=True,
+            )
+            for (idx, _), wav in zip(items, wavs):
+                turn_wavs[idx] = (wav, sr)
+
+        # 按顺序拼接，说话人切换插 350-500ms，同人句间 150-250ms
+        import random
+        rng = random.Random(42)
+        all_frames: list[np.ndarray] = []
+        prev_spk = None
+        for i, turn in enumerate(script.turns):
+            if i not in turn_wavs:
+                continue
+            wav, sr = turn_wavs[i]
+            # 停顿：切换 350-500ms，同人 150-250ms
+            if prev_spk is not None:
+                if turn.speaker != prev_spk:
+                    pause_ms = rng.randint(*self.PAUSE_SPEAKER_SWITCH_MS)
+                else:
+                    pause_ms = rng.randint(*self.PAUSE_SAME_SPEAKER_MS)
+                all_frames.append(np.zeros(int(sr * pause_ms / 1000), dtype=np.float32))
+            all_frames.append(np.asarray(wav, dtype=np.float32))
+            prev_spk = turn.speaker
+
+            # 保存分段
+            seg_path = segments_dir / f"turn{i:03d}.wav"
+            sf.write(str(seg_path), wav.astype("float32"), sr)
+            segments.append(seg_path)
+            total_frames += len(wav)
+
+        # 拼接总音频
+        combined = np.concatenate(all_frames, axis=0) if all_frames else np.zeros(1, dtype=np.float32)
+        bundle_path = Path(opts.output_dir) / "episode.wav"
+        sf.write(str(bundle_path), combined.astype("float32"), sr)
+
+        duration_s = len(combined) / sr
+        vram_gb = 0.0
+        try:
+            free0 = torch.cuda.mem_get_info(0)[0] / 1024 ** 3
+            _ = free0
+            used = (torch.cuda.get_device_properties(0).total_memory - torch.cuda.mem_get_info(0)[0]) / 1024 ** 3
+            vram_gb = round(used, 1)
+        except Exception:
+            pass
+
+        return AudioBundle(wav_path=bundle_path, segments=segments, duration_s=round(duration_s, 2), vram_gb=vram_gb)
 
 
 def load_provider(config: dict) -> TTSProvider:
     kind = config.get("provider", "")
     if kind == "moss-ttsd":
         return DialogueTTSProvider(model_dir=config.get("model_dir", "models/moss-ttsd"))
+    if kind == "qwen3-tts":
+        return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/qwen3-tts-customvoice"))
     if kind == "cosyvoice3":
         return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/cosyvoice3"))
     raise ValueError(f"未知 TTS provider: {kind!r}")
@@ -387,6 +498,7 @@ def _cli_synthesize(argv: list[str]) -> int:
     voice_map: dict[str, str] = {}
     output_dir = Path("audio")
     target_minutes = 35.0
+    provider_name = "qwen3-tts"  # 默认 Qwen3-TTS（2026-08-05 选定主方案）
     i = 1
     while i < len(args):
         if args[i] == "--voice-map" and i + 1 < len(args):
@@ -400,6 +512,9 @@ def _cli_synthesize(argv: list[str]) -> int:
         elif args[i] == "--target-minutes" and i + 1 < len(args):
             target_minutes = float(args[i + 1])
             i += 2
+        elif args[i] == "--provider" and i + 1 < len(args):
+            provider_name = args[i + 1]
+            i += 2
         else:
             i += 1
 
@@ -407,7 +522,7 @@ def _cli_synthesize(argv: list[str]) -> int:
         print(f"script 不存在: {script_path}", file=sys.stderr)
         return 1
     if "S1" not in voice_map or "S2" not in voice_map:
-        print("voice-map 必须含 S1 和 S2（如 S1=voice-samples/laozhang.wav,S2=voice-samples/akai.wav）", file=sys.stderr)
+        print("voice-map 必须含 S1 和 S2（qwen3-tts 传音色名如 S1=dylan,S2=aiden；moss-ttsd 传 wav 路径）", file=sys.stderr)
         return 2
 
     # 导入 script parser（延迟，避免无 GPU 环境崩溃）
@@ -417,7 +532,12 @@ def _cli_synthesize(argv: list[str]) -> int:
     script = parse(script_path)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    provider = load_provider({"provider": "moss-ttsd", "model_dir": "models/moss-ttsd"})
+    model_dir = {
+        "moss-ttsd": "models/moss-ttsd",
+        "qwen3-tts": "models/qwen3-tts-customvoice",
+        "cosyvoice3": "models/cosyvoice3",
+    }.get(provider_name, "models/qwen3-tts-customvoice")
+    provider = load_provider({"provider": provider_name, "model_dir": model_dir})
     provider.warmup()
     opts = TTSOpts()
     opts.output_dir = str(output_dir)
