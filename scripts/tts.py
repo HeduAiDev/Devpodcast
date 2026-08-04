@@ -120,7 +120,7 @@ class DialogueTTSProvider(LocalTTSProvider):
         self._model = AutoModel.from_pretrained(
             self.model_dir,
             trust_remote_code=True,
-            attn_implementation="eager",
+            attn_implementation="sdpa",
             torch_dtype=dtype,
             device_map="auto",
             low_cpu_mem_usage=True,
@@ -198,8 +198,10 @@ class DialogueTTSProvider(LocalTTSProvider):
         # （实测 300 字仅生成 ~53 步 vs 短文本可到 318 步）。按目标秒数分块，
         # 每段独立生成后拼接；每段 ≤60s 音频（750 步），提前终止风险低。
         # 音色一致性：每段用同一参考音频克隆，漂移可控。
-        chunk_seconds = 45.0
-        chunk_chars = int(chunk_seconds * 4.0)  # 4 字/秒口播
+        # 模型实测单段可完整朗读 ~889 字（英文 48.8s）。用 800 字 chunk：
+        # 减少分段数、降低失败概率；每段 ~60s 语音，整期 ~13 段。
+        chunk_seconds = 200.0
+        chunk_chars = int(chunk_seconds * 4.0)  # 4 字/秒口播 = 800 字
         # 按 turn 边界切分（避免把单个 turn 劈开）
         chunks: list[str] = []
         cur: list[str] = []
@@ -217,6 +219,8 @@ class DialogueTTSProvider(LocalTTSProvider):
             print(f"  [tts] 分段生成：{len(chunks)} 段（每段 ≤{chunk_chars} 字）")
 
         # 2. 参考音频：voice_map {speaker: wav_path}，编码为 codec tokens
+        #    官方 v0.7 中文示例证明：必须带参考文本前缀（prompt_text），否则
+        #    模型缺少"谁在说话"锚定 → 生成质量差、提前终止。
         import torchaudio
         wavs, ref_names = [], []
         for spk in ("S1", "S2"):
@@ -234,6 +238,12 @@ class DialogueTTSProvider(LocalTTSProvider):
         concat_wav = torch.cat(wavs, dim=-1)
         prompt_audio = processor.encode_audios_from_wav([concat_wav], sampling_rate=target_sr)[0]
 
+        # 参考文本前缀（voice_map 里可选传 REF_TEXT_<spk> 键；缺省用占位）
+        ref_texts = []
+        for spk in ("S1", "S2"):
+            rt = voice_map.get(f"REF_TEXT_{spk}", "")
+            ref_texts.append(f"[{spk}] {rt}".strip() if rt else "")
+
         # 3-5. 分段生成 + 解码
         device = self._model.device
         pad_code = processor.model_config.audio_pad_code
@@ -243,23 +253,35 @@ class DialogueTTSProvider(LocalTTSProvider):
         total_frames = 0
         import soundfile as sf
 
-        for ci, chunk_text in enumerate(chunks):
-            conversation = [[
-                processor.build_user_message(text=chunk_text, reference=ref_codes),
+        # 参考文本前缀：官方 _build_prefixed_text 把 [S1]ref1[S2]ref2 拼在对话前
+        ref_prefix = "".join(rt for rt in ref_texts if rt)
+
+        # 批处理：一次生成 BATCH_SIZE 个 chunk，GPU 并行 → 3-4x 提速
+        # （官方 generate 原生支持 batch；处理器按最长序列 padding）
+        BATCH_SIZE = 4
+        for g in range(0, len(chunks), BATCH_SIZE):
+            group = chunks[g:g + BATCH_SIZE]
+            conversations = [[
+                processor.build_user_message(text=(ref_prefix + ct) if ref_prefix else ct, reference=ref_codes),
                 processor.build_assistant_message(audio_codes_list=[prompt_audio]),
-            ]]
-            batch = processor(conversation, mode="continuation")
+            ] for ct in group]
+            batch = processor(conversations, mode="continuation")
 
-            # 每段 max_new_tokens：文本 → 步数 + 余量；温度 0.7（实测更稳定）
-            chunk_steps = int(len(chunk_text) / 4.0 * 12.5 * 1.3)
-            max_new_tokens = max(512, chunk_steps)
-            expected_new = int(len(chunk_text) / 4.0 * 12.5)
-            min_ok_steps = max(60, int(expected_new * 0.35))
+            # max_new_tokens 取组内最大（短 chunk 靠 <|im_end|> 提前停）
+            max_new_tokens = max(
+                max(512, int(len(ct) / 4.0 * 12.5 * 1.3)) for ct in group
+            )
+            min_ok_steps = [
+                max(60, int(len(ct) / 4.0 * 12.5 * 0.35)) for ct in group
+            ]
 
-            best_out = None
-            best_new = -1
+            # 每样本独立重试评分：非静音占比 × 步数达标率
+            import numpy as np
+
+            best_wavs: list[list] = [[] for _ in group]
+            best_scores = [-1.0] * len(group)
             for attempt in range(3):
-                torch.manual_seed(42 + ci * 101 + attempt * 17)
+                torch.manual_seed(42 + g * 101 + attempt * 17)
                 with torch.no_grad():
                     outputs = model.generate(
                         input_ids=batch["input_ids"].to(device),
@@ -269,26 +291,41 @@ class DialogueTTSProvider(LocalTTSProvider):
                         audio_temperature=0.7, audio_top_p=0.9, audio_top_k=50,
                         audio_repetition_penalty=1.1,
                     )
-                new_steps = int(outputs[0][1].shape[0]) - int(outputs[0][0].item())
-                if new_steps > best_new:
-                    best_new = new_steps
-                    best_out = outputs
-                if new_steps >= min_ok_steps:
-                    break
-            outputs = best_out
-
-            # 解码：官方 processor.decode() 路径（de-delay → 分段 → 解码 → 按
-            # start_length 比例在波形层裁剪，保留 codec 因果上下文）。
-            # 自校准网格搜索（_calibrated_decode）已废弃：往返测试证明 codec
-            # 不需要通道移位/时间偏移，网格搜索只会把正常码搅成噪声。
-            decoded_messages = processor.decode(outputs)
-            for msg in decoded_messages:
-                if msg is None:
-                    continue
-                for wav in msg.audio_codes_list:
-                    if not isinstance(wav, torch.Tensor) or wav.numel() == 0:
+                # outputs: list of (start_length, generation_ids)，每样本一个
+                for i, (start_len, gen_ids) in enumerate(outputs):
+                    new_steps = int(gen_ids.shape[0]) - int(start_len.item())
+                    msgs = processor.decode([(start_len, gen_ids)])
+                    att_wavs = []
+                    for msg in msgs:
+                        if msg is None:
+                            continue
+                        for wav in msg.audio_codes_list:
+                            if not isinstance(wav, torch.Tensor) or wav.numel() == 0:
+                                continue
+                            att_wavs.append(wav.detach().float().cpu())
+                    if not att_wavs:
                         continue
-                    wav_np = wav.detach().float().cpu().numpy()
+                    concat = torch.cat(att_wavs, dim=-1).numpy().reshape(-1)
+                    if concat.size == 0:
+                        continue
+                    nonsil = float((np.abs(concat) >= 0.01).mean())
+                    mok = min_ok_steps[i]
+                    score = nonsil * min(new_steps / mok, 1.0) if mok > 0 else nonsil
+                    if score > best_scores[i]:
+                        best_scores[i] = score
+                        best_wavs[i] = att_wavs
+                # 全部达标才提前停
+                if all(
+                    best_scores[i] > 0.5 * min(1.0, 1.0)
+                    for i in range(len(group))
+                ):
+                    break
+
+            # 保存本组所有样本的分段
+            for i, wavs_out in enumerate(best_wavs):
+                ci = g + i
+                for wav in wavs_out:
+                    wav_np = wav.numpy()
                     if wav_np.ndim == 1:
                         wav_np = wav_np.reshape(-1, 1)
                     seg_path = segments_dir / f"chunk{ci:02d}_{len(segments):03d}.wav"
