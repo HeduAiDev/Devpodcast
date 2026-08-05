@@ -561,17 +561,18 @@ class VLLMTTSProvider(LocalTTSProvider):
     PAUSE_SAME_SPEAKER_MS = (150, 250)
 
     def __init__(self, model_dir: str | Path = "vllm", device: str = "", dtype: str = "",
-                 base_url: str = "http://localhost:8000"):
+                 base_url: str = "http://localhost:8000", speed: float = 1.15):
         super().__init__(model_dir, device, dtype)
         self.base_url = base_url.rstrip("/")
+        self.speed = speed
 
     def _synthesize_one(self, text: str, voice: str):
         """调用 vLLM-Omni /v1/audio/speech 合成一句。返回 (wav, sr)。"""
         import json
         import numpy as np
-        import urllib.request
+        import requests
 
-        payload = json.dumps({
+        payload = {
             "model": "/models/qwen3-tts",
             "input": text,
             "voice": voice,
@@ -579,17 +580,17 @@ class VLLMTTSProvider(LocalTTSProvider):
             "response_format": "wav",
             "task_type": "CustomVoice",
             "non_streaming_mode": True,
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            f"{self.base_url}/v1/audio/speech",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=300) as resp:
-            wav_bytes = resp.read()
+            # 语速：默认 1.15（35 分钟目标用；实测 vLLM-Omni 输出偏慢需微调）
+            "speed": self.speed,
+            # 采样稳定性（2026-08-05 实测）：temperature 只能经 extra_params 传，
+            # 顶层 temperature 被 server 忽略。0.1 显著降低语调随机（浮夸/哭腔）。
+            "extra_params": {"temperature": 0.1, "top_p": 0.9, "top_k": 50},
+        }
+        resp = requests.post(f"{self.base_url}/v1/audio/speech", json=payload, timeout=300)
+        resp.raise_for_status()
         import io
         import soundfile as sf
-        wav, sr = sf.read(io.BytesIO(wav_bytes), dtype="float32")
+        wav, sr = sf.read(io.BytesIO(resp.content), dtype="float32")
         return np.asarray(wav, dtype=np.float32), sr
 
     def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
@@ -609,12 +610,21 @@ class VLLMTTSProvider(LocalTTSProvider):
         valid_turns = [(i, t.speaker, (t.text or "").strip())
                        for i, t in enumerate(script.turns) if (t.text or "").strip()]
 
-        # 逐句合成（HTTP，server 端连续批处理）
-        turn_wavs: dict[int, tuple[np.ndarray, int]] = {}
-        for i, spk, text in valid_turns:
+        # 逐句合成（HTTP，server 端连续批处理）。
+        # 实测单请求有 ~21s 固定开销（vLLM-Omni 每请求重建 cudagraph），
+        # 用线程池并发发请求摊薄它（server 端连续批处理，GPU 单进程吃满）。
+        from concurrent.futures import ThreadPoolExecutor
+
+        def _synth(item):
+            i, spk, text = item
             voice = speaker_voice.get(spk, "dylan")
             wav, sr = self._synthesize_one(text, voice)
-            turn_wavs[i] = (wav, sr)
+            return i, wav, sr
+
+        turn_wavs: dict[int, tuple[np.ndarray, int]] = {}
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for i, wav, sr in ex.map(_synth, valid_turns):
+                turn_wavs[i] = (wav, sr)
 
         # 按顺序拼接（同 SegmentedTTSProvider）
         import random
@@ -638,6 +648,12 @@ class VLLMTTSProvider(LocalTTSProvider):
             total_frames += len(wav)
 
         combined = np.concatenate(all_frames, axis=0) if all_frames else np.zeros(1, dtype=np.float32)
+
+        # 响度归一化：防削波（vLLM-Omni 输出可能满幅 peak=1.0）
+        peak = float(np.abs(combined).max())
+        if peak > 0.95:
+            combined = combined * (0.9 / peak)
+
         bundle_path = Path(opts.output_dir) / "episode.wav"
         sf.write(str(bundle_path), combined.astype("float32"), sr)
 
@@ -652,7 +668,8 @@ def load_provider(config: dict) -> TTSProvider:
     if kind == "qwen3-tts":
         return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/qwen3-tts-customvoice"))
     if kind == "vllm-omni":
-        return VLLMTTSProvider(base_url=config.get("base_url", "http://localhost:8000"))
+        return VLLMTTSProvider(base_url=config.get("base_url", "http://localhost:8000"),
+                               speed=config.get("speed", 1.15))
     if kind == "cosyvoice3":
         return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/cosyvoice3"))
     raise ValueError(f"未知 TTS provider: {kind!r}")
@@ -709,7 +726,10 @@ def _cli_synthesize(argv: list[str]) -> int:
         "qwen3-tts": "models/qwen3-tts-customvoice",
         "cosyvoice3": "models/cosyvoice3",
     }.get(provider_name, "models/qwen3-tts-customvoice")
-    provider = load_provider({"provider": provider_name, "model_dir": model_dir})
+    speed = 1.15
+    if "--speed" in args:
+        speed = float(args[args.index("--speed") + 1])
+    provider = load_provider({"provider": provider_name, "model_dir": model_dir, "speed": speed})
     if provider_name != "vllm-omni":
         provider.warmup()
     opts = TTSOpts()
