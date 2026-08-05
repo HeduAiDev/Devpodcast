@@ -549,6 +549,135 @@ class SegmentedTTSProvider(LocalTTSProvider):
         return AudioBundle(wav_path=bundle_path, segments=segments, duration_s=round(duration_s, 2), vram_gb=vram_gb)
 
 
+class SoulXTTSProvider(LocalTTSProvider):
+    """SoulX-Podcast 后端（2026-08-06 选定最终方案）。
+
+    原生双人对话播客模型：单次 forward_longform 合成整期（音色/人格全程一致，
+    无 chunk 漂移）。调研确认是当前开源中文长播客对话最优解（cpSIM 0.599，
+    中文一等公民，副语言标签原生支持）。torch 2.11 直接可用，VRAM ~5.4GB。
+    """
+    native_dialogue = True
+    SOULX_PYTHON = r"E:\Laboratory\Devpodcast\_venv_soulx\Scripts\python.exe"
+    SOULX_REPO = r"E:\Laboratory\Devpodcast\_diag\SoulX-Podcast"
+
+    def __init__(self, model_dir: str | Path = "models/soulx-podcast", device: str = "cuda:0",
+                 dtype: str = "bfloat16"):
+        super().__init__(model_dir, device, dtype)
+
+    def warmup(self) -> None:
+        """SoulX 无需预热（子进程内加载）。"""
+        pass
+
+    def _build_script_json(self, script, voice_map: dict, tmp_dir: Path) -> Path:
+        """script.turns → SoulX JSON: speakers.{S1,S2}.{prompt_audio,prompt_text} + text。"""
+        import json
+        # voice_map: {"S1": {"audio": "...", "text": "..."}, "S2": {"audio": "...", "text": "..."}}
+        speakers = {}
+        for spk in ("S1", "S2"):
+            info = voice_map.get(spk, {})
+            speakers[spk] = {
+                "prompt_audio": info.get("audio", ""),
+                "prompt_text": info.get("text", ""),
+            }
+        text = [[t.speaker, (t.text or "").strip()] for t in script.turns if (t.text or "").strip()]
+        data = {"speakers": speakers, "text": text}
+        out = tmp_dir / "script.json"
+        out.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return out
+
+    def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
+        """整期单次合成（原生双人对话）。"""
+        import json
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        # 模型路径需绝对路径（子进程 chdir 后相对路径失效）
+        model_abs = Path(self.model_dir).resolve()
+        tmp_dir = Path(opts.output_dir) / "soulx_tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        # voice_map 的 wav 路径需绝对路径（子进程 chdir 后相对路径失效）
+        voice_map_abs = {}
+        for spk, info in voice_map.items():
+            info = dict(info)
+            if "audio" in info and info["audio"]:
+                info["audio"] = str(Path(info["audio"]).resolve())
+            voice_map_abs[spk] = info
+        script_json = self._build_script_json(script, voice_map_abs, tmp_dir).resolve()
+
+        out_wav = (Path(opts.output_dir) / "episode.wav").resolve()
+        infer_py = tmp_dir / "infer.py"
+        infer_py.write_text(f'''
+import os, sys, time, json
+REPO = r"{self.SOULX_REPO}"
+MODEL = r"{model_abs}"
+SCRIPT = r"{script_json}"
+OUT = r"{out_wav.resolve()}"
+os.chdir(REPO)
+sys.path.insert(0, REPO)
+
+import torch, soundfile as sf, numpy as np, torchaudio
+
+def _ta_load_sf(file, sr=None, **kwargs):
+    audio, sample_rate = sf.read(file, dtype="float32", always_2d=True)
+    return torch.from_numpy(audio.T), sample_rate
+
+torchaudio.load = _ta_load_sf
+
+import s3tokenizer.utils as _s3u, s3tokenizer as _s3
+
+def _load_audio_sf(file, sr=16000):
+    audio, sample_rate = sf.read(file, dtype="float32", always_2d=True)
+    audio = torch.from_numpy(audio.T)
+    if sample_rate != sr:
+        audio = torchaudio.transforms.Resample(sample_rate, sr)(audio)
+    return audio[0]
+
+_s3u.load_audio = _load_audio_sf
+_s3.load_audio = _load_audio_sf
+
+from soulxpodcast.utils.parser import podcast_format_parser
+from soulxpodcast.utils.infer_utils import initiate_model, process_single_input
+
+print(f"[env] torch={{torch.__version__}}")
+t0 = time.time()
+model, dataset = initiate_model(1988, MODEL, "hf", False)
+print(f"[load] ok {{time.time()-t0:.1f}}s")
+
+with open(SCRIPT, encoding="utf-8") as f:
+    data = json.load(f)
+inputs = podcast_format_parser(data)
+data_item = process_single_input(dataset, inputs["text"], inputs["prompt_wav"],
+    inputs["prompt_text"], inputs["use_dialect_prompt"], inputs["dialect_prompt_text"])
+
+t0 = time.time()
+results_dict = model.forward_longform(**data_item)
+elapsed = time.time() - t0
+
+target_audio = None
+for wav in results_dict["generated_wavs"]:
+    target_audio = wav if target_audio is None else torch.cat([target_audio, wav], dim=1)
+
+os.makedirs(os.path.dirname(OUT), exist_ok=True)
+sf.write(OUT, target_audio.cpu().squeeze(0).numpy(), 24000)
+dur = target_audio.shape[-1] / 24000.0
+print(f"[save] dur={{dur:.2f}}s rtf={{elapsed/dur:.3f}}")
+''', encoding="utf-8")
+
+        # 用 SoulX venv 的 python 运行（torch 2.11 + s3tokenizer 隔离环境）
+        subprocess.run([self.SOULX_PYTHON, str(infer_py)], check=True, timeout=3600)
+
+        # 读取结果
+        import soundfile as sf
+        x, sr = sf.read(out_wav, dtype="float32")
+        return AudioBundle(
+            wav_path=out_wav,
+            segments=[out_wav],
+            duration_s=round(len(x) / sr, 2),
+            vram_gb=0.0,
+        )
+
+
 class VLLMTTSProvider(LocalTTSProvider):
     """vLLM-Omni 后端（HTTP 调用，2026-08-05 部署成功）。
 
@@ -626,6 +755,17 @@ class VLLMTTSProvider(LocalTTSProvider):
             for i, wav, sr in ex.map(_synth, valid_turns):
                 turn_wavs[i] = (wav, sr)
 
+        # 裁剪段内静音（vLLM-Omni 每句生成带大量静音，实测 60% 是静音）
+        # 保留首尾各 0.1s，去掉中间长静音
+        for i in turn_wavs:
+            wav, sr = turn_wavs[i]
+            mask = np.abs(wav) >= 0.01
+            idx = np.where(mask)[0]
+            if len(idx) > 0:
+                start = max(0, int(idx[0]) - int(0.1 * sr))
+                end = min(len(wav), int(idx[-1]) + int(0.1 * sr))
+                turn_wavs[i] = (wav[start:end], sr)
+
         # 按顺序拼接（同 SegmentedTTSProvider）
         import random
         rng = random.Random(42)
@@ -667,6 +807,8 @@ def load_provider(config: dict) -> TTSProvider:
         return DialogueTTSProvider(model_dir=config.get("model_dir", "models/moss-ttsd"))
     if kind == "qwen3-tts":
         return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/qwen3-tts-customvoice"))
+    if kind == "soulx-tts":
+        return SoulXTTSProvider(model_dir=config.get("model_dir", "models/soulx-podcast"))
     if kind == "vllm-omni":
         return VLLMTTSProvider(base_url=config.get("base_url", "http://localhost:8000"),
                                speed=config.get("speed", 1.15))
@@ -711,8 +853,18 @@ def _cli_synthesize(argv: list[str]) -> int:
         print(f"script 不存在: {script_path}", file=sys.stderr)
         return 1
     if "S1" not in voice_map or "S2" not in voice_map:
-        print("voice-map 必须含 S1 和 S2（qwen3-tts 传音色名如 S1=dylan,S2=aiden；moss-ttsd 传 wav 路径）", file=sys.stderr)
+        print("voice-map 必须含 S1 和 S2（qwen3-tts 传音色名如 S1=dylan,S2=aiden；moss-ttsd/soulx 传 wav 路径）", file=sys.stderr)
         return 2
+
+    # soulx-tts: voice_map 值是 wav 路径，prompt_text 从同目录的 <name>.txt 读
+    if provider_name == "soulx-tts":
+        for spk in ("S1", "S2"):
+            wav_path = voice_map[spk]
+            txt_path = Path(wav_path).with_suffix(".txt")
+            voice_map[spk] = {
+                "audio": wav_path,
+                "text": txt_path.read_text(encoding="utf-8").strip() if txt_path.is_file() else "",
+            }
 
     # 导入 script parser（延迟，避免无 GPU 环境崩溃）
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -724,6 +876,7 @@ def _cli_synthesize(argv: list[str]) -> int:
     model_dir = {
         "moss-ttsd": "models/moss-ttsd",
         "qwen3-tts": "models/qwen3-tts-customvoice",
+        "soulx-tts": "models/soulx-podcast",
         "cosyvoice3": "models/cosyvoice3",
     }.get(provider_name, "models/qwen3-tts-customvoice")
     speed = 1.15
