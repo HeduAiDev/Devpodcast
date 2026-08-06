@@ -1,0 +1,3 @@
+# Git LFS：episode 成品音频（~80MB/期，GitHub 免费 LFS 额度 1GB ≈ 12 期）
+shows/*/episodes/*/audio/*.wav filter=lfs diff=lfs merge=lfs -text
+shows/*/episodes/*/audio/segments/*.wav filter=lfs diff=lfs merge=lfs -text
