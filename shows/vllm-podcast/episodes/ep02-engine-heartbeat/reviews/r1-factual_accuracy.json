@@ -1,0 +1,29 @@
+{
+  "episode_id": "ep02",
+  "run": 1,
+  "dimension": "factual_accuracy",
+  "pass": true,
+  "verdict": "pass",
+  "issues": [
+    {
+      "problem": "script.md:93 「一拍几万颗 token，每拍全量重发，谁也扛不住」与同稿 L49 自己确立的预算上限矛盾：L49 说 max num batched tokens 默认 8192，episode-card.json ch13 明确「批大小的约束是 max_num_batched_tokens（默认 8192）」——一拍调度的总 token 数被该预算封顶，默认配置下一拍不可能到「几万颗」（8192 ≈ 八千，差 4 倍以上）。",
+      "suggested_fix": "把「几万颗」改为「成千上万颗」或「八千多颗」；或干脆删掉具体量级（如「一拍这么多 token，每拍全量重发，谁也扛不住」），论点（diff 省通信）不依赖这个数字。",
+      "rationale": "事实准确维：数字不漂移。这是稿内自相矛盾——同一脚本 L49 与 L93 的数字打架，听众按 L49 的 8192 交叉核对会当场抓到；且 episode-card ch13 是批大小约束的支撑条款。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:305 「我不知道」时刻的复核结论：前半句（8192 默认值为什么是 8192、为什么不是 16384）经查 episode-card / arc.json / 书 ch13 key classes 均无答案，是真不知道，非回避——符合 voice-guide 纪律 1，通过。但后半句「抢占之后重算的浪费到底有多大，我们也没见到系统的数」存在边界风险：voice-027 的源文章（voices.json writer_note：作者提供了实测 trace 和三种修复方案——含 preemption 控制——的量化对比）本身就含抢占代价相关量化，虽然那是端到端延迟视角而非「重算浪费」的系统性拆分，但严格讲「我们没见到系统的数」这句话有被听众查证反噬的空间。",
+      "suggested_fix": "保留「我不知道」时刻（8192 那半是真实的）；若想堵住查证反噬，可把后半句收窄为「抢占重算到底浪费多少，我们没见到公开的系统性拆分数据」——改动一个字级（加「公开的」「拆分」限定），writer 裁量；不改也可成立，因为 voices/arc/card 里确实没有重算浪费的量化。",
+      "rationale": "事实准确维：「我不知道」处必须区分真不知道与回避。本处判定为基本真实（素材范围内无答案），但措辞留有被源文章反证的敞口，收窄限定即可消除；非阻断，仅提示。",
+      "blocking": false
+    }
+  ],
+  "checks_summary": {
+    "voice_numbers": "L109/L113/L117/L133/L141/L161 全部与 voices.json voice-027/voice-003/voice-028/voice-004/voice-005 原数一致，无漂移；L111 的 8x/13x 为 9.8/1.2 与 27/2.1 的算术复核，成立",
+    "book_detail_claims": "L193（heap + (priority, arrival_time)）、L257（共用同一 list 对象）、L289（IntEnum + > 比较）、L89（NewRequestData/CachedRequestData 全量/diff）、L213（10 字段 NamedTuple）均能在 source-book/chapter-cards 对应 key_classes 找到原文支撑",
+    "cross_episode_callbacks": "L15「喂饱还是饿死」、L169「笔记」、L299「排、算、选、记」均可在 ep01 script.md L221/L229/L225 找到原文，非虚构回指",
+    "foreshadow_due": "ep02 应还的两笔账（语法编译上百毫秒 L101、GPU worker 真实执行 L165/L265）均已落地，且指向 arc-map 登记的 ep05/ep04；L313 收尾与 arc.json ep02 closing 逐字一致",
+    "idk_moment": "L305 唯一一处「我不知道」，8192 之问在全部真相源中无答案，判定为真不知道",
+    "directional_frames": "L57/L73/L89/L201 等调度机制描述与 episode-card ch13/ch14 两阶段、skipped_waiting 双队列、抢占循环语义逐条对齐"
+  }
+}

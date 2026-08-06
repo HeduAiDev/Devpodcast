@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep02",
+  "run": 3,
+  "dimension": "spoken_clarity",
+  "pass": false,
+  "issues": [
+    {
+      "problem": "音频-文本版本同步未执行（r2 已列且预留第 3 轮复核路径，本轮复核仍存在）：audio/episode.wav 生成于 03:40:03、audio-qa.json 质检于 03:40:27，而 script.md 最后修改于 03:55:16（本轮定稿——r2 阻断项 L93「几万颗」→「八千多颗」已落在文本）。r2 明确要求「writer 本轮定稿后重新合成 episode.wav 并重跑 audio-qa」且「本维度第 3 轮若存在，应以重新合成的音频为准复核」——截至本次评审，audio/ 目录下无任何 03:40 之后的新文件（TTS 中间产物 firered_tmp/segments 亦止于 03:40 前），重新合成未执行。后果：当前 episode.wav 是修复前文本的朗读，闭耳听者听到的仍是 r1 阻断句——script.md:57 旧版「prefill 相、decode 相」无 decode 首现释义，L57 的口头定义（现稿「prefill 就是第一次把整段提示词喂进去……decode 是之后每拍续写一颗新 token 的那一趟」）不在音频中；L93 的数字修复亦不在音频中。audio-qa.json 自身 issues 为空（削波/静音/时长无问题），此条不是音频质检项，是文本-音频版本同步事实。",
+      "suggested_fix": "workflow/Lead 侧动作（非 writer 改稿——文本已定稿且正确，无需再动）：以 03:55:16 定稿的 script.md 重新合成 episode.wav，重跑 audio-qa 生成新 audio-qa.json（确认 issues 为空），再进入归档；如做收尾核验，以新音频为准确认 L57 prefill/decode 口头定义确实在朗读中。",
+      "rationale": "口播可懂维契约（spec §3.3③ 评审对象是文本+音频双载体；§12.3「闭眼只听能不能跟上」）：r1 判为阻断的口语缺陷（decode 首现无口头释义）在文本已修复，但成品音频仍是修复前版本；r2 已预留「第 3 轮以重新合成的音频为准复核」的路径，该路径因管线未执行重新合成而无法走通。按当前 wav 归档交付，等于放行一个含 r1 阻断句的成品——spec §11.2 有界回环：第 3 轮后仍有关键问题，verdict=review-exhausted，升级 Lead（此条非 writer 可修项，是管线 TTS 步骤未执行；Lead 补跑合成 + audio-qa 即可收口，无需改提示词或改稿）。",
+      "blocking": true
+    }
+  ],
+  "note": "第 3 轮范围：只看仍未清的阻断项（spec §11.2）。本维 r2 无 writer 侧阻断项（5 条非阻断项——L121 判据孤悬引用、L161 PD 缩写无展开、L37 step with batch queue 无中文绑定、L109 p99 百分位无口头锚定、L133 Sarathi-Serve 专名无口头定位——维持 r2 判定为 writer 裁量项，第 3 轮不再展开）。本轮全稿复查：当前文本无新增口播可懂问题（无视觉依赖表述；术语首现释义无新增缺口；L57 修复文本在稿，prefill/decode 释义完整；L93 修订仅改数字量级表述，不影响口播）。本维唯一未清项是音频版本落后于定稿文本（阻断，管线侧动作）。"
+}

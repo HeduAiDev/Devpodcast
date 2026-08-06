@@ -1,0 +1,30 @@
+{
+  "episode_id": "ep02",
+  "run": 2,
+  "dimension": "critical_depth",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:123+149+155+157 收束段（r1 非阻断项，本轮复核仍在）：L123 S1「先认罪」、L149 S2「问题不是设计错了，是默认配置没开」、L155 S1 总结「调度器没错，错的是『不调参就上生产』」、L157 S2 无条件背书「这句话可以裱起来」——结案陈词仍是「免罪」寄存器而非「判据」寄存器。claim 侧在 L149 之后没有打出它最强的一记反拨（「默认值踩坑本身就是设计的代价，这个代价就在默认值里」），S1 直接 pivot 到 L151「给我判据」；claim 侧最锋利的论点（L9「代价被严重低估」）以「操作者背锅」的形式收尾，条件判据（L153 实时/离线两分支）在 L155 的总结里被压缩掉离线分支。",
+      "suggested_fix": "两个等价的低改选项（writer 裁量）：(1) L157 给背书加条件从句：「裱之前先补一行小字：前提是你知道自己的负载——卖 API 的，先开 chunked prefill 再上生产。」；(2) 在 L149 与 L151 之间给 S1 加一拍反拨：「但话说回来——默认配置就是这么埋的坑，代价就住在默认值里，这不算设计欠的账吗？」，再进判据。两条都不动争议结构，只把结案陈词从「无罪」改回「看判据」。",
+      "rationale": "批判强度维（spec §12.3）：claim/counter 都站得住且反方立场公平呈现到收束处。本轮复核确认 arc.json ep02 resolution 的契约内容（SLA 判据）已在 L153 近乎逐字落地、L305 保留「抢占重算浪费没人量化过」的开放批判线程、claim 侧数据（L109-113）从未被反驳——因此判定为 writer 可裁量的修辞压缩而非契约违约，维持非阻断。但 claim 侧缺最后一拍反拨 + L157 无条件背书叠加，是 r1 已指出、本轮仍可低成本消化的精度损失。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:121 S2 断言「预算总数是对的」（r1 非阻断项，本轮复核仍在）：紧邻 L117 已声明 voice-003「具体场景我们没核实到」，S2 仍以平断言关掉「账算错了」的可能。",
+      "suggested_fix": "保留原断言亦可（见 rationale）；若求稳妥可加推断标记：「我们怀疑不是账算错，是默认配置里压根没写公平——但这条我们没核实，只能说到这儿。」",
+      "rationale": "批判强度维（spec §12.3）反方立场公平呈现 + 原声保真维 claim vs verified 层次。本轮复核新增依据：episode-card ch13 两阶段调度机制（阶段一先补齐 RUNNING、阶段二用剩余预算接纳 WAITING）支撑「预算执行正确、公平无保证」的机制解读——L121 的断言是书（episode-card）可支撑的机制陈述，且 S2 先有「同一个方向」的定向认同、后有优先级队列的对症药方，voice-003 的批判被认真对待而非压灭；「是」vs「怀疑是」属语气精度，writer 裁量。维持非阻断。",
+      "blocking": false
+    }
+  ],
+  "checks_summary": {
+    "round2_scope": "critical_depth 在 r1 pass（0 阻断），本轮为确认 + 回归检查：03:48 修订稿唯一改动是 spoken_clarity 的 L57 decode/prefill 术语绑定修复，本维无回归",
+    "only_praise_check": "无——L77「长请求暴政」立靶、L105「开刀时间」、L107「拿数据」、L109-113 实测数据（p99 8x / p99.9 13x）、L117-121 社区痛点是批判主体",
+    "claim_counter_check": "两方均站得住：claim 侧 voice-027（verified=claim-self-checked, confidence=high, 实名+可追溯 trace）+ voice-003（匿名、带「未核实」转述标记）；counter 侧 voice-028（OSDI 2024 经同行评审数据, confidence=high）+ L129 GPU FLOPS 论证。S1 对两侧证据均施压（L107「拿数据」、L131「光说理论，拿证据」、L139「跨度怎么这么大」），L141 counter 方还主动从己方数据读出 claim 侧含义（「问题随规模放大」）——争议是真展开的",
+    "counter_fairness_check": "辩护方拿到最强证据（peer-reviewed 数据）、最优点（L149「默认配置没开」）和完整论证（L125-129），且反方证据被 S1 盘问；社区批判方（voice-003）被定向认同 + 机制解释 + 对症药方，未被断言压灭（见 issues 第二条）",
+    "target_check": "靶子具体：Marcus Chen 的生产系统（dev.to 2026-05，23 个在飞 decode 流、81% GPU 利用率）、匿名论坛用户场景（discuss.vllm.ai 2025-12）、Sarathi-Serve OSDI 2024 论文、以及「连续批处理总是更好」的叙事（voice-027 writer_note 明示其数字正是对该叙事的最佳反驳）——四个靶子全部落在真实 voices 条目上",
+    "arc_landing_check": "arc.json ep02 opening/claim/counter/resolution/closing/foreshadow_map 全部落地：resolution（L151-153）与 arc 原文实质逐字一致；foreshadow ep03（抢占循环+双队列，L167-205）+ ep04（execute_model GPU 执行，L263-265）均挂账",
+    "open_thread_check": "L303-305「抢占之后重算的浪费到底有多大，我们也没见到系统的数」——结束语之后仍留一条未定价的批判线程（voice-guide 纪律 1「我不知道」同时服务批判开放），是收束段的补偿性强度",
+    "regression_check": "L57 修复（prefill/decode 术语绑定）只增术语解释、不增 claim/counter 内容、不改争议结构、未新增 voices 引用——本维无回归、无新问题"
+  }
+}

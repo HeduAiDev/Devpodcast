@@ -1,0 +1,44 @@
+{
+  "episode_id": "ep02",
+  "run": 1,
+  "dimension": "spoken_clarity",
+  "pass": false,
+  "issues": [
+    {
+      "problem": "script.md:57「而且这里没有 prefill 相、decode 相之分——不分成两个阶段排队」——decode 在系列内首现（ep01/script.md:269 只口头定义过 prefill，从未定义 decode），此处无任何口头解释，还叠了一个未解释的「相」（phase）；而 decode 是全期最承重的术语，后续反复出现 15+ 次（行 113、125、129、133、141、145、153、161、165），到行 113「一次 60 毫秒的 prefill，让 23 个在飞的 decode 流全排队」时，没绑定过术语的听者已经掉线。行 81「decode 一次前向，每个请求刚好吐一颗新 token」其实是 decode 的功能性解释，但没点名「decode」，绑定关系不成立。",
+      "suggested_fix": "在行 57 补一句话把两个术语绑上（顺带消掉「相」），例如：「而且这里没有先集中喂新请求、再逐个续写的两个阶段之分——prefill 就是第一次把整段提示词喂进去、算出第一颗 token 的那一趟，decode 是之后每拍续写一颗新 token 的那一趟——所有请求统一按 token 数一视同仁。」若嫌长，至少把行 81 改成点名绑定：「decode——就是每拍给每个请求续写一颗新 token——补多了也用不上」。",
+      "rationale": "口播可懂维契约：术语首现必须有口头解释（spec §12.3「术语首现有没有口头解释」）。decode 是本期批判展开（Marcus trace、Sarathi 数据、chunked prefill 对比）的前提概念，首现句还用了「相」+ 双否定结构，是闭眼听最容易脱轨的一句。",
+      "blocking": true
+    },
+    {
+      "problem": "script.md:121「所以判据里才说，实时服务得自己加优先级队列」——「判据」在此前从未出现或定义（判据要到行 151-153 才由 S1 索要、S2 给出），此处是孤悬引用，听者会疑惑「什么判据？什么时候说过？」。",
+      "suggested_fix": "删掉孤悬引用，改为直接表述：「所以真上生产，实时服务得自己加优先级队列」，或显式预告：「这其实就是本期结尾要给你们的判据的第一条——实时服务得自己加优先级队列」。",
+      "rationale": "口播可懂维契约：闭眼只听能不能跟上。向未定义对象指代是纯听觉下无法追溯的断裂。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:161 voice-004 引语内含「PD 分离后的优化策略」——「PD 分离」缩写未展开；引语保真不能动，但紧随其后的 S2 应答只有一句「这是他的原话」，没有给听者补上缩写含义。",
+      "suggested_fix": "在「这是他的原话」之后补半句展开：「PD 分离，就是 prefill 和 decode 分开来算的意思」——不改引语，只扩 S2 应答。",
+      "rationale": "口播可懂维契约：术语首现口头解释。缩写是听觉上最难自解的形态；引语三档策略（voices.json 档位 (a) 重合成）不阻止应答侧补释。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:37「多机并行或者异步调度的时候，走 step with batch queue」——「step with batch queue」首现无中文绑定（发音表 pronunciation.json 会译成「批量队列步进」，但脚本层面听者听到的是英文短语，且「step」在此的动词义「推一拍」靠前句语境才成立）。",
+      "suggested_fix": "改为中文先行：「走批量队列的 step（step with batch queue）」或「走 step with batch queue，就是带批量队列的一拍一拍推」。",
+      "rationale": "口播可懂维契约：术语首现口头解释；中文先行符合 pronunciation.json 对同类方法名的直译处理（批量队列步进）。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:109「p50 从 340 毫秒降到 190 毫秒。p99 从 1.2 秒飙到 9.8 秒，p99.9 从 2.1 秒跳到 27 秒」——p50/p99/p99.9 首现无口头解释，而这些数字是本期批判的承重墙（行 111 的 8 倍、13 倍都从它们来）。",
+      "suggested_fix": "在首个数字前加半句锚定：「先解释一下：p99 就是最慢的那百分之一请求的延迟」——其余沿用。",
+      "rationale": "口播可懂维契约：术语首现口头解释；voice-guide S2 人格「数字先给量级」，先锚定百分位语义再给数字，数字才承重。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:133「Sarathi-Serve 在 OSDI 2024 发了篇论文」——专名 Sarathi-Serve 无发音指引（pronunciation.json 无条目，TTS 可能逐字母念）也无口头定位，听者抓到的是一个模糊外文词。",
+      "suggested_fix": "给专名一个口头定位：「Sarathi-Serve，一个做推理系统优化的研究团队，在 OSDI 2024 发了篇论文」。pronunciation.json 补条目属 archivist 侧，writer 只需加定位语。",
+      "rationale": "口播可懂维契约：闭眼只听能跟上——未定位的外文专名在听觉上是噪声；定位语同时让「28 倍数据出自哪里」可归因。",
+      "blocking": false
+    }
+  ]
+}

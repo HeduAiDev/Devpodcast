@@ -1,0 +1,23 @@
+{
+  "episode_id": "ep02",
+  "run": 3,
+  "dimension": "job_seeker_resonance",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:13 面试市场框架仍由 S2 主动引入（「你这话，跟 2026 年的面试市场撞一块儿了」），而非从 S1 的提问里长出来——voice-guide.md:17 求职者视角条款字面是「融进 S1 的提问」。本处为 r1/r2 已两轮判定的非阻断参考项，03:55 版仍未改，本轮复核维持原判定：voice-005 在 voices.json 属 critical 类（非 job-seeker 类），writer_note 明确设计「用在 ep02 开场」——该处功能是批判向开场钩子而非求职者段落；真正的求职者段落（L159-165）由 S1 以「面试要是问到，该答到什么程度？我听说这已经是必考题了」（L159）提问引出、S2 挂 voice-004 接上，「融进 S1 的提问」条款在求职者段落本体上字面满足。按 round-3 范围（只看仍未清的阻断项），本维无阻断项，此条仅作保持性记录。",
+      "suggested_fix": "维持现状即合规（writer 裁量）。若想让声线分工严格贴合条款字面，可让 S1 在 L13 前以提问形式引出（如「这考点都长到面试题里了？」），再由 S2 挂 voice-005 接上——两轮未改且两轮均判非阻断，本轮不升级。",
+      "rationale": "voice-guide.md:17「融进 S1 的提问，每期至多两处，必须挂真实 voices 条目，不许凭空说『面试会考』」——三条硬约束（配额 ≤2、挂真实 voices、不凭空断言）本轮全部复核守住；「融进 S1 的提问」的交付通道要求在求职者段落本体（L159-165，S1 提问 + voice-004 落地）已满足，L13 属 critical 开场钩子（voices.json 类别与 writer_note 双支撑），不构成契约违约；铁律「评审无权因风格偏好退稿」，维持非阻断。",
+      "blocking": false
+    }
+  ],
+  "checks_summary": {
+    "concrete_scenes": "两处求职视角均落到具体场景：L13 voice-005 给出具体面试题（「调度器不认请求数、只认 token 数，为什么」「连续批处理和静态批处理在 GPU 那一步到底差在哪」）+ 考察深度信号（「考的就是『为什么这样设计』，不是 API 怎么用」）；L159-165 给出牛客后端前辈面大模型推理岗的必问题清单（prefill/decode 计算访存瓶颈、PD 分离优化策略、chunked prefill vs 一次性 prefill 对比优势）+ 「不到三分之一答得出」的通过率数据 + S2「够答『是什么』，瓶颈细节 defer 到讲 GPU 执行那期」的诚实覆盖边界。无空泛「这个技术很重要」",
+    "quota": "恰好 2 处（L13、L159-165；L163-165 为 L159-161 的延续应答，不单计），未超 ≤2 配额",
+    "real_voices": "{{voice:voice-005}}（L13）与 {{voice:voice-004}}（L161）均为 voices.json 真实条目，id 正确；voice-004 匿名化保持（脚本只称「牛客上一位做后端的前辈」，未泄 handle @中科大附属中学）",
+    "no_bare_claims": "全文「面试/必考题」表述仅 L13/L159/L161，均在 voices 引述或紧邻 grounded；L159「我听说这已经是必考题了」是传闻标记，下一轮即被 voice-004 的 claim 记录（「这是我们公司面大模型推理岗位的必问题」）落地，非凭空断言",
+    "degradation_check": "voices-coverage.json coverage=full（10 条求职者声音），本轮按正常权重评审，无降级",
+    "regression_check": "03:55 修订版与 r2 引用的各行位置逐一对齐（L13/L57/L109/L117/L121/L123/L133/L149/L153/L155/L157/L161/L305 均在原行位、内容一致），唯一变化是 L93 数字（r2 factual 阻断项「几万颗」→「八千多颗」的修复），未触碰求职视角内容、未新增 voices 引用——本维无回归",
+    "round3_scope": "r1/r2 本维均为 pass、无阻断项；run-ledger r2 的 1 个阻断项属 factual_accuracy 维（L93，已在 03:55 版清除，见 r3-factual_accuracy.json）。本维按 round-3 范围（只看仍未清的阻断项）无可执行修改项，pass。"
+  }
+}

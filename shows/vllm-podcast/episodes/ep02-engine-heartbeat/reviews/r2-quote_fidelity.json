@@ -1,0 +1,26 @@
+{
+  "episode_id": "ep02",
+  "run": 2,
+  "dimension": "quote_fidelity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:133 引述边界超界（r1 未清，本轮复核仍存在）：「尾延迟回归正常」与「也就是 chunked prefill」仍在 {{voice:voice-028}} 引述段内（「里面是这么写的——…也就是 chunked prefill，吞吐提升 2.6 倍到 6.9 倍，尾延迟回归正常。这两组数字，都是论文里的实测」）。voices.json voice-028 的 claim 记录止于「28 倍推高」与「2.6x–6.9x 吞吐提升」两组数字，不含「尾延迟回归正常」；「也就是 chunked prefill」是主持人对引述内容的口头标注（把口语描述绑到术语名），同样属于引述段内的叙事插入。",
+      "suggested_fix": "把「尾延迟回归正常」移到引述标记之外、作为阿凯自己的总结：「……吞吐提升 2.6 倍到 6.9 倍。这两组数字，都是论文里的实测。顺便说，同一篇论文里尾延迟也回归了正常。」「也就是 chunked prefill」同样改为引述外的口播解释：「把长 prefill 切成小块、插在 decode 批中间跑——这套做法叫 chunked prefill——吞吐提升 2.6 倍到 6.9 倍。」",
+      "rationale": "原声保真维契约（spec §12.3）：引述内容以 voices.json 的 claim 记录为核对基准，引述段内不应出现 claim 记录之外的断言或解释；arc.json ep02 counter 有「同时 p99 回归正常」支撑该事实，但 arc 层支撑的结论应作为口播评论放在引述边界外，避免被听众读成论文原话。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:161 引述档位标注高估（r1 未清，本轮复核仍存在）：「这是他的原话」仍标注在 voice-004 之后。voice-004 是 community-only（未一手核实、confidence=medium、档位 (a) 重合成）的牛客面经转述，重合成文本不等于逐字原话；且同稿对 voice-005（script.md:13「原话大概这个意思」）与 voice-003（script.md:117「大意是这样」）用了转述标记，口径不一致。",
+      "suggested_fix": "把「这是他的原话」改为「他是这么说的」或「大意是这样」，与 voice-003/voice-005 的转述标记口径对齐；若 writer 已核实面经原文为逐字，则保留并在 production-notes 说明核实依据。",
+      "rationale": "原声保真维契约：引述边界标注要与该条目的 verified/confidence 层次匹配——community-only 的重合成条目不应标成逐字原话，否则把「有人这么说」的层次抬高到「原话如此」，是 claim vs verified 层次失真。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:121 claim vs verified 层次的反向打破（r1 critical_strength 已记同条，本维从层次保持角度复述，避免口径冲突）：L117 刚声明 voice-003「具体场景我们没核实到」，L121 S2 即以「预算总数是对的」平直断言驳回该社区报告的账目前提。voices.json 中没有任何已核实证据支撑「预算总数是对的」这一断言——未核实的社区报告既不能被升级为事实，也不能被主持人断言压灭，两个方向的处置要对称。",
+      "suggested_fix": "把 L121 归因改为带保留语气的推断：「我们怀疑不是账算错，是默认配置里压根没写公平——但这条我们没核实，只能说到这儿。」把「是」改成「怀疑是」，推断标记为推断。",
+      "rationale": "原声保真维契约（spec §12.3）：claim vs verified 的层次必须保持——community-only 材料（voice-003，claim-self-checked 但 confidence=medium、匿名）与已核实证据（voice-027 trace）的证明力不能靠主持人断言拉平；降级标记（「没核实」）一旦给出，后续断言必须与之同层。",
+      "blocking": false
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "episode_id": "ep02",
+  "run": 3,
+  "verdict": "pass",
+  "note": "run-ledger 仅由 factual_accuracy 维写入（防 6 维并行写同一文件竞态）；其余 5 维 verdict 以各自 reviews/r3-<dim>.json 为准，全轮收口由 workflow 按 6 维返回聚合判定。factual_accuracy 本轮 pass：r2 唯一阻断项 L93「几万颗」数字矛盾已清（现文「一拍八千多颗 token」，与 L49 默认 8192、L69 四分之一自洽，episode-card ch13 支撑）；L305「我不知道」三轮复核维持真不知道、非回避（非阻断，可选收窄项保留）。留档事实（非本维阻断）：episode.wav/audio-qa.json 合成于 03:40，script.md 定稿于 03:55——r2 spoken_clarity 判为非阻断的「文本-音频版本同步」项仍在，其修复是 workflow 调度侧动作（定稿后重合成 episode.wav + 重跑 audio-qa 再归档；episode-pipeline.js Review 回环内无 TTS 重合成步骤），建议归档前由调度侧补齐。",
+  "dimensions": {
+    "factual_accuracy": "pass",
+    "critical_depth": "see r3-critical_depth.json",
+    "spoken_clarity": "see r3-spoken_clarity.json",
+    "voice_balance": "see r3-voice_balance.json",
+    "job_seeker_resonance": "see r3-job_seeker_resonance.json",
+    "quote_fidelity": "see r3-quote_fidelity.json"
+  },
+  "factual_accuracy_blockers": 0,
+  "factual_accuracy_nonblocking": 1
+}

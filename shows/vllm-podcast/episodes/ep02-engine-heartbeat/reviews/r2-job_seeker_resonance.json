@@ -1,0 +1,22 @@
+{
+  "episode_id": "ep02",
+  "run": 2,
+  "dimension": "job_seeker_resonance",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:13 面试市场框架仍由 S2 主动引入（「你这话，跟 2026 年的面试市场撞一块儿了」），而非从 S1 的提问里长出来——voice-guide.md:17 求职者视角条款字面是「融进 S1 的提问」。r1 已判非阻断并建议可选修法（让 S1 以「这考点都长到面试题里了？」引出），本轮核对修订稿（03:48 版）：该处未改，仍合规——S1 在 line 11 问的是「长请求欺负短请求」，line 13 由 S2 挂 voice-005 接上。",
+      "suggested_fix": "维持现状即合规（voice-005 在 voices.json 属 critical 类，writer_note 本就设计「用在 ep02 开场」反映面试市场考察深度，该处功能是批判向开场钩子而非求职者段落）；若想让声线分工严格贴合条款字面，可让 S1 在 line 13 前以提问形式引出（如「这考点都长到面试题里了？」），再由 S2 挂 voice-005 接上。writer 裁量。",
+      "rationale": "voice-guide.md:17「融进 S1 的提问，每期至多两处，必须挂真实 voices 条目，不许凭空说『面试会考』」——本处及另一处（line 159-165）的三条硬约束均守住（配额 2 处、挂真实 voices voice-005/voice-004、line 159「必考题」断言随即被 line 161 voice-004 的 claim 记录「这是我们公司面大模型推理岗位的必问题」落地）。仅提示声线分工可更贴合条款字面，非阻断。",
+      "blocking": false
+    }
+  ],
+  "checks_summary": {
+    "concrete_scenes": "两处求职视角均落到具体场景：L13 voice-005 给出具体面试题（「调度器不认请求数、只认 token 数，为什么」+「考的就是为什么这样设计，不是 API 怎么用」）；L159-165 给出牛客后端前辈面大模型推理岗的必问题清单（prefill/decode 瓶颈、PD 分离、chunked prefill 对比）+「不到三分之一答得出」的通过率数据 + S2「够答『是什么』，瓶颈细节 defer 到讲 GPU 执行那期」的诚实覆盖声明。无空泛「这个技术很重要」",
+    "quota": "恰好 2 处（L13、L159-165；L163-165 为 L159-161 的延续应答，不单计），未超 ≤2 配额",
+    "real_voices": "{{voice:voice-005}}（L13）与 {{voice:voice-004}}（L161）均为 voices.json 真实条目，id 正确；voice-004 匿名化保持（脚本只称「牛客上一位做后端的前辈」，未泄 handle）",
+    "no_bare_claims": "全文「面试/必考题」表述仅 L13/L159/L161/L163-165，均在 voices 引述或紧邻 grounded；line 159「我听说这已经是必考题了」是传闻标记 + 下一轮即被 voice-004 落地，非凭空断言",
+    "degradation_check": "voices-coverage.json coverage=full（10 条求职者声音），本轮按正常权重评审，无降级",
+    "regression_check": "03:48 修订版（含 spoken_clarity 的 L57 decode/prefill 术语绑定修复）未新增求职视角内容、未改 L13/L159-165 结构、未新增 voices 引用，本维无回归"
+  }
+}
