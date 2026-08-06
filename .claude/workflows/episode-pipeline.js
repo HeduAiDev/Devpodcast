@@ -46,11 +46,10 @@ if (!A) {
   A = CFG
 }
 
-// REPO 路径自动检测：Windows Git Bash 用 E:\ 风格，WSL 用 /mnt/e/ 风格。
-// 曾硬编码 /mnt/e/... 导致 Windows 下 linter 全失败（解析成 D:\Env\Git\mnt\e\...）。
-// env.os 在 workflow 沙箱不可靠，用 A.repo_root 显式覆盖优先；否则按当前平台猜。
-const _win = typeof process !== 'undefined' && process.platform === 'win32'
-const REPO = A.repo_root || (_win ? 'E:/Laboratory/Devpodcast' : '/mnt/e/Laboratory/Devpodcast')
+// REPO 路径：A.repo_root 显式覆盖优先（发车 args 带 repo_root='E:/Laboratory/Devpodcast'
+// 可强制正确路径，即使引擎缓存旧脚本）；默认 E:/（本机 Windows Git Bash；
+// WSL 用户请传 repo_root='/mnt/e/Laboratory/Devpodcast'）。
+const REPO = A.repo_root || 'E:/Laboratory/Devpodcast'
 const SHOW = REPO + '/shows/' + A.show
 const SEASON = SHOW + '/season'
 const TARGET = A.target_minutes

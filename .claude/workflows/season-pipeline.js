@@ -42,9 +42,8 @@ if (!A) {
   A = CFG
 }
 
-// REPO 路径自动检测：Windows Git Bash 用 E:\ 风格，WSL 用 /mnt/e/ 风格（同 episode-pipeline.js）
-const _win = typeof process !== 'undefined' && process.platform === 'win32'
-const REPO = A.repo_root || (_win ? 'E:/Laboratory/Devpodcast' : '/mnt/e/Laboratory/Devpodcast')
+// REPO 路径：A.repo_root 显式覆盖优先；默认 E:/（本机 Windows Git Bash；WSL 传 repo_root='/mnt/e/...'）
+const REPO = A.repo_root || 'E:/Laboratory/Devpodcast'
 const SHOW = REPO + '/shows/' + A.show
 const SRC = SHOW + '/source-book'    // ★ 书源快照（摄入后只读，spec §2/§8，各站只读它）
 const SEASON = SHOW + '/season'
