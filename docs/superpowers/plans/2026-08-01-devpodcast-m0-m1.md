@@ -4,9 +4,11 @@
 
 **Goal:** 建起 devpodcast 工厂骨架（M0）+ 用 vllm 书跑通第一期能听的节目（M1）。
 
+> **⚠️ 执行状态注记（2026-08-07）**：TTS 方案已**定案 FireRedTTS2**（唯一主方案，temperature=0.8/topk=15，20 组人工试听选定），MOSS-TTSD / CosyVoice3 / SoulX / Qwen3 / vLLM-Omni 均已**排除并清理**。下文 Task 5 / Task 17 中所有 MOSS-TTSD 为默认方案的描述**均为历史计划记录**，已不适用；真相源见 `specs/2026-08-01-devpodcast-design.md` §7（2026-08-07 更新）。Phase A 已完成（season-plan/arc/voices/bible 四件套 + 5 张 episode-card），Phase B ep01 已产出 script + audio。
+
 **Architecture:** 参考已批准规格 `docs/superpowers/specs/2026-08-01-devpodcast-design.md`。两阶段流水线：Phase A（season-pipeline.js：planner/hook-engineer/researcher/book-analyst/archivist 并行产素材）→ Phase B（episode-pipeline.js：writer → producer → writer → tts → audio-qa → reviewer → archivist）。独立代码仓，零运行时跨仓依赖；书源经 `ingest_book.py` 快照摄入 `shows/<name>/source-book/` 后只读。
 
-**Tech Stack:** Python 3.11+ / pytest / torch 2.11.0+cu130（已装）/ MOSS-TTSD v1.0（8B, Apache-2.0, 默认 TTS）/ CosyVoice3 fallback / F5-TTS 仅作 M0 环境试金石。
+**Tech Stack:** Python 3.11+ / pytest / torch 2.11.0+cu130（已装）/ **FireRedTTS2**（2026-08-07 定案唯一 TTS，原生双人对话）。
 
 ## Global Constraints
 
