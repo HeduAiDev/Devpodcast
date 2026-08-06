@@ -328,8 +328,21 @@ for (let r = 1; r <= 3; r++) {
   )
   if (!rev) return { show: A.show, ep_id: A.ep_id, escalated: 'review-revise-failed', stage: 'Review', round: r, note: 'writer 修订 agent 失败（限流/崩溃）' }
   if (rev.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'review-revise', stage: 'Review', round: r, reason: rev.blocker_reason }
+  // REVISE 后 script.md 已改 → 必须重合成 + 重跑 audio-qa，否则下轮评审的是旧音频
+  // （spec §3.3③ 评审对象是文本+音频双载体；曾因缺此步导致 ep02 音频滞后于定稿文本拉闸）
+  const resynth = await agent(
+    head(null, [
+      '任务：' + EP + '/script.md 刚被 writer 修订，重新合成音频并重跑质检（评审以新音频为准）。',
+      '合成：python ' + REPO + '/scripts/tts.py synthesize ' + EP + '/script.md --voice-map S1=' + SHOW + '/voice-samples/laozhang.wav,S2=' + SHOW + '/voice-samples/akai.wav --provider firered-tts2 --output ' + AUDIO + ' --target-minutes ' + TARGET,
+      '质检：python ' + REPO + '/scripts/audio_qa.py ' + AUDIO + '/episode.wav ' + AUDIO + '/audio-qa.json ' + TARGET,
+      '合成完成后再跑质检；audio-qa issues 非空则如实带回（Lead 决策，不要自行改稿）。',
+    ]),
+    { schema: STATUS_SCHEMA, label: 'review-resynth r' + r, phase: 'Review', agentType: 'claude', ...mo('tts'), effort: 'max' },
+  )
+  if (!resynth) return { show: A.show, ep_id: A.ep_id, escalated: 'review-resynth-failed', stage: 'Review', round: r, note: '评审修订后重合成 agent 失败（限流/崩溃）' }
+  if (resynth.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'review-resynth', stage: 'Review', round: r, reason: resynth.blocker_reason }
   reviewV = { verdict: 'REVISE', round: r }
-  log('Review 第 ' + r + ' 轮 REVISE：' + blocking.length + ' 个阻断项回 writer')
+  log('Review 第 ' + r + ' 轮 REVISE：' + blocking.length + ' 个阻断项回 writer，已重合成')
 }
 
 // ---------- Archive：archivist 归档 + season_bible register 回写 arc-map + shownotes ----------
