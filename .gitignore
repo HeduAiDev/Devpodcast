@@ -9,7 +9,7 @@ venv/
 *.mp3
 shows/*/episodes/*/audio/
 
-# 音色克隆样本（可能含他人声音，不入库）
+# 音色样本（vllm-podcast 的 laozhang/akai 为 MOSS 官方中文示例，用户决定上传）
 shows/*/voice-samples/*.wav
 !shows/*/voice-samples/README.md
 
