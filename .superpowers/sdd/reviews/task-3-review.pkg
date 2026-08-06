@@ -1,0 +1,90 @@
+=== commits ===
+3204622 feat: ingest_book 快照摄入（digest 可校验，篡改即漂移）
+
+=== stat ===
+ scripts/ingest_book.py | 36 ++++++++++++++++++++++++++++++++++++
+ tests/test_ingest.py   | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 69 insertions(+)
+
+=== full diff ===
+diff --git a/scripts/ingest_book.py b/scripts/ingest_book.py
+new file mode 100644
+index 0000000..a157a3f
+--- /dev/null
++++ b/scripts/ingest_book.py
+@@ -0,0 +1,36 @@
++# scripts/ingest_book.py
++"""书源快照摄入：BookSource → shows/<name>/source-book/（此后 pipeline 只读快照，不再触碰外部路径）。"""
++import hashlib, json
++from pathlib import Path
++from scripts.book_source import BookSource
++
++def _stable_digest(blob: bytes) -> str:
++    return hashlib.sha256(blob).hexdigest()
++
++def compute_digest(show_dir: Path) -> str:
++    sb = Path(show_dir) / "source-book"
++    if not sb.is_dir():
++        raise FileNotFoundError(f"缺少快照目录: {sb}")
++    h = hashlib.sha256()
++    for p in sorted(sb.rglob("*")):
++        if p.is_file():
++            h.update(p.relative_to(sb).as_posix().encode())
++            h.update(p.read_bytes())
++    return h.hexdigest()
++
++def ingest(source: BookSource, show_dir: Path) -> dict:
++    show_dir = Path(show_dir)
++    sb = show_dir / "source-book"
++    cards_dir = sb / "chapter-cards"
++    cards_dir.mkdir(parents=True, exist_ok=True)
++    book = source.load()
++    (sb / "book.json").write_text(
++        json.dumps(book.as_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
++    (sb / "outline.json").write_text(
++        json.dumps(source.outline(), ensure_ascii=False, indent=2), encoding="utf-8")
++    (sb / "glossary.json").write_text(
++        json.dumps(source.glossary(), ensure_ascii=False, indent=2), encoding="utf-8")
++    for card in book.chapters:
++        (cards_dir / f"{card.chapter_id}.json").write_text(
++            json.dumps(card.as_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
++    return {"digest": compute_digest(show_dir), "chapters": len(book.chapters), "ingested_at": ""}
+diff --git a/tests/test_ingest.py b/tests/test_ingest.py
+new file mode 100644
+index 0000000..69e7ac9
+--- /dev/null
++++ b/tests/test_ingest.py
+@@ -0,0 +1,33 @@
++# tests/test_ingest.py
++import json
++from pathlib import Path
++import pytest
++from scripts.ingest_book import ingest, compute_digest
++from scripts.book_source import Repo2BookSource
++
++FIX = Path(__file__).parent / "fixtures" / "repo2book-mini"
++
++def test_ingest_writes_snapshot(tmp_path):
++    src = Repo2BookSource(FIX, "mini")
++    res = ingest(src, tmp_path)
++    assert res["chapters"] == 2
++    book = json.loads((tmp_path / "source-book" / "book.json").read_text(encoding="utf-8"))
++    assert len(book["chapters"]) == 2
++    assert (tmp_path / "source-book" / "chapter-cards" / "ch01.json").is_file()
++    assert (tmp_path / "source-book" / "glossary.json").is_file()
++    assert (tmp_path / "source-book" / "outline.json").is_file()
++
++def test_digest_changes_on_refresh(tmp_path):
++    src = Repo2BookSource(FIX, "mini")
++    d1 = ingest(src, tmp_path)["digest"]
++    # 篡改快照后 digest 必须变化
++    p = tmp_path / "source-book" / "glossary.json"
++    p.write_text(json.dumps({"改": "了"}), encoding="utf-8")
++    d2 = compute_digest(tmp_path)
++    assert d1 != d2
++
++def test_ingest_idempotent(tmp_path):
++    src = Repo2BookSource(FIX, "mini")
++    d1 = ingest(src, tmp_path)["digest"]
++    d2 = ingest(src, tmp_path)["digest"]
++    assert d1 == d2

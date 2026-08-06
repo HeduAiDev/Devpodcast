@@ -148,6 +148,9 @@ docs/superpowers/              设计规格 + 发车手册 + 经验台账
 ## TTS 环境
 
 - GPU: NVIDIA RTX PRO 6000 Blackwell 95.6GB, CUDA 13.1
-- 默认: MOSS-TTSD v1.0（8B, Apache-2.0, 原生对话建模）
-- Fallback: CosyVoice3-0.5B（逐句合成+拼接）
+- **唯一主方案: FireRedTTS2**（原生双人对话，参数 temperature=0.8 / topk=15，2026-08-07 人工试听 20 组选定）
+- 调用: `python scripts/tts.py synthesize <script.md> --voice-map S1=<wav>,S2=<wav> --provider firered-tts2 --output <dir> --target-minutes <N>`
+- voice_map 值是 wav 路径，prompt_text 从同目录 `<name>.txt` 读；模型子进程加载（torchaudio→soundfile patch 内置）
+- **发音表**：`shows/<name>/season/pronunciation.json` — 合成前替换专有名词为注音读法（SGLang→SG浪、vLLM→V-L-L-M、CUDA→库达 等），避免逐字母念
+- 调参用 `scripts/firered_param_sweep.py` + `scripts/make_listen_page.py`（摘录级，勿用整期调参）
 - 模型详情见 `docs/superpowers/specs/2026-08-01-devpodcast-design.md` §7

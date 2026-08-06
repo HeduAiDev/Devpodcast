@@ -1,16 +1,18 @@
-"""TTS 抽象层：DialogueTTSProvider（MOSS-TTSD，原生对话）与 SegmentedTTSProvider
-（CosyVoice3，逐句+拼接）两类，统一 Protocol。本地基类管理 GPU/batch/预热/显存。
+"""TTS：FireRedTTS2 后端（原生双人对话模型，唯一主方案）。
 
-CLI（MOSS-TTSD 已装时）：
-    python3 scripts/tts.py synthesize <script.md> --voice-map S1=wav S2=wav --output <dir> [--target-minutes 35]
+CLI：
+    python3 scripts/tts.py synthesize <script.md> --voice-map S1=wav S2=wav --output <dir> [--target-minutes 35] [--pronunciation <json>]
+
+- voice_map 值是 wav 路径，prompt_text 从同目录的 <name>.txt 读
+- 发音表（可选）：season/pronunciation.json，合成前替换专有名词为注音读法
 """
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-# 需在 M0 环境任务（Task 17）安装 torch；本文件顶层不 import torch，避免无 GPU 环境崩溃。
-# MOSS-TTSD 的 Windows 兼容 patch（torchaudio → soundfile 回退）在 synthesize 内导入。
+# 本文件顶层不 import torch，避免无 GPU 环境崩溃。模型在子进程内加载（FireRed 的
+# torchaudio → soundfile 兼容 patch 在 infer 模板里，见 FireRedTTSProvider.synthesize）。
 
 
 @dataclass
@@ -83,737 +85,165 @@ def _enable_sdpa_backends() -> None:
     torch.backends.cuda.enable_math_sdp(True)
 
 
-class DialogueTTSProvider(LocalTTSProvider):
-    """MOSS-TTSD：整段对话一次合成。Script → [S1]/[S2] 标签串 → 单次生成。
+class FireRedTTSProvider(LocalTTSProvider):
+    """FireRedTTS2 后端（2026-08-06 下载验证）。
 
-    已接入验证配方（2026-08-03 实测）：
-    - SDPA attention（flash-attn 未装时可用；8B bf16 全卡 VRAM ~26GB）
-    - device_map='auto' + low_cpu_mem_usage=True 流式加载（32GB RAM 直接 .to(cuda) 会 OOM）
-    - 参考音频经 encode_audios_from_wav 编码为 codec tokens 后作 reference
-    - 停顿由模型生成；production-notes 的停顿建议是软提示（改写文本节奏）
+    原生双人对话模型（codec 4.3GB + llm_posttrain 8.3GB），generate_dialogue
+    一次吃整段 turn 列表。torch 2.11 可跑，但 torchaudio 2.11 在本机路由到
+    torchcodec 且缺 FFmpeg DLL，需 monkeypatch load/save 走 soundfile。
     """
     native_dialogue = True
+    FIRERED_PYTHON = r"E:\Laboratory\Devpodcast\_venv_soulx\Scripts\python.exe"
+    FIRERED_REPO = r"E:\Laboratory\Devpodcast\_diag\fireredtts2_repo"
 
-    def __init__(self, model_dir: str | Path, device: str = "cuda:0", dtype: str = "bfloat16"):
+    def __init__(self, model_dir: str | Path = "models/fireredtts2", device: str = "cuda:0",
+                 dtype: str = "bfloat16", temperature: float = 0.8, topk: int = 15):
         super().__init__(model_dir, device, dtype)
-        self._processor = None
-        self._model = None
-
-    def _load(self):
-        if self._processor is not None and self._model is not None:
-            return
-        _enable_sdpa_backends()
-        import torch
-        from transformers import AutoModel, AutoProcessor
-
-        # Windows 无 FFmpeg 时 torchaudio.load 走 soundfile 回退（scripts/ta_compat）
-        try:
-            import scripts.ta_compat  # noqa: F401
-        except ImportError:
-            pass
-
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        dtype = torch.bfloat16 if device == "cuda" else torch.float32
-
-        self._processor = AutoProcessor.from_pretrained(self.model_dir, trust_remote_code=True)
-        self._processor.audio_tokenizer = self._processor.audio_tokenizer.to(device).eval()
-        self._model = AutoModel.from_pretrained(
-            self.model_dir,
-            trust_remote_code=True,
-            attn_implementation="sdpa",
-            torch_dtype=dtype,
-            device_map="auto",
-            low_cpu_mem_usage=True,
-        ).eval()
+        # 2026-08-07 参数扫描结论（_diag/firered_sweep/，20 组人工试听）：
+        #   temp=0.7 全灭（错字/发音差），topk=10 差；满分(10) 5 组集中在
+        #   temp 0.8-1.1 × topk 15-30。选 t0.8_k15：时长 60.3s ≈ 中位 60.5s
+        #   （无赶字/拖字），temp 0.8 比 1.1 更稳（长文本不易错）。
+        self.temperature = temperature
+        self.topk = topk
 
     def warmup(self) -> None:
-        self._load()
-
-    def _calibrated_decode(self, dedelayed, start_length, n_vq, pad_code, target_sr):
-        """网格搜索最佳 (通道移位, 时间偏移) 解码组合，pitch 自相关评分。
-
-        背景：MOSS-TTSD 的 de-delay 通道布局与 start_length 裁剪边界在本环境
-        （Windows/torch 2.11/SDPA）与模型训练时存在偏差，固定常量会导致解码出
-        噪声。pitch 自相关是「是否像语音」的强指标（浊音 >0.4，噪声 <0.25），
-        网格搜索自动对齐。约 16×5=80 次短解码，<1 分钟，对长音频合成可接受。
-        """
-        import numpy as np
-        import torch as _t
-
-        def _pitch(wav):
-            frame = wav[:min(len(wav), target_sr * 10)]
-            if len(frame) < target_sr // 2:
-                return 0.0
-            lag_lo, lag_hi = target_sr // 400, target_sr // 80
-            ac = np.correlate(
-                frame[:target_sr] - frame[:target_sr].mean(),
-                frame[:target_sr] - frame[:target_sr].mean(),
-                "full",
-            )[len(frame[:target_sr]) - 1:]
-            return float((ac / (ac[0] + 1e-9))[lag_lo:lag_hi].max())
-
-        best = (0.0, None)
-        for shift in range(n_vq):
-            for t_off in range(-2, 3):
-                trim_from = max(0, start_length - n_vq + 1 + t_off)
-                trimmed = dedelayed[trim_from:]
-                valid = trimmed[~(trimmed == pad_code).all(dim=1)]
-                if valid.shape[0] < 5:
-                    continue
-                shifted = _t.roll(valid, shift, dims=1)
-                try:
-                    wavs = self._processor.decode_audio_codes(shifted)
-                    if not wavs:
-                        continue
-                    wav = _t.cat(wavs, dim=-1).numpy()
-                    p = _pitch(wav)
-                    if p > best[0]:
-                        best = (p, wav)
-                except Exception:
-                    continue
-        if best[1] is None:
-            raise RuntimeError("自校准解码失败：无任何可解码组合")
-        return [best[1]]
-
-    def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
-        self._load()
-        import torch
-
-        processor = self._processor
-        model = self._model
-        target_sr = int(processor.model_config.sampling_rate)
-        n_vq = getattr(processor.model_config, "n_vq", 16)
-
-        # 1. 组装对话文本：turns → "[S1] ... [S2] ..." 标签串
-        parts = []
-        for turn in script.turns:
-            text = (turn.text or "").strip()
-            if text:
-                parts.append(f"[{turn.speaker}] {text}")
-        if not parts:
-            raise ValueError("script 无任何发言内容，无法合成")
-        full_text = " ".join(parts)
-
-        # 分段生成（规避模型提前终止）：模型对长文本会过早输出 audio_end
-        # （实测 300 字仅生成 ~53 步 vs 短文本可到 318 步）。按目标秒数分块，
-        # 每段独立生成后拼接；每段 ≤60s 音频（750 步），提前终止风险低。
-        # 音色一致性：每段用同一参考音频克隆，漂移可控。
-        # 模型实测单段可完整朗读 ~889 字（英文 48.8s）。用 800 字 chunk：
-        # 减少分段数、降低失败概率；每段 ~60s 语音，整期 ~13 段。
-        chunk_seconds = 200.0
-        chunk_chars = int(chunk_seconds * 4.0)  # 4 字/秒口播 = 800 字
-        # 按 turn 边界切分（避免把单个 turn 劈开）
-        chunks: list[str] = []
-        cur: list[str] = []
-        cur_chars = 0
-        for part in parts:
-            n = len(part)
-            if cur and cur_chars + n > chunk_chars:
-                chunks.append(" ".join(cur))
-                cur, cur_chars = [], 0
-            cur.append(part)
-            cur_chars += n
-        if cur:
-            chunks.append(" ".join(cur))
-        if len(chunks) > 1:
-            print(f"  [tts] 分段生成：{len(chunks)} 段（每段 ≤{chunk_chars} 字）")
-
-        # 2. 参考音频：voice_map {speaker: wav_path}，编码为 codec tokens
-        #    官方 v0.7 中文示例证明：必须带参考文本前缀（prompt_text），否则
-        #    模型缺少"谁在说话"锚定 → 生成质量差、提前终止。
-        import torchaudio
-        wavs, ref_names = [], []
-        for spk in ("S1", "S2"):
-            p = voice_map.get(spk)
-            if not p:
-                raise ValueError(f"voice_map 缺 {spk} 音色样本: {voice_map}")
-            w, sr = torchaudio.load(str(p))
-            if w.shape[0] > 1:
-                w = w.mean(dim=0, keepdim=True)
-            if sr != target_sr:
-                w = torchaudio.functional.resample(w, sr, target_sr)
-            wavs.append(w)
-            ref_names.append(str(p))
-        ref_codes = processor.encode_audios_from_wav(wavs, sampling_rate=target_sr)
-        concat_wav = torch.cat(wavs, dim=-1)
-        prompt_audio = processor.encode_audios_from_wav([concat_wav], sampling_rate=target_sr)[0]
-
-        # 参考文本前缀（voice_map 里可选传 REF_TEXT_<spk> 键；缺省用占位）
-        ref_texts = []
-        for spk in ("S1", "S2"):
-            rt = voice_map.get(f"REF_TEXT_{spk}", "")
-            ref_texts.append(f"[{spk}] {rt}".strip() if rt else "")
-
-        # 3-5. 分段生成 + 解码
-        device = self._model.device
-        pad_code = processor.model_config.audio_pad_code
-        segments_dir = Path(opts.output_dir) / "segments"
-        segments_dir.mkdir(parents=True, exist_ok=True)
-        segments: list[Path] = []
-        total_frames = 0
-        import soundfile as sf
-
-        # 参考文本前缀：官方 _build_prefixed_text 把 [S1]ref1[S2]ref2 拼在对话前
-        ref_prefix = "".join(rt for rt in ref_texts if rt)
-
-        # 批处理：一次生成 BATCH_SIZE 个 chunk，GPU 并行 → 3-4x 提速
-        # （官方 generate 原生支持 batch；处理器按最长序列 padding）
-        BATCH_SIZE = 4
-        for g in range(0, len(chunks), BATCH_SIZE):
-            group = chunks[g:g + BATCH_SIZE]
-            conversations = [[
-                processor.build_user_message(text=(ref_prefix + ct) if ref_prefix else ct, reference=ref_codes),
-                processor.build_assistant_message(audio_codes_list=[prompt_audio]),
-            ] for ct in group]
-            batch = processor(conversations, mode="continuation")
-
-            # max_new_tokens 取组内最大（短 chunk 靠 <|im_end|> 提前停）
-            max_new_tokens = max(
-                max(512, int(len(ct) / 4.0 * 12.5 * 1.3)) for ct in group
-            )
-            min_ok_steps = [
-                max(60, int(len(ct) / 4.0 * 12.5 * 0.35)) for ct in group
-            ]
-
-            # 每样本独立重试评分：非静音占比 × 步数达标率
-            import numpy as np
-
-            best_wavs: list[list] = [[] for _ in group]
-            best_scores = [-1.0] * len(group)
-            for attempt in range(3):
-                torch.manual_seed(42 + g * 101 + attempt * 17)
-                with torch.no_grad():
-                    outputs = model.generate(
-                        input_ids=batch["input_ids"].to(device),
-                        attention_mask=batch["attention_mask"].to(device),
-                        max_new_tokens=max_new_tokens,
-                        text_temperature=0.7, text_top_p=0.9, text_top_k=50,
-                        audio_temperature=0.7, audio_top_p=0.9, audio_top_k=50,
-                        audio_repetition_penalty=1.1,
-                    )
-                # outputs: list of (start_length, generation_ids)，每样本一个
-                for i, (start_len, gen_ids) in enumerate(outputs):
-                    new_steps = int(gen_ids.shape[0]) - int(start_len.item())
-                    msgs = processor.decode([(start_len, gen_ids)])
-                    att_wavs = []
-                    for msg in msgs:
-                        if msg is None:
-                            continue
-                        for wav in msg.audio_codes_list:
-                            if not isinstance(wav, torch.Tensor) or wav.numel() == 0:
-                                continue
-                            att_wavs.append(wav.detach().float().cpu())
-                    if not att_wavs:
-                        continue
-                    concat = torch.cat(att_wavs, dim=-1).numpy().reshape(-1)
-                    if concat.size == 0:
-                        continue
-                    nonsil = float((np.abs(concat) >= 0.01).mean())
-                    mok = min_ok_steps[i]
-                    score = nonsil * min(new_steps / mok, 1.0) if mok > 0 else nonsil
-                    if score > best_scores[i]:
-                        best_scores[i] = score
-                        best_wavs[i] = att_wavs
-                # 全部达标才提前停
-                if all(
-                    best_scores[i] > 0.5 * min(1.0, 1.0)
-                    for i in range(len(group))
-                ):
-                    break
-
-            # 保存本组所有样本的分段
-            for i, wavs_out in enumerate(best_wavs):
-                ci = g + i
-                for wav in wavs_out:
-                    wav_np = wav.numpy()
-                    if wav_np.ndim == 1:
-                        wav_np = wav_np.reshape(-1, 1)
-                    seg_path = segments_dir / f"chunk{ci:02d}_{len(segments):03d}.wav"
-                    sf.write(str(seg_path), wav_np.astype("float32"), target_sr)
-                    segments.append(seg_path)
-                    total_frames += wav_np.shape[0]
-
-        # 6. 拼接总音频
-        bundle_path = Path(opts.output_dir) / "episode.wav"
-        if len(segments) == 1:
-            bundle_path.write_bytes(segments[0].read_bytes())
-        else:
-            import numpy as np
-            frames = [sf.read(str(s), dtype="float32")[0] for s in segments]
-            combined = np.concatenate(frames, axis=0)
-            sf.write(str(bundle_path), combined.astype("float32"), target_sr)
-
-        duration_s = total_frames / target_sr
-        vram_gb = 0.0
-        try:
-            free0 = torch.cuda.mem_get_info(0)[0] / 1024 ** 3
-            _ = free0  # 无法拿加载前基线；报告当前占用
-            used = (torch.cuda.get_device_properties(0).total_memory - torch.cuda.mem_get_info(0)[0]) / 1024 ** 3
-            vram_gb = round(used, 1)
-        except Exception:
-            pass
-
-        return AudioBundle(wav_path=bundle_path, segments=segments, duration_s=round(duration_s, 2), vram_gb=vram_gb)
-
-
-def _synthesize_turns(
-    model_dir: str | Path,
-    turns: list[tuple[int, str, str]],
-    speaker_voice: dict[str, str],
-) -> dict:
-    """进程内合成指定 turns（multiprocessing worker）。返回 {turn_idx: (wav, sr)}。"""
-    import sys
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    _enable_sdpa_backends()
-    import numpy as np
-    import torch
-    from qwen_tts import Qwen3TTSModel
-
-    model = Qwen3TTSModel.from_pretrained(
-        str(model_dir),
-        device_map="cuda:0",
-        dtype=torch.bfloat16,
-        attn_implementation="sdpa",
-    )
-    # 按说话人分组批量合成
-    from collections import defaultdict
-    by_speaker: dict[str, list[tuple[int, str]]] = defaultdict(list)
-    for idx, spk, text in turns:
-        by_speaker[spk].append((idx, text))
-
-    result: dict[int, tuple[np.ndarray, int]] = {}
-    for spk, items in by_speaker.items():
-        voice = speaker_voice.get(spk, "dylan")
-        texts = [t for _, t in items]
-        wavs, sr = model.generate_custom_voice(
-            texts, speaker=voice, language="chinese", do_sample=True,
-        )
-        for (idx, _), wav in zip(items, wavs):
-            result[idx] = (np.asarray(wav, dtype=np.float32), sr)
-    return result
-
-
-class SegmentedTTSProvider(LocalTTSProvider):
-    """Qwen3-TTS（逐句合成 + 规则插静音拼接）。
-
-    2026-08-05 调研选定：MOSS-TTSD 中文长文本生成不稳定（>200字退化），
-    业界第一梯队调研结论主选 Qwen3-TTS-12Hz-1.7B-CustomVoice：
-    - Apache-2.0 全开放，9 个内置音色免克隆（dylan 做老张 / aiden 做阿凯）
-    - 逐句合成 + 拼接天然支持任意长度
-    - RTF≈2.0（35 分钟一期约 70 分钟合成，可接受）
-
-    voice_map 传音色名（如 S1=dylan,S2=aiden），不是 wav 路径。
-    """
-    native_dialogue = False
-    PAUSE_SPEAKER_SWITCH_MS = (350, 500)
-    PAUSE_SAME_SPEAKER_MS = (150, 250)
-
-    def __init__(self, model_dir: str | Path, device: str = "cuda:0", dtype: str = "bfloat16"):
-        super().__init__(model_dir, device, dtype)
-        self._model = None
-
-    def _load(self):
-        if self._model is not None:
-            return
-        _enable_sdpa_backends()
-        import torch
-        from qwen_tts import Qwen3TTSModel
-
-        self._model = Qwen3TTSModel.from_pretrained(
-            self.model_dir,
-            device_map=self.device,
-            dtype=torch.bfloat16,
-            attn_implementation="sdpa",
-        )
-
-    def warmup(self) -> None:
-        """加载模型（Qwen3-TTS 无需预热，加载即就绪）。"""
-        self._load()
-
-    def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
-        """逐句合成 + 拼接。script.turns → 每 turn 一个音频，中间插停顿。
-
-        GPU 利用率实测仅 20-39%（1.7B 模型太小，PRO 6000 算力闲置）。
-        用多进程并行：N 个进程各加载一个 Qwen3-TTS 实例，分配 1/N 的 turns，
-        并行合成 → 利用率拉满、3-4x 提速（95.6GB 显存装 4 个 ~10GB 实例绰绰有余）。
-        """
-        import numpy as np
-        import soundfile as sf
-        import torch
-        from collections import defaultdict
-
-        # voice_map 传音色名（dylan/ryan），不是路径
-        s1_voice = str(voice_map.get("S1", "dylan"))
-        s2_voice = str(voice_map.get("S2", "ryan"))
-        speaker_voice = {"S1": s1_voice, "S2": s2_voice}
-
-        segments_dir = Path(opts.output_dir) / "segments"
-        segments_dir.mkdir(parents=True, exist_ok=True)
-        segments: list[Path] = []
-        total_frames = 0
-
-        # 收集有效 turns（保留原顺序）
-        valid_turns = [(i, t.speaker, (t.text or "").strip())
-                       for i, t in enumerate(script.turns) if (t.text or "").strip()]
-
-        # 并行合成：N 进程（默认 2，防 CPU/内存过载——4 进程同时加载模型实测卡死）
-        # 教训：每个进程 from_pretrained 读 7GB 权重 + CPU 初始化，同时起 4 个会打满
-        # CPU/内存。降到 2 进程，且 spawn 天然错开加载（进程逐个初始化）。
-        import multiprocessing as mp
-        n_proc = 1  # 单进程（内存受限，多进程卡死）
-        if n_proc <= 1 or len(valid_turns) < 4:
-            # 少量 turn 直接单进程
-            turn_wavs = _synthesize_turns(self.model_dir, valid_turns, speaker_voice)
-        else:
-            # 按 turn 索引轮转分配（保证相邻 turn 在不同进程，负载均衡）
-            chunks: list[list[tuple[int, str, str]]] = [[] for _ in range(n_proc)]
-            for k, item in enumerate(valid_turns):
-                chunks[k % n_proc].append(item)
-            ctx = mp.get_context("spawn")
-            results: dict[int, tuple[np.ndarray, int]] = {}
-            with ctx.Pool(n_proc) as pool:
-                partials = pool.starmap(
-                    _synthesize_turns,
-                    [(self.model_dir, ch, speaker_voice) for ch in chunks],
-                )
-                for partial in partials:
-                    results.update(partial)
-            turn_wavs = results
-
-        # 按顺序拼接，说话人切换插 350-500ms，同人句间 150-250ms
-        import random
-        rng = random.Random(42)
-        all_frames: list[np.ndarray] = []
-        prev_spk = None
-        sr = None
-        for i, spk, text in valid_turns:
-            if i not in turn_wavs:
-                continue
-            wav, sr = turn_wavs[i]
-            # 停顿：切换 350-500ms，同人 150-250ms
-            if prev_spk is not None:
-                if spk != prev_spk:
-                    pause_ms = rng.randint(*self.PAUSE_SPEAKER_SWITCH_MS)
-                else:
-                    pause_ms = rng.randint(*self.PAUSE_SAME_SPEAKER_MS)
-                all_frames.append(np.zeros(int(sr * pause_ms / 1000), dtype=np.float32))
-            all_frames.append(np.asarray(wav, dtype=np.float32))
-            prev_spk = spk
-
-            # 保存分段
-            seg_path = segments_dir / f"turn{i:03d}.wav"
-            sf.write(str(seg_path), wav.astype("float32"), sr)
-            segments.append(seg_path)
-            total_frames += len(wav)
-
-        # 按顺序拼接，说话人切换插 350-500ms，同人句间 150-250ms
-        import random
-        rng = random.Random(42)
-        all_frames: list[np.ndarray] = []
-        prev_spk = None
-        for i, turn in enumerate(script.turns):
-            if i not in turn_wavs:
-                continue
-            wav, sr = turn_wavs[i]
-            # 停顿：切换 350-500ms，同人 150-250ms
-            if prev_spk is not None:
-                if turn.speaker != prev_spk:
-                    pause_ms = rng.randint(*self.PAUSE_SPEAKER_SWITCH_MS)
-                else:
-                    pause_ms = rng.randint(*self.PAUSE_SAME_SPEAKER_MS)
-                all_frames.append(np.zeros(int(sr * pause_ms / 1000), dtype=np.float32))
-            all_frames.append(np.asarray(wav, dtype=np.float32))
-            prev_spk = turn.speaker
-
-            # 保存分段
-            seg_path = segments_dir / f"turn{i:03d}.wav"
-            sf.write(str(seg_path), wav.astype("float32"), sr)
-            segments.append(seg_path)
-            total_frames += len(wav)
-
-        # 拼接总音频
-        combined = np.concatenate(all_frames, axis=0) if all_frames else np.zeros(1, dtype=np.float32)
-        bundle_path = Path(opts.output_dir) / "episode.wav"
-        sf.write(str(bundle_path), combined.astype("float32"), sr)
-
-        duration_s = len(combined) / sr
-        vram_gb = 0.0
-        try:
-            free0 = torch.cuda.mem_get_info(0)[0] / 1024 ** 3
-            _ = free0
-            used = (torch.cuda.get_device_properties(0).total_memory - torch.cuda.mem_get_info(0)[0]) / 1024 ** 3
-            vram_gb = round(used, 1)
-        except Exception:
-            pass
-
-        return AudioBundle(wav_path=bundle_path, segments=segments, duration_s=round(duration_s, 2), vram_gb=vram_gb)
-
-
-class SoulXTTSProvider(LocalTTSProvider):
-    """SoulX-Podcast 后端（2026-08-06 选定最终方案）。
-
-    原生双人对话播客模型：单次 forward_longform 合成整期（音色/人格全程一致，
-    无 chunk 漂移）。调研确认是当前开源中文长播客对话最优解（cpSIM 0.599，
-    中文一等公民，副语言标签原生支持）。torch 2.11 直接可用，VRAM ~5.4GB。
-    """
-    native_dialogue = True
-    SOULX_PYTHON = r"E:\Laboratory\Devpodcast\_venv_soulx\Scripts\python.exe"
-    SOULX_REPO = r"E:\Laboratory\Devpodcast\_diag\SoulX-Podcast"
-
-    def __init__(self, model_dir: str | Path = "models/soulx-podcast", device: str = "cuda:0",
-                 dtype: str = "bfloat16"):
-        super().__init__(model_dir, device, dtype)
-
-    def warmup(self) -> None:
-        """SoulX 无需预热（子进程内加载）。"""
+        """无需预热（子进程内加载）。"""
         pass
 
-    def _build_script_json(self, script, voice_map: dict, tmp_dir: Path) -> Path:
-        """script.turns → SoulX JSON: speakers.{S1,S2}.{prompt_audio,prompt_text} + text。"""
-        import json
-        # voice_map: {"S1": {"audio": "...", "text": "..."}, "S2": {"audio": "...", "text": "..."}}
-        speakers = {}
-        for spk in ("S1", "S2"):
-            info = voice_map.get(spk, {})
-            speakers[spk] = {
-                "prompt_audio": info.get("audio", ""),
-                "prompt_text": info.get("text", ""),
-            }
-        text = [[t.speaker, (t.text or "").strip()] for t in script.turns if (t.text or "").strip()]
-        data = {"speakers": speakers, "text": text}
-        out = tmp_dir / "script.json"
-        out.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-        return out
-
     def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
-        """整期单次合成（原生双人对话）。"""
+        """分段合成（动态分段，每段 ≤450 字，防超 max_seq_len），段间 350ms 拼接。"""
         import json
         import subprocess
-        import sys
+        import time
         from pathlib import Path
 
-        # 模型路径需绝对路径（子进程 chdir 后相对路径失效）
-        model_abs = Path(self.model_dir).resolve()
-        tmp_dir = Path(opts.output_dir) / "soulx_tmp"
-        tmp_dir.mkdir(parents=True, exist_ok=True)
-        # voice_map 的 wav 路径需绝对路径（子进程 chdir 后相对路径失效）
-        voice_map_abs = {}
-        for spk, info in voice_map.items():
-            info = dict(info)
-            if "audio" in info and info["audio"]:
-                info["audio"] = str(Path(info["audio"]).resolve())
-            voice_map_abs[spk] = info
-        script_json = self._build_script_json(script, voice_map_abs, tmp_dir).resolve()
+        import numpy as np
+        import soundfile as sf
 
-        out_wav = (Path(opts.output_dir) / "episode.wav").resolve()
-        infer_py = tmp_dir / "infer.py"
-        infer_py.write_text(f'''
-import os, sys, time, json
-REPO = r"{self.SOULX_REPO}"
+        model_abs = Path(self.model_dir).resolve()
+        tmp_dir = Path(opts.output_dir) / "firered_tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+
+        # 参考音频转绝对路径
+        prompt_wavs, prompt_texts = [], []
+        for spk in ("S1", "S2"):
+            info = voice_map.get(spk, {}) or {}
+            audio = info.get("audio", "")
+            prompt_wavs.append(str(Path(audio).resolve()) if audio else "")
+            prompt_texts.append(f"[{spk}]{info.get('text', '')}")
+
+        valid_turns = [t for t in script.turns if (t.text or "").strip()]
+        # 动态分段（FireRed 上下文预算：max_seq_len=3100 - max_generation_len=375 = 2725 token）。
+        # 每轮 ≈ 文本(字×1.5) + 音频(~12.5 token/s × 字数/4s)，实测 30 轮段爆 2725。
+        # 450 字/段 ≈ 文本 675 + 音频 ~1400 + prompt ~300 ≈ 2375，留 13% 裕量。
+        FIRE_CHUNK_CHARS = 450
+        chunks: list[list] = []
+        cur: list = []
+        cur_chars = 0
+        for t in valid_turns:
+            n = len((t.text or "").strip())
+            if cur and cur_chars + n > FIRE_CHUNK_CHARS:
+                chunks.append(cur)
+                cur, cur_chars = [], 0
+            cur.append(t)
+            cur_chars += n
+        if cur:
+            chunks.append(cur)
+        print(f"  [tts] FireRed 分段合成：{len(chunks)} 段（每段 ≤{FIRE_CHUNK_CHARS} 字，动态）", flush=True)
+
+        segments_dir = Path(opts.output_dir) / "segments"
+        segments_dir.mkdir(parents=True, exist_ok=True)
+        segments: list[Path] = []
+
+        for ci, chunk_turns in enumerate(chunks):
+            text_list = [f"[{t.speaker}]{(t.text or '').strip()}" for t in chunk_turns]
+            payload = {
+                "text_list": text_list,
+                "prompt_wav_list": prompt_wavs,
+                "prompt_text_list": prompt_texts,
+            }
+            chunk_json = (tmp_dir / f"chunk{ci:02d}.json").resolve()
+            chunk_json.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+            chunk_wav = (segments_dir / f"chunk{ci:02d}.wav").resolve()
+            infer_py = tmp_dir / f"infer_{ci:02d}.py"
+            infer_py.write_text(f'''
+import json, sys, time
+REPO = r"{self.FIRERED_REPO}"
 MODEL = r"{model_abs}"
-SCRIPT = r"{script_json}"
-OUT = r"{out_wav.resolve()}"
-os.chdir(REPO)
+SCRIPT = r"{chunk_json}"
+OUT = r"{chunk_wav}"
 sys.path.insert(0, REPO)
 
-import torch, soundfile as sf, numpy as np, torchaudio
+import numpy as np, soundfile as sf, torch, torchaudio
 
-def _ta_load_sf(file, sr=None, **kwargs):
-    audio, sample_rate = sf.read(file, dtype="float32", always_2d=True)
-    return torch.from_numpy(audio.T), sample_rate
+def _ta_load(path, *a, **kw):
+    data, sr = sf.read(str(path), dtype="float32", always_2d=True)
+    return torch.from_numpy(data.T).contiguous(), sr
 
-torchaudio.load = _ta_load_sf
+def _ta_save(path, src, sample_rate, *a, **kw):
+    arr = src.detach().cpu().numpy() if isinstance(src, torch.Tensor) else np.asarray(src)
+    if arr.ndim == 2 and arr.shape[0] == 1:
+        arr = arr[0]
+    sf.write(str(path), arr, sample_rate)
 
-import s3tokenizer.utils as _s3u, s3tokenizer as _s3
+torchaudio.load = _ta_load
+torchaudio.save = _ta_save
 
-def _load_audio_sf(file, sr=16000):
-    audio, sample_rate = sf.read(file, dtype="float32", always_2d=True)
-    audio = torch.from_numpy(audio.T)
-    if sample_rate != sr:
-        audio = torchaudio.transforms.Resample(sample_rate, sr)(audio)
-    return audio[0]
+from fireredtts2.fireredtts2 import FireRedTTS2
 
-_s3u.load_audio = _load_audio_sf
-_s3.load_audio = _load_audio_sf
-
-from soulxpodcast.utils.parser import podcast_format_parser
-from soulxpodcast.utils.infer_utils import initiate_model, process_single_input
-
-print(f"[env] torch={{torch.__version__}}")
-t0 = time.time()
-model, dataset = initiate_model(1988, MODEL, "hf", False)
-print(f"[load] ok {{time.time()-t0:.1f}}s")
+_t0 = time.time()
+model = FireRedTTS2(pretrained_dir=MODEL, gen_type="dialogue", device="cuda", use_bf16=True)
+_t1 = time.time()
+print(f"  [firered] load: {{_t1 - _t0:.1f}}s", flush=True)
 
 with open(SCRIPT, encoding="utf-8") as f:
     data = json.load(f)
-inputs = podcast_format_parser(data)
-data_item = process_single_input(dataset, inputs["text"], inputs["prompt_wav"],
-    inputs["prompt_text"], inputs["use_dialect_prompt"], inputs["dialect_prompt_text"])
 
-t0 = time.time()
-results_dict = model.forward_longform(**data_item)
-elapsed = time.time() - t0
+_t2 = time.time()
+audio = model.generate_dialogue(
+    text_list=data["text_list"],
+    prompt_wav_list=data["prompt_wav_list"],
+    prompt_text_list=data["prompt_text_list"],
+    temperature={self.temperature},
+    topk={self.topk},
+)
+_t3 = time.time()
+print(f"  [firered] decode: {{_t3 - _t2:.1f}}s", flush=True)
 
-target_audio = None
-for wav in results_dict["generated_wavs"]:
-    target_audio = wav if target_audio is None else torch.cat([target_audio, wav], dim=1)
-
-os.makedirs(os.path.dirname(OUT), exist_ok=True)
-sf.write(OUT, target_audio.cpu().squeeze(0).numpy(), 24000)
-dur = target_audio.shape[-1] / 24000.0
-print(f"[save] dur={{dur:.2f}}s rtf={{elapsed/dur:.3f}}")
+sf.write(OUT, audio.cpu().squeeze(0).numpy(), 24000)
+print(f"chunk done: {{audio.shape[-1]/24000.0:.1f}}s")
 ''', encoding="utf-8")
 
-        # 用 SoulX venv 的 python 运行（torch 2.11 + s3tokenizer 隔离环境）
-        subprocess.run([self.SOULX_PYTHON, str(infer_py)], check=True, timeout=3600)
+            t0 = time.time()
+            subprocess.run([self.FIRERED_PYTHON, str(infer_py)], check=True, timeout=1800)
+            elapsed = time.time() - t0
+            x, sr = sf.read(chunk_wav, dtype="float32")
+            print(f"  chunk {ci+1}/{len(chunks)}: {len(x)/sr:.1f}s ({elapsed:.1f}s)", flush=True)
+            segments.append(chunk_wav)
 
-        # 读取结果
-        import soundfile as sf
-        x, sr = sf.read(out_wav, dtype="float32")
+        all_frames = []
+        for i, seg in enumerate(segments):
+            x, sr = sf.read(seg, dtype="float32")
+            if i > 0:
+                all_frames.append(np.zeros(int(sr * 0.35), dtype=np.float32))
+            all_frames.append(x)
+        combined = np.concatenate(all_frames, axis=0)
+        out_wav = (Path(opts.output_dir) / "episode.wav").resolve()
+        sf.write(str(out_wav), combined.astype("float32"), sr)
+
         return AudioBundle(
             wav_path=out_wav,
-            segments=[out_wav],
-            duration_s=round(len(x) / sr, 2),
+            segments=segments,
+            duration_s=round(len(combined) / sr, 2),
             vram_gb=0.0,
         )
 
 
-class VLLMTTSProvider(LocalTTSProvider):
-    """vLLM-Omni 后端（HTTP 调用，2026-08-05 部署成功）。
-
-    vLLM-Omni 连续批处理：RTF 2.0 → 0.14（14x），单进程吃满 GPU，
-    无多进程 CPU/内存过载问题。35 分钟一期 ~5 分钟合成。
-    Server: docker run vllm/vllm-omni:latest（见 _diag/run_vllm_tts.sh）
-    """
-    native_dialogue = False
-    PAUSE_SPEAKER_SWITCH_MS = (350, 500)
-    PAUSE_SAME_SPEAKER_MS = (150, 250)
-
-    def __init__(self, model_dir: str | Path = "vllm", device: str = "", dtype: str = "",
-                 base_url: str = "http://localhost:8000", speed: float = 1.15):
-        super().__init__(model_dir, device, dtype)
-        self.base_url = base_url.rstrip("/")
-        self.speed = speed
-
-    def _synthesize_one(self, text: str, voice: str):
-        """调用 vLLM-Omni /v1/audio/speech 合成一句。返回 (wav, sr)。"""
-        import json
-        import numpy as np
-        import requests
-
-        payload = {
-            "model": "/models/qwen3-tts",
-            "input": text,
-            "voice": voice,
-            "language": "chinese",
-            "response_format": "wav",
-            "task_type": "CustomVoice",
-            "non_streaming_mode": True,
-            # 语速：默认 1.15（35 分钟目标用；实测 vLLM-Omni 输出偏慢需微调）
-            "speed": self.speed,
-            # 采样稳定性（2026-08-05 实测）：temperature 只能经 extra_params 传，
-            # 顶层 temperature 被 server 忽略。0.1 显著降低语调随机（浮夸/哭腔）。
-            "extra_params": {"temperature": 0.1, "top_p": 0.9, "top_k": 50},
-        }
-        resp = requests.post(f"{self.base_url}/v1/audio/speech", json=payload, timeout=300)
-        resp.raise_for_status()
-        import io
-        import soundfile as sf
-        wav, sr = sf.read(io.BytesIO(resp.content), dtype="float32")
-        return np.asarray(wav, dtype=np.float32), sr
-
-    def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
-        """逐句合成 + 拼接（HTTP 到 vLLM-Omni server）。"""
-        import numpy as np
-        import soundfile as sf
-
-        s1_voice = str(voice_map.get("S1", "dylan"))
-        s2_voice = str(voice_map.get("S2", "ryan"))
-        speaker_voice = {"S1": s1_voice, "S2": s2_voice}
-
-        segments_dir = Path(opts.output_dir) / "segments"
-        segments_dir.mkdir(parents=True, exist_ok=True)
-        segments: list[Path] = []
-        total_frames = 0
-
-        valid_turns = [(i, t.speaker, (t.text or "").strip())
-                       for i, t in enumerate(script.turns) if (t.text or "").strip()]
-
-        # 逐句合成（HTTP，server 端连续批处理）。
-        # 实测单请求有 ~21s 固定开销（vLLM-Omni 每请求重建 cudagraph），
-        # 用线程池并发发请求摊薄它（server 端连续批处理，GPU 单进程吃满）。
-        from concurrent.futures import ThreadPoolExecutor
-
-        def _synth(item):
-            i, spk, text = item
-            voice = speaker_voice.get(spk, "dylan")
-            wav, sr = self._synthesize_one(text, voice)
-            return i, wav, sr
-
-        turn_wavs: dict[int, tuple[np.ndarray, int]] = {}
-        with ThreadPoolExecutor(max_workers=8) as ex:
-            for i, wav, sr in ex.map(_synth, valid_turns):
-                turn_wavs[i] = (wav, sr)
-
-        # 裁剪段内静音（vLLM-Omni 每句生成带大量静音，实测 60% 是静音）
-        # 保留首尾各 0.1s，去掉中间长静音
-        for i in turn_wavs:
-            wav, sr = turn_wavs[i]
-            mask = np.abs(wav) >= 0.01
-            idx = np.where(mask)[0]
-            if len(idx) > 0:
-                start = max(0, int(idx[0]) - int(0.1 * sr))
-                end = min(len(wav), int(idx[-1]) + int(0.1 * sr))
-                turn_wavs[i] = (wav[start:end], sr)
-
-        # 按顺序拼接（同 SegmentedTTSProvider）
-        import random
-        rng = random.Random(42)
-        all_frames: list[np.ndarray] = []
-        prev_spk = None
-        for i, spk, _ in valid_turns:
-            wav, sr = turn_wavs[i]
-            if prev_spk is not None:
-                if spk != prev_spk:
-                    pause_ms = rng.randint(*self.PAUSE_SPEAKER_SWITCH_MS)
-                else:
-                    pause_ms = rng.randint(*self.PAUSE_SAME_SPEAKER_MS)
-                all_frames.append(np.zeros(int(sr * pause_ms / 1000), dtype=np.float32))
-            all_frames.append(wav)
-            prev_spk = spk
-
-            seg_path = segments_dir / f"turn{i:03d}.wav"
-            sf.write(str(seg_path), wav.astype("float32"), sr)
-            segments.append(seg_path)
-            total_frames += len(wav)
-
-        combined = np.concatenate(all_frames, axis=0) if all_frames else np.zeros(1, dtype=np.float32)
-
-        # 响度归一化：防削波（vLLM-Omni 输出可能满幅 peak=1.0）
-        peak = float(np.abs(combined).max())
-        if peak > 0.95:
-            combined = combined * (0.9 / peak)
-
-        bundle_path = Path(opts.output_dir) / "episode.wav"
-        sf.write(str(bundle_path), combined.astype("float32"), sr)
-
-        return AudioBundle(wav_path=bundle_path, segments=segments,
-                           duration_s=round(len(combined) / sr, 2), vram_gb=0.0)
-
-
 def load_provider(config: dict) -> TTSProvider:
     kind = config.get("provider", "")
-    if kind == "moss-ttsd":
-        return DialogueTTSProvider(model_dir=config.get("model_dir", "models/moss-ttsd"))
-    if kind == "qwen3-tts":
-        return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/qwen3-tts-customvoice"))
-    if kind == "soulx-tts":
-        return SoulXTTSProvider(model_dir=config.get("model_dir", "models/soulx-podcast"))
-    if kind == "vllm-omni":
-        return VLLMTTSProvider(base_url=config.get("base_url", "http://localhost:8000"),
-                               speed=config.get("speed", 1.15))
-    if kind == "cosyvoice3":
-        return SegmentedTTSProvider(model_dir=config.get("model_dir", "models/cosyvoice3"))
+    if kind == "firered-tts2":
+        return FireRedTTSProvider(model_dir=config.get("model_dir", "models/fireredtts2"))
     raise ValueError(f"未知 TTS provider: {kind!r}")
 
 
@@ -829,7 +259,7 @@ def _cli_synthesize(argv: list[str]) -> int:
     voice_map: dict[str, str] = {}
     output_dir = Path("audio")
     target_minutes = 35.0
-    provider_name = "qwen3-tts"  # 默认 Qwen3-TTS（2026-08-05 选定主方案）
+    provider_name = "firered-tts2"  # 默认 FireRedTTS2（2026-08-07 选定主方案）
     i = 1
     while i < len(args):
         if args[i] == "--voice-map" and i + 1 < len(args):
@@ -853,18 +283,17 @@ def _cli_synthesize(argv: list[str]) -> int:
         print(f"script 不存在: {script_path}", file=sys.stderr)
         return 1
     if "S1" not in voice_map or "S2" not in voice_map:
-        print("voice-map 必须含 S1 和 S2（qwen3-tts 传音色名如 S1=dylan,S2=aiden；moss-ttsd/soulx 传 wav 路径）", file=sys.stderr)
+        print("voice-map 必须含 S1 和 S2（firered-tts2 传 wav 路径，prompt_text 从同目录的 <name>.txt 读）", file=sys.stderr)
         return 2
 
-    # soulx-tts: voice_map 值是 wav 路径，prompt_text 从同目录的 <name>.txt 读
-    if provider_name == "soulx-tts":
-        for spk in ("S1", "S2"):
-            wav_path = voice_map[spk]
-            txt_path = Path(wav_path).with_suffix(".txt")
-            voice_map[spk] = {
-                "audio": wav_path,
-                "text": txt_path.read_text(encoding="utf-8").strip() if txt_path.is_file() else "",
-            }
+    # firered-tts2: voice_map 值是 wav 路径，prompt_text 从同目录的 <name>.txt 读
+    for spk in ("S1", "S2"):
+        wav_path = voice_map[spk]
+        txt_path = Path(wav_path).with_suffix(".txt")
+        voice_map[spk] = {
+            "audio": wav_path,
+            "text": txt_path.read_text(encoding="utf-8").strip() if txt_path.is_file() else "",
+        }
 
     # 导入 script parser（延迟，避免无 GPU 环境崩溃）
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -873,18 +302,36 @@ def _cli_synthesize(argv: list[str]) -> int:
     script = parse(script_path)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model_dir = {
-        "moss-ttsd": "models/moss-ttsd",
-        "qwen3-tts": "models/qwen3-tts-customvoice",
-        "soulx-tts": "models/soulx-podcast",
-        "cosyvoice3": "models/cosyvoice3",
-    }.get(provider_name, "models/qwen3-tts-customvoice")
-    speed = 1.15
-    if "--speed" in args:
-        speed = float(args[args.index("--speed") + 1])
-    provider = load_provider({"provider": provider_name, "model_dir": model_dir, "speed": speed})
-    if provider_name != "vllm-omni":
-        provider.warmup()
+    model_dir = "models/fireredtts2"
+    provider = load_provider({"provider": provider_name, "model_dir": model_dir})
+    provider.warmup()
+
+    # 注音替换：script.md 里英文/专有名词 → 中文读法（如 SGLang → SG浪），
+    # 避免 TTS 逐字母念。只改喂给 TTS 的文本，不改 script.md。
+    # 发音表：<output 上级>/<show>/season/pronunciation.json，或 --pronunciation 显式指定
+    pron_json = None
+    if "--pronunciation" in args:
+        pron_json = Path(args[args.index("--pronunciation") + 1])
+    else:
+        # 从 script 路径回退找 show 目录：episodes/<slug>/script.md → shows/<show>/season/pronunciation.json
+        try:
+            show_dir = script_path.resolve().parents[2]
+            cand = show_dir / "season" / "pronunciation.json"
+            if cand.is_file():
+                pron_json = cand
+        except Exception:
+            pron_json = None
+    if pron_json and pron_json.is_file():
+        import json
+        pron_data = json.loads(pron_json.read_text(encoding="utf-8"))
+        pron_map = {k: v.get("replace", k) for k, v in pron_data.get("terms", {}).items() if v.get("replace")}
+        if pron_map:
+            # 长词优先（避免 "KV cache" 被 "cache" 先替换之类）
+            for term, pron in sorted(pron_map.items(), key=lambda kv: -len(kv[0])):
+                for t in script.turns:
+                    if t.text and term in t.text:
+                        t.text = t.text.replace(term, pron)
+            print(f"  [tts] 注音替换：{len(pron_map)} 词（{pron_json.name}）", flush=True)
     opts = TTSOpts()
     opts.output_dir = str(output_dir)
     # 官方换算 1s ≈ 12.5 tokens；目标分钟数 × 60s × 12.5 tokens/s，加 30% 余量

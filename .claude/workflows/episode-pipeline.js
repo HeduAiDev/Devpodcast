@@ -194,7 +194,7 @@ phase('TTS')
 const tts = await agent(
   head(null, [
     '任务：把 ' + EP + '/script.md 合成 ' + AUDIO + '/episode.wav + ' + AUDIO + '/segments/（对齐 scripts/tts.py 的 AudioBundle 契约）。',
-    '方式：优先 scripts/tts.py 的 DialogueTTSProvider（MOSS-TTSD：script → [S1]/[S2] 标签串 → 单次生成；1s ≈ 12.5 tokens 换算 --max_new_tokens 与时长预算；多说话人开 --sample_rate_normalize，始终开 --text_normalize）。模型/环境接入以 Task 17 落地的入口为准。',
+    '方式：用 scripts/tts.py 的 firered-tts2 provider（FireRedTTSProvider，temperature=0.8/topk=15，2026-08-07 人工试听 20 组选定）：python scripts/tts.py synthesize <script.md> --voice-map S1=<wav1>,S2=<wav2> --provider firered-tts2 --output <audio_dir> --target-minutes <N>。prompt_text 从 wav 同目录的 <name>.txt 读（需存在）。FireRed 每段 ≤30 轮自动分段，段间 350ms 拼接。',
     '说话人映射：' + SHOW + '/devpodcast.json 的 tts.voice_map（S1=老张 / S2=阿凯，voice-samples/ 音色样本）。',
     '目标时长：' + TARGET + ' 分钟（超过 20% 余量会被 audio-qa BLOCKING）。',
     '拉闸（spec §11.1）：音色样本质量不足 / 显存不够 / 模型加载失败 → status=BLOCKED。**TTS 是必经站**（spec §11.3）：环境没配好 = BLOCKED，不给「先出脚本、音频待补」的后门。',

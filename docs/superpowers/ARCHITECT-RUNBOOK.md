@@ -132,7 +132,7 @@ shows/vllm-podcast/episodes/ep01-<slug>/
 | book-analyst 拉闸 | 议题在书里找不到支撑 / 切片矛盾 | 改议题 / 补章 / 重跑 planner |
 | writer 拉闸 | episode-card 与 voices 冲突 | 裁决取舍，可能回溯 researcher |
 | lint 门禁耗尽 | 2 轮修复仍未通过 | 手动看门禁输出定位问题 |
-| TTS 拉闸 | 模型加载失败 / 显存不够 | 检查环境，切 fallback（CosyVoice3） |
+| TTS 拉闸 | 模型加载失败 / 显存不够 | 检查环境与 infer 日志，修好重跑（唯一方案 FireRedTTS2，无 fallback） |
 | review-exhausted | 3 轮评审仍 BLOCKING | 改提示词 / 降级问题级别 / 砍期 |
 
 **处理流程**：
@@ -173,7 +173,7 @@ Workflow 的 `args` 参数是 JSON 对象（不是字符串）。如果发车时
 
 本机 95.6GB 显存通常有余量，但可能有其他进程占用。audio-qa 站报告 VRAM，如不足：
 - 检查是否有其他模型加载中（`nvidia-smi`）
-- 考虑切换 fallback provider（CosyVoice3 0.5B → 显存压力小得多）
+- FireRedTTS2 子进程独占加载（~40GB bf16），合成期间勿同时跑其他大模型
 
 ### 书源漂移
 
@@ -197,10 +197,13 @@ ep_id 可以是完整目录名（`ep01-memory-management`）或前缀（`ep01`�
 
 ### TTS 环境
 
-- MOSS-TTSD 需要从 `moss-ttsd-v1.0-with-cat` 分支源码装，先跑 codec 融合脚本
-- 多说话人必须开 `--sample_rate_normalize`，始终开 `--text_normalize`
-- 长度换算：1s ≈ 12.5 tokens
-- M0 先用 F5-TTS 验证 CUDA/torch/flash-attn 链路，再装 MOSS-TTSD
+- **唯一方案：FireRedTTS2**（`models/fireredtts2`，参数 t0.8/k15）
+- 调用：`python scripts/tts.py synthesize <script.md> --voice-map S1=<wav>,S2=<wav> --provider firered-tts2 --output <dir> --target-minutes <N>`
+- voice_map 值是 wav 路径，prompt_text 从同目录 `<name>.txt` 读（缺 .txt 会读空 → 音色可能退化）
+- 模型子进程加载（`_venv_soulx` venv），torchaudio→soundfile patch 内置
+- **发音表**：`shows/<name>/season/pronunciation.json` 自动发现（SGLang→SG浪 等），或 `--pronunciation <json>` 显式指定
+- 上下文上限 2725 token → 动态分段 ≤450 字/段已内置；长稿报 `Inputs too long` 时先查分段
+- 调参：`scripts/firered_param_sweep.py` + `scripts/make_listen_page.py`（摘录级试听）
 
 ## 相关文件
 

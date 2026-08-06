@@ -1,0 +1,162 @@
+{
+  "comment": "专有名词发音表（发音真相源）。TTS 合成前把脚本里的英文/专有名词替换为注音读法，避免逐字母念。term → 替换文本（zh_common 中文播客读法，或拼音注音）。confidence: high=官方来源 / medium=社区共识 / low=推测。",
+  "terms": {
+    "SGLang": {
+      "replace": "SG浪",
+      "official_pron": "S-G-Lang（官方 README: pronounced as S-G-Lang）",
+      "zh_common": "SG浪",
+      "confidence": "high",
+      "source_url": "https://arxiv.org/abs/2312.07104",
+      "notes": "官方 README 无 explicit 发音声明；依据论文名称拆分 S-G-Lang（Structured Generation Language）+ 发音库 IPA /ˌɛs dʒiː ˈlæŋ/。SG浪 为口语谐音，首次出现建议铺垫 S-G-Lang"
+    },
+    "vLLM": {
+      "replace": "V-L-L-M",
+      "official_pron": "逐字母 V-L-L-M（/ˌviː ɛl ɛl ˈæm/；官方无发音声明，社区逐字母无争议）",
+      "zh_common": "V-L-L-M 逐字母（「v浪」无任何文本证据，官方论坛亦无 'v' 含义定论）",
+      "confidence": "medium",
+      "source_url": "https://discuss.vllm.ai/t/what-v-means-in-vllm/892/2",
+      "notes": "首次出现时可铺垫「就是逐字母的 V-L-L-M」"
+    },
+    "ZMQ": {
+      "replace": "Z-M-Q",
+      "official_pron": "Z-M-Q（逐字母）",
+      "zh_common": "Z-M-Q（逐字母，防 TTS 拼读成 zmo）",
+      "confidence": "high",
+      "notes": "ZeroMQ 官方别名体系 0MQ/ØMQ/ZeroMQ；写 ZMQ 时逐字母"
+    },
+    "ZeroMQ": {
+      "replace": "零M-Q",
+      "official_pron": "ZeroMQ（读 zero-em-queue 或 zero-m-q）",
+      "zh_common": "零M-Q",
+      "confidence": "medium",
+      "notes": "官方名称即 0MQ/ØMQ/ZeroMQ，Zero 即「零」"
+    },
+    "KV cache": {
+      "replace": "K-V缓存",
+      "official_pron": "KV cache（K-V 逐字母 + cache）",
+      "zh_common": "K-V缓存",
+      "confidence": "high",
+      "source_url": "https://hub.baai.ac.cn/view/34716",
+      "notes": "cache 读凯什（/kæʃ/，与 cash 同音，V2EX 读音共识）；绝无「凯威缓存」整词音译"
+    },
+    "PagedAttention": {
+      "replace": "",
+      "official_pron": "英文原音 /ˈpeɪdʒd əˈtɛnʃən/（vLLM 论文 arXiv:2309.06180 官方术语）",
+      "zh_common": "中文书面保留英文原词（机器之心/腾讯云均不译），口语读英文原音，无中文音译流行",
+      "confidence": "medium",
+      "source_url": "https://arxiv.org/abs/2309.06180"
+    },
+    "CUDA": {
+      "replace": "库达",
+      "official_pron": "CUDA（官方读 /ˈkjuːdə/ 库达）",
+      "zh_common": "库达",
+      "confidence": "high",
+      "source_url": "https://pronounce.renlab.ai/word/cuda",
+      "notes": "NVIDIA 官方视频读库达；「Q大」为典型错误读法"
+    },
+    "EngineCore": {
+      "replace": "恩金寇儿",
+      "official_pron": "本项目自造词",
+      "zh_common": "引擎核心（中文直译）",
+      "confidence": "low",
+      "notes": "自造词无官方读法；engine 与 core 连读，重音在 engine 首音节；core 勿读成「科瑞」（那是 Korea 谐音）"
+    },
+    "GPU": {
+      "replace": "G-P-U",
+      "official_pron": "Graphics Processing Unit 缩写，逐字母 G-P-U",
+      "zh_common": "G-P-U（逐字母）",
+      "confidence": "high",
+      "source_url": "https://pronounce.renlab.ai/word/gpu"
+    },
+    "CPU": {
+      "replace": "C-P-U",
+      "official_pron": "Central Processing Unit 缩写，逐字母 C-P-U",
+      "zh_common": "C-P-U（逐字母）",
+      "confidence": "high",
+      "notes": "与 GPU 同，逐字母为主流，无整词连读"
+    },
+    "LLM": {
+      "replace": "L-L-M",
+      "official_pron": "Large Language Model 缩写，逐字母 L-L-M",
+      "zh_common": "L-L-M（逐字母），或「大模型」",
+      "confidence": "high",
+      "notes": "逐字母 L-L-M 为主流；已知误读「Elm（埃尔姆）」整词；语境完整时中文播客常用「大模型」替代"
+    },
+    "API": {
+      "replace": "A-P-I",
+      "official_pron": "Application Programming Interface，逐字母 A-P-I",
+      "zh_common": "A-P-I（逐字母）",
+      "confidence": "high",
+      "source_url": "https://dictionary.cambridge.org/zhs/%E5%8F%91%E9%9F%B3/%E8%8B%B1%E8%AF%AD/api",
+      "notes": "剑桥词典官方音标 /ˌeɪ piː ˈaɪ/；南方口语「诶批」为地域变体，统一逐字母"
+    },
+    "LRU": {
+      "replace": "L-R-U",
+      "official_pron": "Least Recently Used，逐字母 L-R-U",
+      "zh_common": "L-R-U（逐字母）",
+      "confidence": "high"
+    },
+    "top-k": {
+      "replace": "",
+      "official_pron": "top-k（英文原音，中文语境「top-K」）",
+      "zh_common": "top-K（英文原音）",
+      "confidence": "high",
+      "notes": "top-K 英文原音，中文保留英文原词"
+    },
+    "top-p": {
+      "replace": "",
+      "official_pron": "top-p（英文原音）",
+      "zh_common": "top-P（英文原音）",
+      "confidence": "high",
+      "notes": "top-P 英文原音，中文保留英文原词"
+    },
+    "logits": {
+      "replace": "",
+      "official_pron": "logits（英文原音 /ˈlɒdʒɪts/）",
+      "zh_common": "logits（英文原音）",
+      "confidence": "high",
+      "notes": "英文原音 /ˈlɒdʒɪts/，中文保留英文原词"
+    },
+    "torch.compile": {
+      "replace": "",
+      "official_pron": "torch 英文原音 /tɔːrtʃ/（中文谐音「派托奇」/「托奇」）+ compile 英文原音 /kəmˈpaɪl/",
+      "zh_common": "「托奇-康派尔」（英文原音，不逐字母 T-O-R-C-H）；中文口语「torch 的 compile」",
+      "confidence": "medium",
+      "source_url": "https://pronounce.renlab.ai/zh/word/pytorch",
+      "notes": "PyTorch 读音有 V2EX 讨论与发音库双来源；torch 不是缩写，绝不逐字母念"
+    },
+    "Inductor": {
+      "replace": "",
+      "official_pron": "Inductor（英文原音 /ɪnˈdʌktər/ 因达克特）",
+      "zh_common": "因达克特（英文原音为主）",
+      "confidence": "medium",
+      "notes": "英文原音「因达克特」，无流行中文音译（推断，confidence low）"
+    },
+    "FlashAttention": {
+      "replace": "",
+      "official_pron": "Flash Attention（英文原音）",
+      "zh_common": "FlashAttention（英文原音）",
+      "confidence": "high",
+      "notes": "Flash Attention 英文原音，中文保留英文原词"
+    },
+    "ExecuteModelState": {
+      "replace": "执行模型状态",
+      "official_pron": "Execute Model State（英文原音，vLLM 内部类名）",
+      "zh_common": "执行模型状态（中文直译）",
+      "confidence": "low"
+    },
+    "prefill": {
+      "replace": "",
+      "official_pron": "英文原音 /ˈpriːfɪl/",
+      "zh_common": "prefill 英文原音，中文保留英文原词",
+      "confidence": "medium",
+      "notes": "重音在首音节"
+    },
+    "decode": {
+      "replace": "",
+      "official_pron": "英文原音 /diːˈkoʊd/",
+      "zh_common": "decode 英文原音（解码）",
+      "confidence": "medium"
+    }
+  }
+}

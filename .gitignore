@@ -22,3 +22,9 @@ shows/*/voice-samples/*.wav
 
 # TTS 模型权重（本地下载，不入库）
 models/
+
+# 本地 venv（不入库）
+_venv_*/
+
+# TTS 运行时依赖（模型仓库克隆/venv/合成 staging，不入库）
+_diag/

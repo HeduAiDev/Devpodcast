@@ -54,8 +54,9 @@ def scaffold_show(root: Path, name: str, title: str, book_root: str, instance: s
         "audience": {"profile": "对 LLM 推理有兴趣的工程师 + 正在准备相关面试的求职者",
                      "assumed_knowledge": ["Python", "Transformer 基本概念"], "language": "zh-CN"},
         "format": {"hosts": 2, "target_minutes": 35, "episodes_planned": None},
-        "tts": {"provider": "moss-ttsd", "fallback": "cosyvoice3",
-                "voice_map": {"S1": "voice-samples/laozhang.wav", "S2": "voice-samples/akai.wav"}},
+        "tts": {"provider": "firered-tts2",
+                "voice_map": {"S1": "voice-samples/laozhang.wav", "S2": "voice-samples/akai.wav"},
+                "pronunciation": "season/pronunciation.json"},
     }
     (show_dir / "devpodcast.json").write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
     (show_dir / "SHOW.md").write_text(

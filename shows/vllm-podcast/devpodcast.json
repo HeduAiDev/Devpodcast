@@ -22,11 +22,11 @@
     "episodes_planned": null
   },
   "tts": {
-    "provider": "moss-ttsd",
-    "fallback": "cosyvoice3",
+    "provider": "firered-tts2",
     "voice_map": {
       "S1": "voice-samples/laozhang.wav",
       "S2": "voice-samples/akai.wav"
-    }
+    },
+    "pronunciation": "season/pronunciation.json"
   }
 }

@@ -1,0 +1,157 @@
+=== commits ===
+27a27d2 feat: audio_qa 试听质检（时长/削波/静音/响度）
+
+=== stat ===
+ scripts/audio_qa.py    | 87 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_audio_qa.py | 49 ++++++++++++++++++++++++++++
+ 2 files changed, 136 insertions(+)
+
+=== full diff ===
+diff --git a/scripts/audio_qa.py b/scripts/audio_qa.py
+new file mode 100644
+index 0000000..1c7ea65
+--- /dev/null
++++ b/scripts/audio_qa.py
+@@ -0,0 +1,87 @@
++"""试听质检：时长/削波/静音占比/响度/显存。CLI 输出 JSON 报告。"""
++import json
++import sys
++from dataclasses import dataclass, asdict
++from pathlib import Path
++
++# 以 `python3 scripts/audio_qa.py ...` 直接运行时 sys.path[0] 是 scripts/，
++# 需把仓库根目录加回 path（与 lint_script/lint_voices 同模式）
++sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
++
++import numpy as np
++import soundfile as sf
++
++CLIP_DB = -0.1  # 峰值超过 0dB 视为削波（接近满幅）
++SILENCE_THRESHOLD_DB = -45.0
++MAX_DURATION_TOLERANCE = 1.20
++MIN_RMS_DB = -40.0
++
++USAGE = "usage: python3 scripts/audio_qa.py <wav> [out.json] [expected_minutes]"
++
++
++@dataclass
++class AudioQAReport:
++    duration_s: float = 0.0
++    peak_db: float = -float("inf")
++    clipping: bool = False
++    silence_ratio: float = 0.0
++    rms_db: float = -float("inf")
++    issues: list[str] = None
++    vram_gb: float = 0.0
++
++    def __post_init__(self):
++        if self.issues is None:
++            self.issues = []
++
++
++def _db(x: float) -> float:
++    return 20.0 * np.log10(max(x, 1e-10))
++
++
++def analyze(path: Path, expected_minutes: float = 35.0) -> AudioQAReport:
++    path = Path(path)
++    x, sr = sf.read(str(path), dtype="float32")
++    if x.ndim > 1:
++        x = x.mean(axis=1)
++    r = AudioQAReport()
++    r.duration_s = len(x) / sr
++    r.peak_db = _db(float(np.abs(x).max()))
++    r.clipping = bool(r.peak_db > CLIP_DB)  # bool()：np.bool_ 不可 JSON 序列化
++    rms = float(np.sqrt(np.mean(x ** 2)))
++    r.rms_db = _db(rms)
++    sil = x[np.abs(x) < 10 ** (SILENCE_THRESHOLD_DB / 20)]
++    r.silence_ratio = len(sil) / len(x)
++
++    target_s = expected_minutes * 60
++    if r.duration_s > target_s * MAX_DURATION_TOLERANCE:
++        r.issues.append(f"BLOCKING: 时长 {r.duration_s:.0f}s 超目标 {target_s:.0f}s 的 20% 余量")
++    if r.clipping:
++        r.issues.append(f"BLOCKING: 峰值 {r.peak_db:.1f}dB 削波")
++    if r.silence_ratio > 0.25:
++        r.issues.append(f"WARN: 静音占比 {r.silence_ratio:.0%} > 25%")
++    if r.rms_db < MIN_RMS_DB:
++        r.issues.append(f"WARN: 响度 {r.rms_db:.1f}dB 偏低（< {MIN_RMS_DB}dB）")
++    return r
++
++
++def write_report(report: AudioQAReport, path: Path) -> None:
++    path.write_text(json.dumps(asdict(report), ensure_ascii=False, indent=2), encoding="utf-8")
++
++
++def main(argv=None) -> int:
++    argv = argv if argv is not None else sys.argv[1:]
++    if not argv:
++        print(USAGE, file=sys.stderr)
++        return 2
++    wav = Path(argv[0])
++    out = Path(argv[1]) if len(argv) > 1 else wav.with_suffix(".audio-qa.json")
++    expected = float(argv[2]) if len(argv) > 2 else 35.0
++    r = analyze(wav, expected)
++    write_report(r, out)
++    for i in r.issues:
++        print(f"[{'BLOCKING' if i.startswith('BLOCKING') else 'WARN'}] {i}")
++    return 1 if any(i.startswith("BLOCKING") for i in r.issues) else 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/tests/test_audio_qa.py b/tests/test_audio_qa.py
+new file mode 100644
+index 0000000..0864d6e
+--- /dev/null
++++ b/tests/test_audio_qa.py
+@@ -0,0 +1,49 @@
++import math
++import numpy as np
++import pytest
++import soundfile as sf
++from scripts.audio_qa import analyze, AudioQAReport, write_report
++
++def make_wav(path, seconds=2.0, sr=24000, freq=440.0, amp=0.5, silence_frac=0.1):
++    n = int(seconds * sr)
++    t = np.arange(n) / sr
++    x = amp * np.sin(2 * math.pi * freq * t).astype(np.float32)
++    sil = int(n * silence_frac)
++    x[:sil] = 0.0
++    sf.write(str(path), x, sr)
++
++def test_basic_duration(tmp_path):
++    p = tmp_path / "a.wav"
++    make_wav(p, seconds=2.0)
++    r = analyze(p, expected_minutes=35.0)
++    assert r.duration_s == pytest.approx(2.0, abs=0.05)
++    assert not r.clipping
++    assert r.peak_db < 0.0
++
++def test_clipping_detected(tmp_path):
++    p = tmp_path / "b.wav"
++    make_wav(p, seconds=1.0, amp=2.0)  # 削波
++    r = analyze(p)
++    assert r.clipping
++
++def test_silence_ratio(tmp_path):
++    p = tmp_path / "c.wav"
++    make_wav(p, seconds=4.0, silence_frac=0.5)
++    r = analyze(p)
++    assert r.silence_ratio > 0.4
++
++def test_over_duration_blocking(tmp_path):
++    p = tmp_path / "d.wav"
++    # 90s > 1min 目标 × 1.2 余量 = 72s（brief 原 50s vs 35min 不会超时，已修正）
++    make_wav(p, seconds=90.0)
++    r = analyze(p, expected_minutes=1.0)
++    assert any("时长" in i for i in r.issues)
++
++def test_write_report(tmp_path):
++    p = tmp_path / "e.wav"
++    make_wav(p, seconds=1.0)
++    r = analyze(p)
++    out = tmp_path / "audio-qa.json"
++    write_report(r, out)
++    import json
++    assert json.loads(out.read_text(encoding="utf-8"))["duration_s"] == pytest.approx(1.0, abs=0.05)

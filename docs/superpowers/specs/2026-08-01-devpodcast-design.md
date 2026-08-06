@@ -286,41 +286,31 @@ NVIDIA RTX PRO 6000 Blackwell Workstation Edition
 
 CUDA 生态全可用，无 ROCm 顾虑。95.6GB 意味着 8B 级对话模型毫无压力，可并行加载多模型做对比。注意本机可能有其他进程占用显存（观测到 3.9GB），audio-qa 站报告 VRAM 占用。
 
-### 7.2 选型（2026-08 调研结论）
+### 7.2 选型（2026-08-07 定案）
 
-**默认：MOSS-TTSD v1.0**（OpenMOSS，8B，Apache-2.0）
+**唯一主方案：FireRedTTS2**（原生双人对话模型）
 
 | 判据 | 数据 |
 |---|---|
-| 原生对话建模 | `[S1]`–`[S5]` 行内标签，1–5 说话人，单次最长 60 分钟；轮转/停顿/接话由**模型生成**而非拼接 |
-| 对话场景中文开源第一 | TTSD-eval ZH：SIM 0.7949 / WER 4.85%（闭源豆包播客 0.8034 / 4.72%） |
-| 协议 | 代码与权重均 Apache-2.0，商用无忧 |
-| 活跃度 | last push 2026-07-26 |
-| 显存 | 8B 在 95.6GB 上无压力 |
-| 配套 | 官方 Podever 播客流水线（PDF/URL/文本 → 播客）可参考分段策略 |
+| 原生对话建模 | `[S1]`–`[S4]` 行内标签，双人对话一次生成；轮转/停顿由**模型生成**而非拼接 |
+| 中文长文本播客 | 20 组参数网格人工试听（2026-08-07）全部读音自然流畅、无读标签、无音色漂移 |
+| 参数 | temperature=0.8 / topk=15（10分最优组，时长 ≈ 中位，temp 0.7 全灭——错字/发音差） |
+| 协议 | 权重开源（FireRedTeam/FireRedTTS2，ModelScope） |
+| 显存 | 20.8GB 权重，bf16 加载，95.6GB 无压力 |
+| 速度 | RTF ~1.6（26 分钟一期 ≈ 45 分钟合成，离线批处理可接受） |
 
-**已知的坑（写进 SHOW.md）**：
-- README 未提 CUDA/Blackwell 要求；8B + flash-attn 在 sm_120 上大概率要手动装 torch cu128 系列
-- 无 pip 包、无 Docker；SGLang 要从 `moss-ttsd-v1.0-with-cat` 分支源码装，需先跑 codec 融合脚本
-- 多说话人必须开 `--sample_rate_normalize`，始终开 `--text_normalize`
-- 克隆用 `voice_clone_and_continuation` 模式效果最好
-- 长度换算 **1s ≈ 12.5 tokens**，用于 `--max_new_tokens` 与时长预算
+**已知的坑（已趟平）**：
+- torchaudio 2.11 在本机路由到 torchcodec 且缺 FFmpeg DLL → infer 模板内 monkeypatch `torchaudio.load/save` 走 soundfile（内置在 `scripts/tts.py`）
+- 上下文预算：`max_seq_len=3100 - max_generation_len=375 = 2725 token` → **动态分段每段 ≤450 字**（30 轮静态分段实测爆上限）
+- 参考音频必须配对应 prompt_text（`<name>.txt` 同目录读取）
 
-**Fallback：Fun-CosyVoice3-0.5B-2512_RL**（Apache-2.0，test-zh CER 0.81%）
-- 何时切：MOSS-TTSD 装不起来 / 长稿音色漂移 / 吞吐不够
-- 代价：退回逐句合成 + 规则补停顿（说话人切换 350–500ms，同一人句间 150–250ms）
-- 好处：fastapi/grpc/vLLM/Triton 部署现成，0.5B 可并发跑十几个实例
+**发音表（2026-08-07 researcher 调研）**：`shows/<name>/season/pronunciation.json` — 合成前把专有名词替换为注音读法（SGLang→SG浪、vLLM→V-L-L-M、CUDA→库达、KV cache→K-V缓存 等），防 TTS 逐字母念。词条带 confidence + source_url。
 
-**环境试金石：F5-TTS**
-- 调研中**唯一有社区实测在 RTX PRO 6000 跑通**的项目
-- 权重 CC-BY-NC **不进生产**，但装它验证 CUDA/torch/flash-attn 链路比装 8B 快得多
-- **M0 阶段先用它打通环境**，再上 MOSS-TTSD——环境问题与模型问题不缠在一起
-
-**明确排除**：IndexTTS 2（不支持对话，时长控制至今未开放）、GPT-SoVITS（sm_120 有报错 issue、权重协议未明、每音色要训练）、Fish Audio S2（质量最强但 Research License 禁商用）、VibeVoice（微软已下架 TTS 代码）、ChatTTS / MetaVoice / MaskGCT / NaturalSpeech 3（能力不匹配或已死）、SoulX-Podcast（方言唯一选择但停更 8 个月，仅作实验分支）。
+**明确排除（历史调研，2026-08-07 已清理）**：MOSS-TTSD（跨语言克隆不稳定，英文参考+中文文本出静音）、SoulX-Podcast（RTF 1.04 且每段重复加载，音色自然度不及 FireRed）、Qwen3-TTS（逐句拼接，非原生对话）、CosyVoice3（逐句拼接）、vLLM-Omni（HTTP 逐句 overhead 重）、F5-TTS（仅环境试金石）、IndexTTS 2 / GPT-SoVITS / Fish Audio S2 / VibeVoice / ChatTTS 等（能力不匹配或协议禁用）。
 
 ### 7.3 抽象层
 
-对话模型与逐句模型接口不同，抽象层要区分：
+唯一 provider 为 FireRedTTS2，但抽象层保留以隔离 CLI/工作流：
 
 ```python
 class TTSProvider(Protocol):
@@ -330,26 +320,21 @@ class TTSProvider(Protocol):
     def native_dialogue(self) -> bool: ...
 
 class LocalTTSProvider:
-    """本地基类：GPU 设备管理、batch、模型预热、显存监控"""
+    """本地基类：GPU 设备管理、模型预热、显存监控"""
     def warmup(self): ...
     def vram_report(self) -> dict: ...
 
-class DialogueTTSProvider(LocalTTSProvider):
-    """整段对话一次性合成（MOSS-TTSD）。
-    Script → [S1]/[S2] 标签串 → 单次生成。
+class FireRedTTSProvider(LocalTTSProvider):
+    """FireRedTTS2 原生双人对话（唯一主方案）。
+    Script → [S1]/[S2] 标签串 → generate_dialogue 逐轮自回归。
+    动态分段（≤450 字/段）防超 max_seq_len，段间 350ms 拼接。
     停顿由模型生成，production-notes 的停顿建议是软提示（改写文本节奏）。"""
     native_dialogue = True
-
-class SegmentedTTSProvider(LocalTTSProvider):
-    """逐句合成 + 拼接（CosyVoice3）。停顿由 pipeline 插入静音。"""
-    native_dialogue = False
-    PAUSE_SPEAKER_SWITCH_MS = (350, 500)
-    PAUSE_SAME_SPEAKER_MS = (150, 250)
 ```
 
-**输入是结构化 `Script` 对象**（不是 raw markdown）——说话人/停顿/重音/引述嵌入点全是结构化字段，provider 自己负责标签或 SSML 转换。同一份 Script 跑不同 provider 出不同 AudioBundle，writer 不关心用了哪家。
+**输入是结构化 `Script` 对象**（不是 raw markdown）——说话人/停顿/重音/引述嵌入点全是结构化字段，provider 自己负责标签转换。
 
-**对 producer 的影响**：停顿建议在两类 provider 下语义不同——对话模型下是"改写文本节奏引导模型"，分段模型下是"插入具体毫秒静音"。producer 契约要写清这个分支。
+**对 producer 的影响**：FireRed 是对话模型（native_dialogue=true）——停顿由**模型生成**，停顿建议是"改写文本节奏引导模型"的软提示，不写死毫秒。
 
 ---
 
@@ -611,7 +596,7 @@ tests/test_linters.py           每个 linter 的正例/反例
 
 | M | 验收标准 | 阻塞什么 |
 |---|---|---|
-| **M0 骨架 + 环境** | CLAUDE.md + 8 个 agent 提示词骨架 + 空 workflows + devpodcast.json + README + show_resolver 跑得通；**用 F5-TTS 打通 GPU/torch/flash-attn 链路**（环境试金石，不进生产）；再装 MOSS-TTSD 并跑通一段样例合成 | 一切 |
+| **M0 骨架 + 环境** | CLAUDE.md + 8 个 agent 提示词骨架 + 空 workflows + devpodcast.json + README + show_resolver 跑得通；**用 FireRedTTS2 跑通一段样例合成**（2026-08-07 已定案） | 一切 |
 | **M1 一期能听** | 书源摄入 → Phase A → ep01 → 脚本 + wav + audio-qa.json；**人工完整听一遍**，通过 §12.4 三问 | pipeline 真伪验证 |
 | **M2 一季跑通** | 整季 5–8 期全部走通；Season Bible 在最后两期被有效回收 | 整季编排是否可行 |
 | **M3 抽象层验证** | 写一个 MarkdownSource（或 EpubSource），用它产出一期对比；BookSource 抽象真的不用重构 | "给一本书就能生成"承诺的真伪 |
@@ -625,8 +610,8 @@ tests/test_linters.py           每个 linter 的正例/反例
 
 | # | 风险 | 应对 |
 |---|---|---|
-| 1 | **TTS 是单点故障** — 模型加载失败、显存抖动、合成超时 | 抽象层先封好；M0 用 F5-TTS 独立验证环境；装好 CosyVoice3 作 fallback |
-| 2 | **MOSS-TTSD 在 Blackwell 上的未知数** — README 未提 CUDA 要求，8B + flash-attn 在 sm_120 要自己趟 | M0 就验证，不拖到 M1；失败即切 fallback |
+| 1 | **TTS 是单点故障** — 模型加载失败、显存抖动、合成超时 | FireRedTTS2 子进程隔离；加载失败即 BLOCKED 升级 Lead，无静默降级 |
+| 2 | **FireRed 上下文超限** — 长稿超 max_seq_len 崩溃 | 动态分段（≤450 字/段）已内置；分段参数可调 |
 | 3 | **求职者声音过时** — 面经半年就过时 | 写进 SHOW.md：voices 有 3 个月保质期，到期刷新 |
 | 4 | **researcher 找不到某议题的声音** | §11.1 逃生舱兜底，允许议题降级或删除，不许编 |
 | 5 | **book-analyst 跨章切片质量** — 这是 devpodcast 的新增逻辑，最容易踩坑 | M1 选最容易切片的议题验证（如内存管理天然跨多章） |
