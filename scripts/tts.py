@@ -229,6 +229,10 @@ print(f"chunk done: {{audio.shape[-1]/24000.0:.1f}}s")
                 all_frames.append(np.zeros(int(sr * 0.35), dtype=np.float32))
             all_frames.append(x)
         combined = np.concatenate(all_frames, axis=0)
+        # FireRed 各段峰值归一化到 1.0，拼接后必然 0dB 削波——整体降到 0.95 留 headroom
+        peak = float(np.abs(combined).max())
+        if peak > 0.95:
+            combined = combined * (0.95 / peak)
         out_wav = (Path(opts.output_dir) / "episode.wav").resolve()
         sf.write(str(out_wav), combined.astype("float32"), sr)
 
