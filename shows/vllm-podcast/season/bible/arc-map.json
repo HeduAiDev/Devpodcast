@@ -10,11 +10,11 @@
     "ep02": {
       "foreshadow_due": [
         "execute_model：模型前向在 GPU worker 上的真实执行",
-        "语法编译要上百毫秒，不能堵在调度循环里"
+        "语法编译要上百毫秒，不能堵在调度循环里",
+        "prefill/decode 瓶颈细节",
+        "采样参数细节"
       ],
-      "payoff_due": [
-        "EngineCore 一拍 = schedule → execute_model → sample_tokens → update_from_output"
-      ]
+      "payoff_due": []
     },
     "ep03": {
       "foreshadow_due": [
@@ -30,14 +30,16 @@
       ],
       "payoff_due": [
         "execute_model：模型前向在 GPU worker 上的真实执行",
-        "block_table：Triton kernel 把逻辑块号映射成 GPU 物理 slot"
+        "block_table：Triton kernel 把逻辑块号映射成 GPU 物理 slot",
+        "prefill/decode 瓶颈细节"
       ]
     },
     "ep05": {
       "foreshadow_due": [],
       "payoff_due": [
         "采样不是简单 argmax：9 步 logits 处理器管线",
-        "语法编译要上百毫秒，不能堵在调度循环里"
+        "语法编译要上百毫秒，不能堵在调度循环里",
+        "采样参数细节"
       ]
     }
   }
