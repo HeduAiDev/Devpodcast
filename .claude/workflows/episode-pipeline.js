@@ -119,7 +119,10 @@ const epResolve = await agent(
 )
 if (!epResolve) return { show: A.show, ep_id: A.ep_id, escalated: 'ep-resolve-failed', stage: 'Write', note: '目录解析 agent 失败（限流/崩溃）' }
 if (epResolve.status === 'BLOCKED') return { show: A.show, ep_id: A.ep_id, escalated: 'ep-not-found', stage: 'Write', reason: epResolve.blocker_reason, note: epResolve.note }
-const EP = SHOW + '/episodes/' + epResolve.dir
+// ep-resolve agent 返回的 dir 可能是「目录名」也可能是「完整绝对路径」——兼容两者：
+// 若已含 SHOW 前缀（绝对路径）直接用；否则拼 episodes/ 前缀。
+const _dir = epResolve.dir || ''
+const EP = (_dir.startsWith(SHOW) || _dir.includes(':')) ? _dir : SHOW + '/episodes/' + _dir
 const AUDIO = EP + '/audio'
 const WRITER_INPUTS = '四份素材（缺一不写）：' + EP + '/episode-card.json、' + SEASON + '/voices.json、' + SEASON + '/arc.json、' + SEASON + '/bible/（voice-guide.md ★强制复用 + glossary.json + arc-map.json）'
 const LINT_CMDS = [
