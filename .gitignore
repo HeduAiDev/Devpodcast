@@ -28,3 +28,6 @@ _venv_*/
 
 # TTS 运行时依赖（模型仓库克隆/venv/合成 staging，不入库）
 _diag/
+
+# 本地缓存（E盘重定向，不入库）
+cache/

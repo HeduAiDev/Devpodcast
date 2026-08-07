@@ -30,12 +30,19 @@ def main():
     if not payload.exists():
         raise SystemExit(f"chunk payload 不存在: {payload}")
 
-    out_wav = seg_dir / f"chunk{idx:02d}.wav"
+    # 注音变体支持：chunk<idx>_cuda.json → 输出 chunk<idx>_cuda.wav（独立不覆盖原段）
+    variant = ""
+    cuda_p = ep_dir / "audio" / "firered_tmp" / f"chunk{idx:02d}_cuda.json"
+    if cuda_p.exists():
+        payload = cuda_p
+        variant = "_cuda"
+
+    out_wav = seg_dir / f"chunk{idx:02d}{variant}.wav"
     if out_wav.exists():
-        print(f"chunk{idx:02d} 已存在，跳过")
+        print(f"chunk{idx:02d}{variant} 已存在，跳过")
         return
 
-    infer_py = ep_dir / "audio" / "firered_tmp" / f"infer_{idx:02d}.py"
+    infer_py = ep_dir / "audio" / "firered_tmp" / f"infer_{idx:02d}{variant}.py"
     infer_py.write_text(f'''
 import json, sys, time
 sys.path.insert(0, r"{FIRERED_REPO}")

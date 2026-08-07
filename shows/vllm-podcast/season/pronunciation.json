@@ -2,42 +2,42 @@
   "comment": "专有名词发音表（发音真相源）。TTS 合成前把脚本里的英文/专有名词替换为注音读法，避免逐字母念。term → 替换文本（zh_common 中文播客读法，或拼音注音）。confidence: high=官方来源 / medium=社区共识 / low=推测。",
   "terms": {
     "SGLang": {
-      "replace": "SG浪",
+      "replace": "",
       "official_pron": "S-G-Lang（官方 README: pronounced as S-G-Lang）",
       "zh_common": "SG浪",
       "confidence": "high",
       "source_url": "https://arxiv.org/abs/2312.07104",
-      "notes": "官方 README 无 explicit 发音声明；依据论文名称拆分 S-G-Lang（Structured Generation Language）+ 发音库 IPA /ˌɛs dʒiː ˈlæŋ/。SG浪 为口语谐音，首次出现建议铺垫 S-G-Lang"
+      "notes": "官方 README 无 explicit 发音声明；依据论文名称拆分 S-G-Lang（Structured Generation Language）+ 发音库 IPA /ˌɛs dʒiː ˈlæŋ/。SG浪 为口语谐音，首次出现建议铺垫 S-G-Lang（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "vLLM": {
-      "replace": "V-L-L-M",
+      "replace": "",
       "official_pron": "逐字母 V-L-L-M（/ˌviː ɛl ɛl ˈæm/；官方无发音声明，社区逐字母无争议）",
       "zh_common": "V-L-L-M 逐字母（「v浪」无任何文本证据，官方论坛亦无 'v' 含义定论）",
       "confidence": "medium",
       "source_url": "https://discuss.vllm.ai/t/what-v-means-in-vllm/892/2",
-      "notes": "首次出现时可铺垫「就是逐字母的 V-L-L-M」"
+      "notes": "首次出现时可铺垫「就是逐字母的 V-L-L-M」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "ZMQ": {
-      "replace": "Z-M-Q",
+      "replace": "",
       "official_pron": "Z-M-Q（逐字母）",
       "zh_common": "Z-M-Q（逐字母，防 TTS 拼读成 zmo）",
       "confidence": "high",
-      "notes": "ZeroMQ 官方别名体系 0MQ/ØMQ/ZeroMQ；写 ZMQ 时逐字母"
+      "notes": "ZeroMQ 官方别名体系 0MQ/ØMQ/ZeroMQ；写 ZMQ 时逐字母（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "ZeroMQ": {
-      "replace": "零M-Q",
+      "replace": "",
       "official_pron": "ZeroMQ（读 zero-em-queue 或 zero-m-q）",
       "zh_common": "零M-Q",
       "confidence": "medium",
-      "notes": "官方名称即 0MQ/ØMQ/ZeroMQ，Zero 即「零」"
+      "notes": "官方名称即 0MQ/ØMQ/ZeroMQ，Zero 即「零」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "KV cache": {
-      "replace": "K-V缓存",
+      "replace": "",
       "official_pron": "KV cache（K-V 逐字母 + cache）",
       "zh_common": "K-V缓存",
       "confidence": "high",
       "source_url": "https://hub.baai.ac.cn/view/34716",
-      "notes": "cache 读凯什（/kæʃ/，与 cash 同音，V2EX 读音共识）；绝无「凯威缓存」整词音译"
+      "notes": "cache 读凯什（/kæʃ/，与 cash 同音，V2EX 读音共识）；绝无「凯威缓存」整词音译（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "PagedAttention": {
       "replace": "",
@@ -52,49 +52,50 @@
       "zh_common": "库达",
       "confidence": "high",
       "source_url": "https://pronounce.renlab.ai/word/cuda",
-      "notes": "NVIDIA 官方视频读库达；「Q大」为典型错误读法"
+      "notes": "2026-08-07 试听确认：FireRed 把 CUDA 逐字母读成 C-U-D-A，需注音为「库达」。其余英文词（SGLang/vLLM/KV cache/EngineCore/ZMQ/prefill/decode）FireRed 均读对，无需注音。"
     },
     "EngineCore": {
-      "replace": "恩金寇儿",
+      "replace": "",
       "official_pron": "本项目自造词",
       "zh_common": "引擎核心（中文直译）",
       "confidence": "low",
-      "notes": "自造词无官方读法；engine 与 core 连读，重音在 engine 首音节；core 勿读成「科瑞」（那是 Korea 谐音）"
+      "notes": "自造词无官方读法；engine 与 core 连读，重音在 engine 首音节；core 勿读成「科瑞」（那是 Korea 谐音）（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "GPU": {
-      "replace": "G-P-U",
-      "official_pron": "Graphics Processing Unit 缩写，逐字母 G-P-U",
-      "zh_common": "G-P-U（逐字母）",
+      "replace": "",
+      "official_pron": "Graphics Processing Unit",
+      "zh_common": "图形处理器（中文全称，防逐字母 G-P-U 读错）",
       "confidence": "high",
-      "source_url": "https://pronounce.renlab.ai/word/gpu"
+      "notes": "2026-08-07 试听确认：FireRed 读 GPU 逐字母 G-P-U 正确，无需注音（中文全称反而不自然）。"
     },
     "CPU": {
-      "replace": "C-P-U",
-      "official_pron": "Central Processing Unit 缩写，逐字母 C-P-U",
-      "zh_common": "C-P-U（逐字母）",
+      "replace": "",
+      "official_pron": "Central Processing Unit",
+      "zh_common": "中央处理器（中文全称，防逐字母读错）",
       "confidence": "high",
-      "notes": "与 GPU 同，逐字母为主流，无整词连读"
+      "notes": "同 GPU：FireRed 读逐字母正确，无需注音。"
     },
     "LLM": {
-      "replace": "L-L-M",
+      "replace": "",
       "official_pron": "Large Language Model 缩写，逐字母 L-L-M",
       "zh_common": "L-L-M（逐字母），或「大模型」",
       "confidence": "high",
-      "notes": "逐字母 L-L-M 为主流；已知误读「Elm（埃尔姆）」整词；语境完整时中文播客常用「大模型」替代"
+      "notes": "逐字母 L-L-M 为主流；已知误读「Elm（埃尔姆）」整词；语境完整时中文播客常用「大模型」替代（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "API": {
-      "replace": "A-P-I",
+      "replace": "",
       "official_pron": "Application Programming Interface，逐字母 A-P-I",
       "zh_common": "A-P-I（逐字母）",
       "confidence": "high",
       "source_url": "https://dictionary.cambridge.org/zhs/%E5%8F%91%E9%9F%B3/%E8%8B%B1%E8%AF%AD/api",
-      "notes": "剑桥词典官方音标 /ˌeɪ piː ˈaɪ/；南方口语「诶批」为地域变体，统一逐字母"
+      "notes": "剑桥词典官方音标 /ˌeɪ piː ˈaɪ/；南方口语「诶批」为地域变体，统一逐字母（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "LRU": {
-      "replace": "L-R-U",
+      "replace": "",
       "official_pron": "Least Recently Used，逐字母 L-R-U",
       "zh_common": "L-R-U（逐字母）",
-      "confidence": "high"
+      "confidence": "high",
+      "notes": "（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "top-k": {
       "replace": "",
@@ -140,10 +141,11 @@
       "notes": "Flash Attention 英文原音，中文保留英文原词"
     },
     "ExecuteModelState": {
-      "replace": "执行模型状态",
+      "replace": "",
       "official_pron": "Execute Model State（英文原音，vLLM 内部类名）",
       "zh_common": "执行模型状态（中文直译）",
-      "confidence": "low"
+      "confidence": "low",
+      "notes": "（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "prefill": {
       "replace": "",
@@ -159,39 +161,39 @@
       "confidence": "medium"
     },
     "EOS": {
-      "replace": "E-O-S",
+      "replace": "",
       "official_pron": "E-O-S（逐字母，End-of-Sequence 缩写）",
       "zh_common": "E-O-S（逐字母，中文播客主流读法；防 TTS 拼读成整词）",
       "confidence": "high",
-      "notes": "vLLM check_stop 停止判定中的模型结束符。三个大写字母缩写，中文口语逐字母。"
+      "notes": "vLLM check_stop 停止判定中的模型结束符。三个大写字母缩写，中文口语逐字母。（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "IPC": {
-      "replace": "I-P-C",
+      "replace": "",
       "official_pron": "Inter-Process Communication 缩写，逐字母 I-P-C",
       "zh_common": "I-P-C（逐字母）",
       "confidence": "high",
-      "notes": "EngineCoreOutputs 经 IPC 回传前端的通信通道。逐字母为主流。"
+      "notes": "EngineCoreOutputs 经 IPC 回传前端的通信通道。逐字母为主流。（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "LIFO": {
-      "replace": "L-I-F-O",
+      "replace": "",
       "official_pron": "Last In First Out，逐字母 L-I-F-O",
       "zh_common": "L-I-F-O（逐字母）",
       "confidence": "high",
-      "notes": "抢占循环按后进先出释放队尾请求，与 LRU 同型逐字母读法。"
+      "notes": "抢占循环按后进先出释放队尾请求，与 LRU 同型逐字母读法。（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "FCFS": {
-      "replace": "F-C-F-S",
+      "replace": "",
       "official_pron": "First Come First Served，逐字母 F-C-F-S",
       "zh_common": "F-C-F-S（逐字母）",
       "confidence": "high",
-      "notes": "先到先得的排队模式，中文播客逐字母。"
+      "notes": "先到先得的排队模式，中文播客逐字母。（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "check_stop": {
-      "replace": "检查停止",
+      "replace": "",
       "official_pron": "check stop（英文原音，vLLM 内部方法名）",
       "zh_common": "检查停止（中文直译）",
       "confidence": "low",
-      "notes": "方法名直译，与 ExecuteModelState→执行模型状态 同型。脚本中与「停止判定」释义配对出现。"
+      "notes": "方法名直译，与 ExecuteModelState→执行模型状态 同型。脚本中与「停止判定」释义配对出现。（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "schedule": {
       "replace": "",
@@ -222,151 +224,151 @@
       "notes": "update_from_output 方法名的口语写法"
     },
     "Scheduler Output": {
-      "replace": "调度输出",
+      "replace": "",
       "official_pron": "Scheduler Output（英文原音）",
       "zh_common": "调度输出（中文直译）",
       "confidence": "low",
-      "notes": "SchedulerOutput 的口语写法；脚本「产出一个 Scheduler Output」→「产出一个 调度输出」"
+      "notes": "SchedulerOutput 的口语写法；脚本「产出一个 Scheduler Output」→「产出一个 调度输出」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "SchedulerOutput": {
-      "replace": "调度输出",
+      "replace": "",
       "official_pron": "Scheduler Output（英文原音）",
       "zh_common": "调度输出（中文直译）",
       "confidence": "low",
-      "notes": "类名原形（CamelCase），与口语写法共用读法"
+      "notes": "类名原形（CamelCase），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "Engine Core Outputs": {
-      "replace": "引擎核心输出",
+      "replace": "",
       "official_pron": "Engine Core Outputs（英文原音）",
       "zh_common": "引擎核心输出（中文直译）",
       "confidence": "low",
-      "notes": "EngineCoreOutputs 的口语写法；脚本「产物叫 Engine Core Outputs」→「产物叫 引擎核心输出」"
+      "notes": "EngineCoreOutputs 的口语写法；脚本「产物叫 Engine Core Outputs」→「产物叫 引擎核心输出」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "EngineCoreOutputs": {
-      "replace": "引擎核心输出",
+      "replace": "",
       "official_pron": "Engine Core Outputs（英文原音）",
       "zh_common": "引擎核心输出（中文直译）",
       "confidence": "low",
-      "notes": "类名原形（CamelCase），与口语写法共用读法"
+      "notes": "类名原形（CamelCase），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "prepend request": {
-      "replace": "插队",
+      "replace": "",
       "official_pron": "prepend request（英文原音 /prɪˈpend/）",
       "zh_common": "插队（按语境译）",
       "confidence": "low",
-      "notes": "抢占请求回队头机制；脚本「靠 prepend request 直接回队头」→「靠 插队 直接回队头」"
+      "notes": "抢占请求回队头机制；脚本「靠 prepend request 直接回队头」→「靠 插队 直接回队头」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "prepend_request": {
-      "replace": "插队",
+      "replace": "",
       "official_pron": "prepend request（英文原音 /prɪˈpend/）",
       "zh_common": "插队（按语境译）",
       "confidence": "low",
-      "notes": "方法名原形（下划线），与口语写法共用读法"
+      "notes": "方法名原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "prepend": {
-      "replace": "插队",
+      "replace": "",
       "official_pron": "prepend（英文原音 /prɪˈpend/）",
       "zh_common": "插队（按语境译）",
       "confidence": "low",
-      "notes": "单用形式；脚本「prepend 变成按优先级和到达时间重新入堆」→「插队 变成按优先级和到达时间重新入堆」"
+      "notes": "单用形式；脚本「prepend 变成按优先级和到达时间重新入堆」→「插队 变成按优先级和到达时间重新入堆」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "allocate slots": {
-      "replace": "分配槽位",
+      "replace": "",
       "official_pron": "allocate slots（英文原音）",
       "zh_common": "分配槽位（中文直译）",
       "confidence": "low",
-      "notes": "KV 块分配动作；脚本「allocate slots 返回空」→「分配槽位 返回空」"
+      "notes": "KV 块分配动作；脚本「allocate slots 返回空」→「分配槽位 返回空」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "allocate_slots": {
-      "replace": "分配槽位",
+      "replace": "",
       "official_pron": "allocate slots（英文原音）",
       "zh_common": "分配槽位（中文直译）",
       "confidence": "low",
-      "notes": "方法名原形（下划线），与口语写法共用读法"
+      "notes": "方法名原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "collective RPC": {
-      "replace": "集体R-P-C",
+      "replace": "",
       "official_pron": "collective RPC（英文原音，RPC 逐字母）",
       "zh_common": "集体R-P-C（中文口播：集体 + RPC 逐字母）",
       "confidence": "low",
-      "notes": "向所有 worker 广播指令的机制；脚本「collective RPC——向所有 GPU worker 广播」"
+      "notes": "向所有 worker 广播指令的机制；脚本「collective RPC——向所有 GPU worker 广播」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "collective_rpc": {
-      "replace": "集体R-P-C",
+      "replace": "",
       "official_pron": "collective RPC（英文原音，RPC 逐字母）",
       "zh_common": "集体R-P-C",
       "confidence": "low",
-      "notes": "方法名原形（下划线），与口语写法共用读法"
+      "notes": "方法名原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "step with batch queue": {
-      "replace": "批量队列步进",
+      "replace": "",
       "official_pron": "step with batch queue（英文原音）",
       "zh_common": "批量队列步进（中文直译）",
       "confidence": "low",
-      "notes": "step_with_batch_queue 的口语写法；PP/async_scheduling 时同步路径走它"
+      "notes": "step_with_batch_queue 的口语写法；PP/async_scheduling 时同步路径走它（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "step_with_batch_queue": {
-      "replace": "批量队列步进",
+      "replace": "",
       "official_pron": "step with batch queue（英文原音）",
       "zh_common": "批量队列步进（中文直译）",
       "confidence": "low",
-      "notes": "方法名原形（下划线），与口语写法共用读法"
+      "notes": "方法名原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "max num batched tokens": {
-      "replace": "单批最大token数",
+      "replace": "",
       "official_pron": "max number of batched tokens（英文原音）",
       "zh_common": "单批最大token数（中文直译）",
       "confidence": "low",
-      "notes": "max_num_batched_tokens 的口语写法；默认 8192，批大小约束是 token 数不是请求数"
+      "notes": "max_num_batched_tokens 的口语写法；默认 8192，批大小约束是 token 数不是请求数（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "max_num_batched_tokens": {
-      "replace": "单批最大token数",
+      "replace": "",
       "official_pron": "max number of batched tokens（英文原音）",
       "zh_common": "单批最大token数（中文直译）",
       "confidence": "low",
-      "notes": "配置项原形（下划线），与口语写法共用读法"
+      "notes": "配置项原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "max tokens": {
-      "replace": "最大token数",
+      "replace": "",
       "official_pron": "max tokens（英文原音）",
       "zh_common": "最大token数（中文直译）",
       "confidence": "low",
-      "notes": "max_tokens 的口语写法；check_stop 停止判定里的硬上限，脚本「还有 max tokens 这个硬上限」→「还有 最大token数 这个硬上限」"
+      "notes": "max_tokens 的口语写法；check_stop 停止判定里的硬上限，脚本「还有 max tokens 这个硬上限」→「还有 最大token数 这个硬上限」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "max_tokens": {
-      "replace": "最大token数",
+      "replace": "",
       "official_pron": "max tokens（英文原音）",
       "zh_common": "最大token数（中文直译）",
       "confidence": "low",
-      "notes": "配置项原形（下划线），与口语写法共用读法"
+      "notes": "配置项原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "skipped waiting": {
-      "replace": "跳过等待",
+      "replace": "",
       "official_pron": "skipped waiting（英文原音）",
       "zh_common": "跳过等待（中文直译）",
       "confidence": "low",
-      "notes": "skipped_waiting 的口语写法；分配失败的请求单列一队防队头阻塞"
+      "notes": "skipped_waiting 的口语写法；分配失败的请求单列一队防队头阻塞（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "skipped_waiting": {
-      "replace": "跳过等待",
+      "replace": "",
       "official_pron": "skipped waiting（英文原音）",
       "zh_common": "跳过等待（中文直译）",
       "confidence": "low",
-      "notes": "队列名原形（下划线），与口语写法共用读法"
+      "notes": "队列名原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "chunked prefill": {
-      "replace": "切块prefill",
+      "replace": "",
       "official_pron": "chunked prefill（英文原音）",
       "zh_common": "切块prefill（中文口播：切块 + prefill 英文原音）",
       "confidence": "medium",
-      "notes": "长 prefill 切成小块插在 decode 之间跑；脚本「也就是 chunked prefill」→「也就是 切块prefill」"
+      "notes": "长 prefill 切成小块插在 decode 之间跑；脚本「也就是 chunked prefill」→「也就是 切块prefill」（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "chunked_prefill": {
-      "replace": "切块prefill",
+      "replace": "",
       "official_pron": "chunked prefill（英文原音）",
       "zh_common": "切块prefill",
       "confidence": "medium",
-      "notes": "机制名原形（下划线），与口语写法共用读法"
+      "notes": "机制名原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     }
   }
 }
