@@ -1,0 +1,16 @@
+{
+  "episode_id": "ep03",
+  "run": 1,
+  "verdict": "pass",
+  "note": "run-ledger 仅由 factual_accuracy 维写入（防 6 维并行写同一文件竞态）。r1 六维全 pass：机制断言全部有 episode-card/source-book chapter-cards 支撑（ch14/15/16/18 逐条对齐），9 处引述数字与 voices.json 无漂移；arc.json ep03 的 payoff（抢占循环 + skipped_waiting 双队列，L161-L193）与 foreshadow（block_table Triton kernel → ep04，L237-L253 + L323）均已落地；「我不知道」两处（L273/L307）复核为真不知道非回避；求职者视角恰好 2 处且均挂真实 voices（voice-009/voice-024）；voice-guide 性格契约（S1 不捧哏不假装惊叹、S2 不背书）通过，轮次比 81/81=50%。无阻断项。留档事实（非本维阻断，Lead 决策面）：成片时长 1493.9s（24.9 分钟）仅为 target 35 分钟的 71%——TTS 实际语速约 5.4 字/秒，超出 production-notes 按 4 字/秒的估算（33.5-38.3 分钟）；audio-qa 时长门禁只查上限不查下限故通过；接受 25 分钟成片 / 调 target / 扩内容三选一由 Lead 拍板（spec「单期时长 config 默认 35 分钟，随时可调」），详见 r1-spoken_clarity.json issue 3。另：r1-spoken_clarity 两条非阻断润色项（L277「UCX 钩子」补半句口头解释、L285「P90」垫一句量级）、r1-quote_fidelity 一条非阻断措辞项（L285「原话如此」/L299「这是他们的原话」与全剧转述档措辞统一），均可改可不改，writer 裁量，不影响本轮 pass。音频侧：audio-qa issues 为空，脚本定稿 04:16 早于音频合成 06:15-06:16，无版本同步遗留问题。",
+  "dimensions": {
+    "factual_accuracy": "pass",
+    "critical_depth": "pass",
+    "spoken_clarity": "pass",
+    "voice_balance": "pass",
+    "job_seeker_resonance": "pass",
+    "quote_fidelity": "pass"
+  },
+  "factual_accuracy_blockers": 0,
+  "factual_accuracy_nonblocking": 0
+}

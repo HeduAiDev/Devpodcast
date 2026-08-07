@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep04-gpu-execution-pipeline",
+  "run": 1,
+  "dimension": "factual_accuracy",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "arc-map ep04 payoff_due 列明的「prefill/decode 瓶颈细节」只落地了 decode 半边：L117（decode 一拍几十个算子）、L125（uniform_decode 检查）、L141（固定网格空转）覆盖了 decode 侧；prefill 侧（变长形状吃不到固定录像红利、为何常回退 NONE）未显式落地，全篇无 prefill 一词",
+      "evidence": "script.md:117,125,141（decode 侧）；全篇缺 prefill 落地",
+      "suggested_fix": "在 L125-129 三级分派处或 L141 空转处补一句 prefill 的账（形状不定→录不了固定录像→只能回退 NONE/逐算子）；或与 archivist 确认该账可移交 ep05 还",
+      "rationale": "事实准确维要求技术断言与 arc.json/arc-map.json 对齐；ep04 payoff_due 明列此账，半落地属于叙事账目缺口",
+      "blocking": false
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "episode_id": "ep03",
+  "run": 1,
+  "dimension": "quote_fidelity",
+  "pass": true,
+  "verdict": "pass",
+  "issues": [
+    {
+      "problem": "script.md:285「原话如此」与 script.md:299「这是他们的原话」两处断言逐字引用，而 voice-007/voice-026 的 claim 文本在 voices.json 中标注为引述档位 (a) 重合成（researcher 依原文重整的措辞，非逐字抄录）；同稿其余 7 处引述均用「原话大概这个意思」「大意就是这样」「原话大概这样」的转述档措辞，这两处与全剧引述纪律不一致。",
+      "suggested_fix": "统一改为转述档措辞，如「——原话大概这个意思」（L285）与「——大意就是这样，这是他们贴出的结论」（L299）。数字与含义已逐条核对无漂移，仅措辞档位对齐。",
+      "rationale": "原声保真维：引述边界与忠实度已达标（claim vs verified 层次保持、匿名化到位、9 处边界全标注），本条为措辞一致性的非阻断项——「原话如此」可能让听众误以为引述逐字来自源文，而源文为 researcher 重整文本；按 voice-guide 转述纪律统一措辞，writer 裁量。",
+      "blocking": false
+    }
+  ],
+  "checks_summary": {
+    "quote_by_quote": "9 处引述与 voices.json claim 逐条核对，无曲解、无增删数字：L5=voice-029 ✓、L61=voice-009 ✓、L133=voice-024 ✓、L261=voice-008 ✓、L269=voice-006 ✓、L277=voice-022 ✓、L285=voice-007 ✓、L293=voice-030 ✓、L299=voice-026 ✓（逐条对照明细见 r1-factual_accuracy.json checks_summary.voice_numbers，双向引用）。",
+    "claim_vs_verified": "claim vs verified 层次保持：community-only 两条——voice-009（confidence=low）以「有个博主转述过群里的经历」+「这事咱没法核实」呈现（L61），voice-024 以「牛客面经」+「原话大概这个意思」呈现（L133），均未升格为事实；claim-self-checked 各条均保留来源锚点（腾讯云开发者社区 / GitHub issue / Mistral AI / llm-d 团队 / FutureAGI 第三方评估团队），voice-030 特别标注「第三方评估团队」防止听众误读为官方结论。无 community-only 说成事实的事故。",
+    "anonymization": "匿名化核查：voices.json 标记 anonymized=true 的 voice-009/024/008/022/029 在稿中均未出现个人名/ID/平台账号——只提「有个博主」「牛客面经」「Mistral AI（公司主体，非个人）」；anonymized=false 的 voice-006/007/026/030 按需点名团队，未点名 voice-006 个人作者（无义务，安全处理）。spec 6.3「不点名素人」遵守。",
+    "quote_boundaries": "9 处引述边界全部有口播标注：进入（「他是这么说的——」「他们贴出的数字是——」「他贴的就是这组数」「面试官是这么问的——」）+ 退出（「原话大概这个意思」「大意就是这样」「原话大概这样」「这事咱没法核实」「原话如此」「这是他们的原话」），无一引述与主持人话语粘连；voice-029 引述（L5）因是开场题眼，退出语「原话大概这个意思」之后紧接 S1 复述消化（L7-L9），边界仍清晰。",
+    "tier_rendering": "三档策略（spec 6.4）：全稿引述统一由阿凯转述（档位 c），9/9 标注边界——(c) 是 spec 明文选项（「只标引述不带音色——由阿凯/老张转述」），(a) 为默认而非强制；当前 TTS 栈（FireRedTTS2 双声线）无外部原声素材，统一 (c) 是自洽的节目决策，且本季 ep01/ep02 同约定，无跨期不一致。",
+    "cross_episode_consistency": "「笔记」隐喻（ep01/ep02 建立）在 L21 复用；L277 的泄漏雷（引用循环）与 L125 预埋的「计数不为零」因果链一致，引用循环 → 计数不减 → 不还块 → 泄漏的链条在稿件内自洽（voice-022 原 claim 亦如此表述）。"
+  }
+}

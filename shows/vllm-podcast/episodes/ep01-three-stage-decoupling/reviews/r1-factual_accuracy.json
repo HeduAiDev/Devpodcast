@@ -1,0 +1,20 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimension": "factual_accuracy",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:129 S2 说「它天天跨进程，一天跑几亿次」——「几亿次」是凭空给出的量级数字，episode-card / source-book ch05 / voices 均无此数。",
+      "evidence": "script.md:129",
+      "suggested_fix": "删掉具体数字，改为「它天天跨进程，一天不知道要跑多少趟，每个字段多花一纳秒都是真金白银」；保留论证不保留虚构量级。",
+      "rationale": "事实准确维：数字不漂移（与书 / voices 原文一致）；每个技术断言须能在 episode-card 找到支撑，量级数字无支撑即为漂移。",
+      "blocking": false
+    }
+  ],
+  "notes": [
+    "其余技术断言全部通过 episode-card 支撑核对：L5 两次 IPC（ch04）、L21-25 v0 单进程同步（ch01）、L57 一套内核两种驱动（ch01）、L77 三段扇出（ch04）、L81 初始化即搭好（ch04 4.2）、L85-105 信箱与 request_id（ch02）、L109 三道票+归一化（ch05）、L133 n>1 在 Stage1 fan-out（ch05 5.10 fan-out 机制 + parallel_sampling.py，已到 source-book 验证）、L141-149 ZMQ 两线程 + DEALER ready 握手（ch07 7.4）、L157 多帧零拷贝三档（ch07 7.11）、L177 单循环解多路复用（ch08）、L189 两道闸门 StreamInterval+DELTA（ch08）、L201-229 run_busy_loop 四步一拍与状态机（ch11）、L289-293 并发判据（arc.json resolution 原句）。",
+    "「我不知道」检查：L169「这个分界线具体是多少字节，书里没写死，我们俩也没搞清楚」是真不知道（book 未给字节阈值），且邀请评论区补充，非回避——满足 voice-guide 纪律 1。",
+    "伏笔核对（arc-map ep01 foreshadow_due 两项均埋设）：四步一拍见 L209/L221/L307-309（指向 ep02）；KV cache 块分配失败抢占循环见 L227-229/L311-313（指向 ep03），archivist 台账已同步确认。"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep03",
+  "run": 1,
+  "dimension": "job_seeker_resonance",
+  "pass": true,
+  "verdict": "pass",
+  "issues": [],
+  "checks_summary": {
+    "coverage": "season/voices-coverage.json coverage=full（36 条 voices、10 条求职者），无降级知情事项，本维全权评审。",
+    "quota": "求职者视角恰好 2 处，配额（≤2）守住：(1) L59-L63 voice-009——「面试官让手写 PagedAttention 的实现逻辑，再讲讲它跟 KV cache 的区别和优化点，群里一位同学当场被问懵」；(2) L131-L135 voice-024——「前缀缓存的哈希粒度是什么？不满一个块的前缀能不能缓存？系统提示词固定但用户 query 不同时，命中率怎么估算？」。两处均挂真实 voices 条目（voices.json 内 voice-009/voice-024 存在且 category=job-seeker），无凭空「面试会考」。",
+    "concrete_scenes": "两处都是具体场景而非空泛口号：场景 A 有「当场被问懵、尴尬地说没听过」的画面和具体题目；场景 B 有三个可逐条作答的具体追问，且 L135 明确交付答案「前两个的答案，咱今天都讲到了：满块才算哈希，不满的进不了缓存表」——面试题在当期内闭环，不是悬空恐吓。",
+    "payoff_and_bookend": "求职价值落点充分：L63「『手写 PagedAttention』能出现在面试里，本身就说明切块是理解 vLLM 的入场券」；L265「你能说出『我这是短序列场景，块该往小调』，比背出 16 强一百倍」——把面试答案方法论化；开头 L3 的面试题（锚定 voice-029，episode-card voices_refs 收录）在 L313-L315 以判据收口，整期首尾是同一道题的解体过程。",
+    "resonance_mechanics": "面试题与机制的连接显式：L3 淘汰 90% 显存没降 → L261 内部碎片病根 → L315 分页物理模型答案；听众带着「面试题怎么答」的动机走完机制主线，机制知识即面试答案，不存在「机制归机制、面试归面试」的割裂。"
+  }
+}

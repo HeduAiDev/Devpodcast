@@ -1,0 +1,16 @@
+{
+  "episode_id": "ep05",
+  "run": 1,
+  "date": "2026-08-07",
+  "dimensions": {
+    "factual_accuracy": "fail",
+    "critical_strength": "pass",
+    "listenability": "pass",
+    "voice_balance": "pass",
+    "job_seeker_resonance": "pass",
+    "quote_fidelity": "pass"
+  },
+  "blocking": true,
+  "blocker_summary": "factual_accuracy 阻断项：script.md:65/69 将 argmax-invariant / non-argmax-invariant 处理器生效位置说反（min_p 与偏置/禁词/长度门槛的快路前后位置对调），且 L69 分家逻辑自相矛盾；与 episode-card ch30、书 ch30 key_classes、vLLM V1 sampler.py docstring 全部相反。writer 修复后进入 r2（仅复核 factual_accuracy）。",
+  "next_run_focus": ["factual_accuracy"]
+}

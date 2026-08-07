@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep05",
+  "run": 1,
+  "dimension": "quote_fidelity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:241「Triton 写的 attention 后端在 H100 上达到 FlashAttention 3 的 100.7%」的数据源是 voice-031（vLLM 官方博客 2026-03），但该处未用 {{voice:voice-031}} 嵌入、只以「官方博客也确认过」归因。数字与 voices.json voice-031 完全一致，arc.json ep05 counter 也预设了该 claim，无曲解；仅引述可追踪性弱一档。",
+      "evidence": "script.md:241；voices.json voice-031；arc.json:57",
+      "suggested_fix": "可选：嵌入 {{voice:voice-031}} 或在 production-notes 标注该句数据源为 voice-031（voice-031 writer_note 原定用于 ep04，跨期复用需 archivist 在 trace 记账）。保持现状亦可接受。",
+      "rationale": "原声保真维：引述边界标注的完整性——有归因、有数据源、无曲解；此项仅提升可追踪性，非阻断。",
+      "blocking": false
+    }
+  ]
+}

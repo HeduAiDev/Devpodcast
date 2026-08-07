@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep04-gpu-execution-pipeline",
+  "run": 1,
+  "dimension": "voice_fidelity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "三处引述的「逐字原话」措辞超出研究链支撑：L157「这是他的原话」（voice-012，writer_note 档位 (c) 转述）、L169「原话是——…就这组数」（voice-031，档位 (a) 重合成）、L189「这是他们的原话」（voice-032，档位 (a) 重合成）——档位为转述/重合成的条目不应口播宣称逐字原话",
+      "evidence": "script.md:157,169,189；voices.json voice-012/031/032 的 writer_note 档位标注",
+      "suggested_fix": "三处改口语化转述标记，与 L165（「答话的大意是」）和 L185（「大意是这样」）口径统一：如 L157 改「他是这么说的，大意是——」、L169 改「官方给的数字是——」、L189 改「他们预判，大意是——」",
+      "rationale": "原声保真维：引述边界按三档策略标注（spec §6.4）；档位 (c)/(a) 意味着非逐字音频素材，「原话」是节目对保真度的过度承诺",
+      "blocking": false
+    }
+  ]
+}

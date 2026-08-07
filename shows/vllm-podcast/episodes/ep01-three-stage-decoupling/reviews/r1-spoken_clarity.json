@@ -1,0 +1,43 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimension": "spoken_clarity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:241 「SGLang 的 p50 是 195 毫秒，vLLM 是 310 毫秒」——p50 首现无口头解释；L269「p99 从 1.2 秒飙升到 9.8 秒」同样裸用。闭耳听众第一次听到百分位术语没有锚点。",
+      "evidence": "script.md:241, 269",
+      "suggested_fix": "L241 加半句：「p50 就是一半的请求比这个还快」；L269 同理一句带过：「p99，就是最慢的那 1% 请求的延迟」。",
+      "rationale": "口播可懂维：术语首现必须有口头解释（spec §12.3）。目标听众含求职者与普通开发者，百分位延迟不是默认词汇。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:269 「开了连续批处理」——连续批处理（continuous batching）是 voice-027 引文内的关键词，本期首次出现即裸用，全期未给定义（它是 ep02 主题，但首现仍需一句锚点）。",
+      "evidence": "script.md:269",
+      "suggested_fix": "在 L269 或 L273 补一句口头定义：「连续批处理——不等一批凑齐就开跑，每拍往正在算的批里塞新请求」；与 season bible glossary.json 的译名一致。",
+      "rationale": "口播可懂维：术语首现解释；同一术语跨期口径一致（bible glossary 是口播译名真相源）。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:269 该 S2 turn 共 211 字（含引文与点评），超出书写纪律「单段 ≤200 字」（口播换气）；voice-027 引文数字密集（8 个数字 + prefill 括号插入语）。",
+      "evidence": "script.md:269",
+      "suggested_fix": "在「让 23 个在飞的请求全排队。」后断句重起一段，或删掉「他原话大意」之前的 12 字引出链（L269「技术博主 Marcus Chen，今年五月在自己线上系统抓的」可并入上句）。",
+      "rationale": "口播可懂维：单段 ≤200 字是 CLAUDE.md 书写纪律，超限段换气点不足；producer 同条提醒（production-notes L50-61）与之一致。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:177 「检测停止串」——season bible glossary.json 定名「停止词（stop_strings）」，同一概念两期两种说法（archivist 已在 trace 经验台账点名）；追剧听众会困惑。",
+      "evidence": "script.md:177",
+      "suggested_fix": "改为「检测停止词」，与 bible 译名统一。",
+      "rationale": "口播可懂维：术语跨期一致（bible glossary 48 条口播译名是定名真相源）。",
+      "blocking": false
+    }
+  ],
+  "notes": [
+    "音频载体核查：audio/episode.wav 1643.8s 存在，audio-qa.json issues=[]（peak -0.99dB 无削波、silence_ratio 21.4%、max_silence_run 0.8s），segments 20 段合计 1637.1s 与整轨时长一致——无音频问题需引用（audio-qa 已有独立回环）。",
+    "说明：本环境无音频播放工具，无法逐句试听；口播可懂评估基于脚本全文 + audio-qa + producer 阅读笔记。producer 的换气/括号警告（voice-001/036/025 引文超长、括号插入语）经核对已在定稿中消解：L233 无括号、L241/253 引文已压到 1-2 句、L265 引文已压成一句，「——{{voice}}——」六连式过渡已因引出语各异（结论很硬/跑了组实测/发帖说/量性能损失/抓的）而有了断句差异。",
+    "视觉依赖扫描：全文无「如图/看这段/左边/右边」类表述，闭眼可跟。",
+    "抽查术语首现解释均合格：tokenize（L29）、解多路复用（L93）、标准载荷（L113）、多模态展平（L137）、ZMQ/守护线程（L141）、忙循环（L201）、prefill（L269）、KV cache（L229）、状态机三档（L221）都有当场口头解释。",
+    "「我不知道」纪律：L169 真不知道 + 邀请评论区，合格（重复检查，与事实准确维结论一致）。"
+  ]
+}

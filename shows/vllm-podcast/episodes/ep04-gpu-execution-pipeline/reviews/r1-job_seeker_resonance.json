@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep04-gpu-execution-pipeline",
+  "run": 1,
+  "dimension": "job_seeker_resonance",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "配额口径提示：求职话题共 2 处（L135 CSDN 面试题、L183-193 面试行情），但挂了 3 条 voice 引述（voice-015、voice-014、voice-032）；voice-032 在 voices.json 里 category=critical（techinterview.org 备考平台），内容实为面试市场信号",
+      "evidence": "script.md:135,185,189；voices.json voice-032",
+      "suggested_fix": "维持现状即可（voice-guide 的「每期至多两处」按求职话题场景计为 2 处，守住）；若后续轮次从严按引述条数计，可把 L189 的 voice-032 并作 L185 场景的延伸或删其一",
+      "rationale": "voice-guide.md 求职者视角纪律：至多两处、必须挂真实 voices；两处场景均挂真实条目且融进 S1 提问，不构成违规，仅作口径边界告知",
+      "blocking": false
+    }
+  ]
+}

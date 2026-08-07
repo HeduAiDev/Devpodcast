@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep04-gpu-execution-pipeline",
+  "run": 1,
+  "dimensions": {
+    "factual_accuracy": "pass",
+    "critical_strength": "pass",
+    "listenability": "pass",
+    "voice_balance": "pass",
+    "job_seeker_resonance": "pass",
+    "voice_fidelity": "pass"
+  },
+  "blocking_issues": 0,
+  "voices_coverage": "full",
+  "verdict": "OK"
+}

@@ -1,0 +1,14 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimensions": {
+    "factual_accuracy": {"pass": true, "blocking_issues": 0},
+    "critical_depth": {"pass": true, "blocking_issues": 0},
+    "spoken_clarity": {"pass": true, "blocking_issues": 0},
+    "voice_balance": {"pass": true, "blocking_issues": 0},
+    "job_seeker_resonance": {"pass": true, "blocking_issues": 0},
+    "voice_fidelity": {"pass": true, "blocking_issues": 0}
+  },
+  "verdict": "OK",
+  "notes": "ep01 首次评审（历史遗漏补跑，FireRedTTS2 定案首期）。6 维全 pass，无阻断项，共 11 条非阻断意见（事实准确 1、批判强度 1、口播可懂 4、双声线 2、原声保真 3）。本轮为 r1，无需回环；如有后续轮次，run 从 2 计数。"
+}

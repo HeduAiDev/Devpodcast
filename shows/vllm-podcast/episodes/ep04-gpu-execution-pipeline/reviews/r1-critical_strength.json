@@ -1,0 +1,7 @@
+{
+  "episode_id": "ep04-gpu-execution-pipeline",
+  "run": 1,
+  "dimension": "critical_strength",
+  "pass": true,
+  "issues": []
+}

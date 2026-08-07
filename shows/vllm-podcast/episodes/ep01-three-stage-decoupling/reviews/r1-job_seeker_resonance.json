@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimension": "job_seeker_resonance",
+  "pass": true,
+  "issues": [],
+  "notes": [
+    "配额：全期仅 1 处求职者视角（script.md:67-73），满足 voice-guide「每期至多两处」。",
+    "必须挂真实 voices：L69 挂 voice-002（@DecIus 牛客面经，community-only），id 在 voices.json 真实存在，linter 已验。",
+    "落到具体场景而非空泛：S1 提问带明确场景（「AI Infra 实习岗」「最近刷面经」），引述带具体考点（pagedattention、连续批处理、v0/v1 架构），结论落成可执行认知（「考点是'你懂不懂为什么这么设计'，不是'你背没背过 API'」，L73），并紧接着在 L75 把面试知识接到本集主体（「那 v1 内部到底怎么把一条请求拆成三段的」）——求职视角与内容主线同构，不是贴片。",
+    "L71 S1 复述「SGLang 代码没怎么看，问的不多」与 voice-002 引文原句逐字一致，回扣质量好。",
+    "降级知情：season/voices-coverage.json coverage=full，无需降级处理。",
+    "voice-002 过期风险（writer_note 要求标注）已在原声保真维另行提示，此处不重复。"
+  ]
+}
