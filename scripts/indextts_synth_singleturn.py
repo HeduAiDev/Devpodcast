@@ -24,8 +24,9 @@ VS = REPO / "shows" / "vllm-podcast" / "voice-samples"
 
 # IndexTTS2 用 16kHz mono 参考（已预转好）
 REFS = {
-    "S1": str(VS / "laozhang_16k.wav"),
-    "S2": str(VS / "akai_16k.wav"),
+    "S1": str(VS / "laozhang_16k.wav"),   # 老张（主持人）
+    "S2": str(VS / "akai_16k.wav"),       # 阿凯（作者/技术大佬）
+    "S3": str(VS / "azhe_16k.wav"),       # 阿哲（北京话主持人，Qwen dylan 克隆）——读者代言人
 }
 OUT_SR = 22050  # IndexTTS2 BigVGAN v2 输出采样率
 
@@ -77,14 +78,43 @@ def main():
         out_wav = seg / f"turn{i:03d}.wav"
         if out_wav.exists():
             continue
-        text = apply_pron((t.text or "").strip(), pron_map)
         ref = REFS.get(t.speaker, REFS["S1"])
         t1 = time.time()
-        tts.infer(spk_audio_prompt=ref, text=text, output_path=str(out_wav))
-        print(f"turn{i:03d} [{t.speaker}] done: {time.time()-t1:.1f}s", flush=True)
+        # turn 内 <break Nms> 拆片段：逐段合成 + 插静音（修断句连读）
+        segs = t.segments if getattr(t, "segments", None) else [((t.text or "").strip(), None)]
+        seg_audios = []
+        for seg_text, seg_pause in segs:
+            st = apply_pron(seg_text.strip(), pron_map)
+            if not st:
+                continue
+            tmp = seg / f"_part{i:03d}_{len(seg_audios)}.wav"
+            tts.infer(spk_audio_prompt=ref, text=st, output_path=str(tmp))
+            x, sr = sf.read(str(tmp), dtype="float32")
+            if x.ndim > 1:
+                x = x.mean(1)
+            seg_audios.append((x, sr, seg_pause))
+            tmp.unlink()
+        if seg_audios:
+            target_sr = seg_audios[0][1]
+            merged = []
+            for x, sr, pause in seg_audios:
+                merged.append(x)
+                if pause:
+                    merged.append(np.zeros(int(sr * pause / 1000), dtype="float32"))
+            audio = np.concatenate(merged)
+            sf.write(str(out_wav), audio, target_sr)
+        print(f"turn{i:03d} [{t.speaker}] done: {time.time()-t1:.1f}s ({len(seg_audios)} 段)", flush=True)
 
-    # 拼接：100ms 间隙，统一 22050Hz
-    print("[concat] 拼接 ...", flush=True)
+    # 处理：逐 turn 响度归一化（修阿哲音量低）→ 拼接 → ffmpeg atempo 变速降速（修语速快）
+    # 注意：变速用 ffmpeg atempo（WSOLA，保调无回音），绝不用 librosa time_stretch（相位声码器产生回音/发散）
+    import librosa
+    SPEED_RATE = 0.88       # 0.88x ≈ 降速 12%
+    TARGET_RMS_DB = -17.0   # 目标响度（dB）
+    MAX_GAIN_DB = 12.0      # 单 turn 最大增益（防过度放大底噪）
+    FFMPEG = "ffmpeg"
+    print(f"[proc] 响度归一化到 {TARGET_RMS_DB}dB + 变速 {SPEED_RATE}x (ffmpeg atempo)", flush=True)
+
+    print("[concat] 拼接（响度归一化）...", flush=True)
     parts = []
     gap = np.zeros(int(0.1 * OUT_SR), dtype="float32")
     for i in range(len(turns)):
@@ -92,17 +122,33 @@ def main():
         if x.ndim > 1:
             x = x.mean(1)
         if sr != OUT_SR:
-            import librosa
             x = librosa.resample(x, orig_sr=sr, target_sr=OUT_SR)
+        # 响度归一化（RMS 拉到目标，限增益）
+        rms = float(np.sqrt((x ** 2).mean()) + 1e-9)
+        cur_db = 20 * np.log10(rms)
+        gain_db = min(TARGET_RMS_DB - cur_db, MAX_GAIN_DB)
+        x = x * (10 ** (gain_db / 20))
+        pk = float(np.abs(x).max())
+        if pk > 0.95:
+            x = x * (0.95 / pk)
         parts.append(x)
         parts.append(gap)
     out = np.concatenate(parts[:-1])
     peak = np.abs(out).max()
     if peak > 0.95:
         out = out * (0.95 / peak)
-    full = ad / "episode.wav"
-    sf.write(full, out, OUT_SR)
-    print(f"[done] episode.wav {len(out)/OUT_SR:.1f}s @ {OUT_SR}Hz", flush=True)
+    raw = ad / "_raw_loudnorm.wav"
+    sf.write(raw, out, OUT_SR)
+
+    # ffmpeg atempo 变速降速（专业 WSOLA 算法，保调无回音）
+    import subprocess
+    final = ad / "episode.wav"
+    subprocess.run([FFMPEG, "-y", "-i", str(raw), "-filter:a", f"atempo={SPEED_RATE}", str(final)],
+                   check=True, capture_output=True)
+    raw.unlink(missing_ok=True)
+    import soundfile as _sf
+    fx, fsr = _sf.read(str(final), dtype="float32")
+    print(f"[done] episode.wav {len(fx)/fsr:.1f}s @ {fsr}Hz (变速 {SPEED_RATE}x)", flush=True)
 
 
 if __name__ == "__main__":

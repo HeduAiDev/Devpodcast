@@ -11,7 +11,7 @@ from scripts.script_parser import parse
 from scripts.voice_budget import budget_check
 
 UNKNOWN_WORDS = ("我不知道", "没搞清", "没想明白", "说不准")
-MIN_SPEAKER_RATIO = 0.30
+MIN_SPEAKER_RATIO = 0.25  # 三人模式（S1/S2/S3）任一方 turn 占比不低于 25%（voice-guide 硬约束）
 
 USAGE = "usage: python3 scripts/lint_script.py <path> [--voices <json>] [--target-minutes N]"
 
@@ -27,12 +27,12 @@ def lint_script(path: Path, voices: dict, target_minutes: float) -> list[dict]:
             if ref not in known:
                 issues.append({"level": "BLOCKING", "msg": f"turn {i} 引用未知 voice id: {ref}"})
 
-    # 2. 双声线平衡
+    # 2. 多声线平衡（三人模式：S1/S2/S3 任一 ≥ 25%）
     if script.turns:
         n = len(script.turns)
-        s1 = sum(1 for t in script.turns if t.speaker == "S1")
-        s2 = n - s1
-        for sp, cnt in (("S1", s1), ("S2", s2)):
+        from collections import Counter
+        counts = Counter(t.speaker for t in script.turns)
+        for sp, cnt in sorted(counts.items()):
             if cnt / n < MIN_SPEAKER_RATIO:
                 issues.append({"level": "WARN", "msg": f"{sp} 仅 {cnt}/{n} turn（{cnt/n:.0%}），低于 {MIN_SPEAKER_RATIO:.0%}——防捧哏"})
 

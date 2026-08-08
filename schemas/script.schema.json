@@ -7,7 +7,7 @@
     "turns": {"type": "array", "items": {
       "type": "object", "required": ["speaker", "text"],
       "properties": {
-        "speaker": {"enum": ["S1", "S2"]},
+        "speaker": {"enum": ["S1", "S2", "S3"]},
         "text": {"type": "string"},
         "voice_refs": {"type": "array", "items": {"type": "string"}},
         "pause_ms": {"type": "integer", "minimum": 0}

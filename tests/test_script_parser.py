@@ -34,7 +34,7 @@ def test_unclosed_tag_raises(tmp_path):
 
 def test_bad_speaker_raises(tmp_path):
     p = tmp_path / "script.md"
-    p.write_text("[S3] 不该出现 [/S3]\n", encoding="utf-8")
+    p.write_text("[S4] 不该出现 [/S4]\n", encoding="utf-8")  # S4 超出当前支持的 S1-S3
     with pytest.raises(ScriptParseError):
         parse(p)
 

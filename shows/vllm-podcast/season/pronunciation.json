@@ -2,12 +2,12 @@
   "comment": "专有名词发音表（发音真相源）。TTS 合成前把脚本里的英文/专有名词替换为注音读法，避免逐字母念。term → 替换文本（zh_common 中文播客读法，或拼音注音）。confidence: high=官方来源 / medium=社区共识 / low=推测。",
   "terms": {
     "SGLang": {
-      "replace": "",
+      "replace": "S G 朗",
       "official_pron": "S-G-Lang（官方 README: pronounced as S-G-Lang）",
-      "zh_common": "SG浪",
+      "zh_common": "S G 朗（S-G 逐字母 + 朗 lang3）",
       "confidence": "high",
       "source_url": "https://arxiv.org/abs/2312.07104",
-      "notes": "官方 README 无 explicit 发音声明；依据论文名称拆分 S-G-Lang（Structured Generation Language）+ 发音库 IPA /ˌɛs dʒiː ˈlæŋ/。SG浪 为口语谐音，首次出现建议铺垫 S-G-Lang（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
+      "notes": "2026-08-08 IndexTTS 实测 9 变体，v7「S G 朗」胜出（用户试听确认）：字母拆开读 + 朗(3声)。比 艾斯鸡朗(中文)更自然，比 S-G-lang(读成long)调值对。"
     },
     "vLLM": {
       "replace": "",

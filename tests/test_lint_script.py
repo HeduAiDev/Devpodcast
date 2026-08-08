@@ -31,9 +31,10 @@ def test_unknown_word_present_no_warn(tmp_path):
 
 def test_bald_broadcast_warn(tmp_path):
     p = tmp_path / "s.md"
-    p.write_text("[S1] a [/S1]\n[S1] b [/S1]\n[S1] c [/S1]\n[S2] d [/S2]\n", encoding="utf-8")
+    # S2 仅 1/5=20% < 25% 阈值 → 应触发平衡 WARN
+    p.write_text("[S1] a [/S1]\n[S1] b [/S1]\n[S1] c [/S1]\n[S1] c2 [/S1]\n[S2] d [/S2]\n", encoding="utf-8")
     issues = lint_script(p, VOICES, target_minutes=5)
-    assert any("30%" in i["msg"] and i["level"] == "WARN" for i in issues)
+    assert any("25%" in i["msg"] and i["level"] == "WARN" for i in issues)
 
 def test_budget_overrun_blocking_strips_prefix(tmp_path):
     # 60 字 ≈ 15s 口播 > 0.1min×60×1.15=6.9s 余量 → BLOCKING；60 < 200 不触发换气 WARN
