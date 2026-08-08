@@ -1,10 +1,10 @@
 {
-  "duration_s": 1390.73,
+  "duration_s": 1396.26,
   "peak_db": -0.44541628554405305,
   "clipping": false,
-  "silence_ratio": 0.1319604233778187,
-  "max_silence_run_s": 0.78,
-  "rms_db": -17.19072796576048,
+  "silence_ratio": 0.14560325440820476,
+  "max_silence_run_s": 0.72,
+  "rms_db": -17.15412932622938,
   "issues": [],
   "vram_gb": 0.0
 }
