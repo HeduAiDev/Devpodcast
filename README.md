@@ -141,6 +141,6 @@ Devpodcast/
 
 - **语言**：Python 3.11+ / JavaScript（workflow）
 - **测试**：pytest
-- **TTS**：MOSS-TTSD v1.0（8B, Apache-2.0）+ CosyVoice3 fallback
+- **TTS**：IndexTTS-2 单句合成（逐 turn 独立生成，Apache-2.0，conda env itts310 / torch 2.8.0+cu128）
 - **GPU**：NVIDIA RTX PRO 6000 Blackwell 95.6GB, CUDA 13.1
 - **设计参考**：Repo2Book 方法论（仅方法论，零运行时依赖）

@@ -1,10 +1,15 @@
-"""TTS：FireRedTTS2 后端（原生双人对话模型，唯一主方案）。
+"""TTS：IndexTTS-2 单句合成（2026-08-08 定案唯一主方案）。
+
+IndexTTS-2（IndexTTS2Provider）逐 turn 独立生成，无跨 turn 上下文累积，
+解决 FireRed 逐段/carryover 的尾部喃喃伪影。模型跑在 conda env `itts310`
+（Python 3.10 + torch 2.8.0+cu128），子进程调用 indextts_synth_singleturn.py。
 
 CLI：
-    python3 scripts/tts.py synthesize <script.md> --voice-map S1=wav S2=wav --output <dir> [--target-minutes 35] [--pronunciation <json>]
+    python3 scripts/tts.py synthesize <script.md> --provider indextts2 --output <dir> [--target-minutes 35]
 
-- voice_map 值是 wav 路径，prompt_text 从同目录的 <name>.txt 读
+- indextts2 用固定参考音色（laozhang/akai 16k，内置），无需 voice_map
 - 发音表（可选）：season/pronunciation.json，合成前替换专有名词为注音读法
+- FireRed（firered-tts2）为历史备选，已因尾部伪影弃用
 """
 import sys
 from dataclasses import dataclass, field
@@ -244,8 +249,47 @@ print(f"chunk done: {{audio.shape[-1]/24000.0:.1f}}s")
         )
 
 
+class IndexTTS2Provider(LocalTTSProvider):
+    """IndexTTS-2 后端（2026-08-08 定案唯一主方案）。
+
+    单句合成（scripts/indextts_synth_singleturn.py）：逐 turn 独立生成，无跨 turn
+    上下文累积——解决 FireRed 逐段/carryover 合成的尾部喃喃伪影。
+    模型跑在独立 conda env `itts310`（Python 3.10 + torch 2.8.0+cu128），子进程调用。
+    """
+    native_dialogue = True
+    ITTS_PYTHON = r"D:\Env\Miniconda\envs\itts310\python.exe"
+    SYNTH_SCRIPT = r"E:\Laboratory\Devpodcast\scripts\indextts_synth_singleturn.py"
+
+    def __init__(self, model_dir: str | Path = "models/indextts2", device: str = "cuda:0",
+                 dtype: str = "bfloat16"):
+        super().__init__(model_dir, device, dtype)
+
+    def warmup(self) -> None:
+        pass
+
+    def synthesize(self, script, voice_map: dict, opts: TTSOpts) -> AudioBundle:
+        """经子进程调用 itts310/indextts_synth_singleturn.py 完成整期合成。"""
+        import subprocess
+        import soundfile as sf
+        from pathlib import Path
+        # output_dir = <ep_dir>/audio → ep_dir = 父目录
+        ep_dir = Path(opts.output_dir).resolve().parent
+        subprocess.run([self.ITTS_PYTHON, self.SYNTH_SCRIPT, str(ep_dir)], check=True, timeout=7200)
+        out_wav = (Path(opts.output_dir) / "episode.wav").resolve()
+        x, sr = sf.read(str(out_wav), dtype="float32")
+        segs = sorted((Path(opts.output_dir) / "segments").glob("turn*.wav"))
+        return AudioBundle(
+            wav_path=out_wav,
+            segments=[Path(s) for s in segs],
+            duration_s=round(len(x) / sr, 2),
+            vram_gb=0.0,
+        )
+
+
 def load_provider(config: dict) -> TTSProvider:
     kind = config.get("provider", "")
+    if kind == "indextts2":
+        return IndexTTS2Provider(model_dir=config.get("model_dir", "models/indextts2"))
     if kind == "firered-tts2":
         return FireRedTTSProvider(model_dir=config.get("model_dir", "models/fireredtts2"))
     raise ValueError(f"未知 TTS provider: {kind!r}")
@@ -263,7 +307,7 @@ def _cli_synthesize(argv: list[str]) -> int:
     voice_map: dict[str, str] = {}
     output_dir = Path("audio")
     target_minutes = 35.0
-    provider_name = "firered-tts2"  # 默认 FireRedTTS2（2026-08-07 选定主方案）
+    provider_name = "indextts2"  # 默认 IndexTTS-2（2026-08-08 定案唯一主方案）
     i = 1
     while i < len(args):
         if args[i] == "--voice-map" and i + 1 < len(args):
@@ -286,18 +330,19 @@ def _cli_synthesize(argv: list[str]) -> int:
     if not script_path.is_file():
         print(f"script 不存在: {script_path}", file=sys.stderr)
         return 1
-    if "S1" not in voice_map or "S2" not in voice_map:
-        print("voice-map 必须含 S1 和 S2（firered-tts2 传 wav 路径，prompt_text 从同目录的 <name>.txt 读）", file=sys.stderr)
-        return 2
-
-    # firered-tts2: voice_map 值是 wav 路径，prompt_text 从同目录的 <name>.txt 读
-    for spk in ("S1", "S2"):
-        wav_path = voice_map[spk]
-        txt_path = Path(wav_path).with_suffix(".txt")
-        voice_map[spk] = {
-            "audio": wav_path,
-            "text": txt_path.read_text(encoding="utf-8").strip() if txt_path.is_file() else "",
-        }
+    # indextts2 用固定参考（laozhang/akai 16k，indextts_synth_singleturn.py 内置），无需 voice_map
+    if provider_name != "indextts2":
+        if "S1" not in voice_map or "S2" not in voice_map:
+            print("voice-map 必须含 S1 和 S2（firered-tts2 传 wav 路径，prompt_text 从同目录的 <name>.txt 读）", file=sys.stderr)
+            return 2
+        # firered-tts2: voice_map 值是 wav 路径，prompt_text 从同目录的 <name>.txt 读
+        for spk in ("S1", "S2"):
+            wav_path = voice_map[spk]
+            txt_path = Path(wav_path).with_suffix(".txt")
+            voice_map[spk] = {
+                "audio": wav_path,
+                "text": txt_path.read_text(encoding="utf-8").strip() if txt_path.is_file() else "",
+            }
 
     # 导入 script parser（延迟，避免无 GPU 环境崩溃）
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -306,7 +351,7 @@ def _cli_synthesize(argv: list[str]) -> int:
     script = parse(script_path)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model_dir = "models/fireredtts2"
+    model_dir = {"indextts2": "models/indextts2", "firered-tts2": "models/fireredtts2"}.get(provider_name, "models/indextts2")
     provider = load_provider({"provider": provider_name, "model_dir": model_dir})
     provider.warmup()
 

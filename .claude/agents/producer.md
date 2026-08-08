@@ -43,9 +43,9 @@ color: orange
 
 ## TTS 停顿语义（spec §7.3）
 
-当前唯一方案 FireRedTTS2（native_dialogue=true，对话模型）：
+当前唯一方案 IndexTTS-2 单句合成（native_dialogue=true，逐 turn 独立生成）：
 - 停顿由**模型生成**。你的停顿建议是**软提示**——建议改写文本节奏（加引出句、断句、改换行）引导模型，不写死毫秒。`<break Nms>` 可给参考值，但注明「模型自主决定」
-- 若未来切非对话模型（逐句拼接），停顿才由 pipeline 插静音（说话人切换 350–500ms、同一人句间 150–250ms）——当前不适用
+- turn 间过渡由 pipeline 统一插 100ms 静音（拼接时固定），无需在建议里给段间停顿毫秒数
 
 ## 与 reviewer 的分工（spec §3.3②）
 

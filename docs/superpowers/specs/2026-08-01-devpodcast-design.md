@@ -286,31 +286,31 @@ NVIDIA RTX PRO 6000 Blackwell Workstation Edition
 
 CUDA 生态全可用，无 ROCm 顾虑。95.6GB 意味着 8B 级对话模型毫无压力，可并行加载多模型做对比。注意本机可能有其他进程占用显存（观测到 3.9GB），audio-qa 站报告 VRAM 占用。
 
-### 7.2 选型（2026-08-07 定案）
+### 7.2 选型（2026-08-08 定案）
 
-**唯一主方案：FireRedTTS2**（原生双人对话模型）
+**唯一主方案：IndexTTS-2 单句合成**（逐 turn 独立生成）
 
 | 判据 | 数据 |
 |---|---|
-| 原生对话建模 | `[S1]`–`[S4]` 行内标签，双人对话一次生成；轮转/停顿由**模型生成**而非拼接 |
-| 中文长文本播客 | 20 组参数网格人工试听（2026-08-07）全部读音自然流畅、无读标签、无音色漂移 |
-| 参数 | temperature=0.8 / topk=15（10分最优组，时长 ≈ 中位，temp 0.7 全灭——错字/发音差） |
-| 协议 | 权重开源（FireRedTeam/FireRedTTS2，ModelScope） |
-| 显存 | 20.8GB 权重，bf16 加载，95.6GB 无压力 |
-| 速度 | RTF ~1.6（26 分钟一期 ≈ 45 分钟合成，离线批处理可接受） |
+| 合成方式 | **逐 turn 独立生成**（`indextts_synth_singleturn.py`），无跨 turn 上下文累积 —— 解决 FireRed 逐段/carryover 的尾部喃喃伪影 |
+| 中文克隆质量 | laozhang/akai 参考克隆清晰，无读标签、无明显音色漂移；**尾部伪影仅 4/156（ep01），且可重生成修复**（FireRed 为 16/156） |
+| 参考音色 | 内置 laozhang/akai（16kHz mono，零样本克隆，无需 voice_map） |
+| 协议 | Apache-2.0（权重开源，IndexTeam/IndexTTS-2） |
+| 显存/环境 | conda env `itts310`（Python 3.10 + torch 2.8.0+cu128），子进程隔离 |
+| 速度 | RTF ~1.8-2.0（单句逐 turn；比 FireRed 1.2 略慢但**干净**） |
 
-**已知的坑（已趟平）**：
-- torchaudio 2.11 在本机路由到 torchcodec 且缺 FFmpeg DLL → infer 模板内 monkeypatch `torchaudio.load/save` 走 soundfile（内置在 `scripts/tts.py`）
-- 上下文预算：`max_seq_len=3100 - max_generation_len=375 = 2725 token` → **动态分段每段 ≤450 字**（30 轮静态分段实测爆上限）
-- 参考音频必须配对应 prompt_text（`<name>.txt` 同目录读取）
+**定案理由（2026-08-08 实测）**：
+- FireRed 逐段合成存在**尾部喃喃伪影**（模型说完正文后多吐一段不成语言的咕哝），ep01 实测 16 处，逐段/carryover 两种分段策略均触发；carryover 还引入 S1/S2 串色（上下文污染）。
+- IndexTTS-2 单句合成逐 turn 独立，天然免疫上下文污染类伪影；ep01 全量检测仅 4 处轻微伪影，且换 seed 重生成即修复。
+- IndexTTS-2 附带原生拼音/IPA 发音标注能力（备用，可正面替代"CUDA→库达"谐音替换）。
+
+**FireRed（firered-tts2）已弃用**（尾部伪影不可接受），保留代码仅作历史参考。其余历史排除项（MOSS-TTSD / SoulX / Qwen3 / CosyVoice3 / vLLM-Omni / F5-TTS / VibeVoice 等）同 2026-08-07 调研结论。
 
 **发音表（2026-08-07 researcher 调研）**：`shows/<name>/season/pronunciation.json` — 合成前把专有名词替换为注音读法（SGLang→SG浪、vLLM→V-L-L-M、CUDA→库达、KV cache→K-V缓存 等），防 TTS 逐字母念。词条带 confidence + source_url。
 
-**明确排除（历史调研，2026-08-07 已清理）**：MOSS-TTSD（跨语言克隆不稳定，英文参考+中文文本出静音）、SoulX-Podcast（RTF 1.04 且每段重复加载，音色自然度不及 FireRed）、Qwen3-TTS（逐句拼接，非原生对话）、CosyVoice3（逐句拼接）、vLLM-Omni（HTTP 逐句 overhead 重）、F5-TTS（仅环境试金石）、IndexTTS 2 / GPT-SoVITS / Fish Audio S2 / VibeVoice / ChatTTS 等（能力不匹配或协议禁用）。
-
 ### 7.3 抽象层
 
-唯一 provider 为 FireRedTTS2，但抽象层保留以隔离 CLI/工作流：
+唯一 provider 为 IndexTTS-2，抽象层保留以隔离 CLI/工作流：
 
 ```python
 class TTSProvider(Protocol):
@@ -324,17 +324,18 @@ class LocalTTSProvider:
     def warmup(self): ...
     def vram_report(self) -> dict: ...
 
-class FireRedTTSProvider(LocalTTSProvider):
-    """FireRedTTS2 原生双人对话（唯一主方案）。
-    Script → [S1]/[S2] 标签串 → generate_dialogue 逐轮自回归。
-    动态分段（≤450 字/段）防超 max_seq_len，段间 350ms 拼接。
+class IndexTTS2Provider(LocalTTSProvider):
+    """IndexTTS-2 单句合成（唯一主方案）。
+    子进程调用 conda env itts310 的 indextts_synth_singleturn.py：
+    逐 turn 独立 infer（无跨 turn 上下文），按 S1/S2 选内置参考音色，
+    应用 pronunciation.json 注音替换，concat 输出 22050Hz episode.wav。
     停顿由模型生成，production-notes 的停顿建议是软提示（改写文本节奏）。"""
     native_dialogue = True
 ```
 
 **输入是结构化 `Script` 对象**（不是 raw markdown）——说话人/停顿/重音/引述嵌入点全是结构化字段，provider 自己负责标签转换。
 
-**对 producer 的影响**：FireRed 是对话模型（native_dialogue=true）——停顿由**模型生成**，停顿建议是"改写文本节奏引导模型"的软提示，不写死毫秒。
+**对 producer 的影响**：IndexTTS-2 单句模式下停顿由**模型生成**，停顿建议是"改写文本节奏引导模型"的软提示，不写死毫秒。
 
 ---
 
@@ -596,7 +597,7 @@ tests/test_linters.py           每个 linter 的正例/反例
 
 | M | 验收标准 | 阻塞什么 |
 |---|---|---|
-| **M0 骨架 + 环境** | CLAUDE.md + 8 个 agent 提示词骨架 + 空 workflows + devpodcast.json + README + show_resolver 跑得通；**用 FireRedTTS2 跑通一段样例合成**（2026-08-07 已定案） | 一切 |
+| **M0 骨架 + 环境** | CLAUDE.md + 8 个 agent 提示词骨架 + 空 workflows + devpodcast.json + README + show_resolver 跑得通；**用 IndexTTS-2 跑通一段样例合成**（2026-08-08 定案） | 一切 |
 | **M1 一期能听** | 书源摄入 → Phase A → ep01 → 脚本 + wav + audio-qa.json；**人工完整听一遍**，通过 §12.4 三问 | pipeline 真伪验证 |
 | **M2 一季跑通** | 整季 5–8 期全部走通；Season Bible 在最后两期被有效回收 | 整季编排是否可行 |
 | **M3 抽象层验证** | 写一个 MarkdownSource（或 EpubSource），用它产出一期对比；BookSource 抽象真的不用重构 | "给一本书就能生成"承诺的真伪 |
@@ -610,8 +611,8 @@ tests/test_linters.py           每个 linter 的正例/反例
 
 | # | 风险 | 应对 |
 |---|---|---|
-| 1 | **TTS 是单点故障** — 模型加载失败、显存抖动、合成超时 | FireRedTTS2 子进程隔离；加载失败即 BLOCKED 升级 Lead，无静默降级 |
-| 2 | **FireRed 上下文超限** — 长稿超 max_seq_len 崩溃 | 动态分段（≤450 字/段）已内置；分段参数可调 |
+| 1 | **TTS 是单点故障** — 模型加载失败、显存抖动、合成超时 | IndexTTS-2 子进程隔离（独立 conda env itts310）；加载失败即 BLOCKED 升级 Lead，无静默降级 |
+| 2 | **TTS 尾部喃喃伪影** — 自回归模型正文后多吐咕哝声 | IndexTTS-2 单句逐 turn 独立生成（无上下文累积）大幅规避；残余伪影换 seed 重生成修复 |
 | 3 | **求职者声音过时** — 面经半年就过时 | 写进 SHOW.md：voices 有 3 个月保质期，到期刷新 |
 | 4 | **researcher 找不到某议题的声音** | §11.1 逃生舱兜底，允许议题降级或删除，不许编 |
 | 5 | **book-analyst 跨章切片质量** — 这是 devpodcast 的新增逻辑，最容易踩坑 | M1 选最容易切片的议题验证（如内存管理天然跨多章） |

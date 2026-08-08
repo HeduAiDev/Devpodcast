@@ -22,11 +22,9 @@
     "episodes_planned": null
   },
   "tts": {
-    "provider": "firered-tts2",
-    "voice_map": {
-      "S1": "voice-samples/laozhang.wav",
-      "S2": "voice-samples/akai.wav"
-    },
+    "provider": "indextts2",
+    "synth_env": "itts310",
+    "note": "单句合成（逐turn独立），内置 laozhang/akai 16k 参考；解决 FireRed 尾部喃喃伪影",
     "pronunciation": "season/pronunciation.json"
   }
 }
