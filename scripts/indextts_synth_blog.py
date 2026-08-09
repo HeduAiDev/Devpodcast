@@ -22,6 +22,8 @@ REPO = Path(__file__).parent.parent
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "_diag" / "index-tts-repo"))
 
+from scripts.script_parser import auto_segment  # cut5 断句：标点自动切段 + 精确停顿（cc9a53a）
+
 MODEL_DIR = str(REPO / "models" / "indextts2")
 CFG = str(REPO / "models" / "indextts2" / "config.yaml")
 VS = REPO / "shows" / "vllm-podcast" / "voice-samples"
@@ -184,23 +186,48 @@ def main():
             print(f"[load] 模型加载 {time.time()-t0:.1f}s", flush=True)
         tts = globals()["tts"]
 
-        # 逐 turn 合成（turns 里无 <break>，单段合成即可；长度护栏仍生效）
+        # 逐 turn 合成：cut5 断句（auto_segment 按标点切段 + 手动插精确静音）。
+        # IndexTTS 标点停顿随机（句号实测 0/60/270ms 三种），抢在模型之前切开、
+        # 由合成器插静音——句末 350ms / 分号 250ms / 逗号 200(≥20字) / 顿号 150ms / 省略号 400ms / 破折号 250ms。
+        TRIM_PAD_MS = 50  # _trim_edges 两边各保留的垫片，插静音时扣掉避免叠加
         turn_wavs = []
         t_total = 0.0
         for i, (spk, text) in enumerate(turns):
-            tmp = seg / f"_{slug}_{i:03d}_brk.wav"
-            t0 = time.time()
-            tts.infer(spk_audio_prompt=REF_S1, text=text, output_path=str(tmp))
-            x, sr = sf.read(str(tmp), dtype="float32")
-            if x.ndim > 1:
-                x = x.mean(1)
-            x = _trim_edges(x, sr)
-            out_turn = seg / f"{slug}_turn{i:03d}.wav"
-            sf.write(str(out_turn), x, sr)
-            tmp.unlink(missing_ok=True)
-            turn_wavs.append((out_turn, sr))
+            raw_segs = auto_segment(text, None)  # 按标点细分（清洗期已移除 <break>）
+            # 护栏：过短片段并进后一段（短片段孤立合成会被拉长）
+            segs = []
+            for stxt, pause in raw_segs:
+                if segs and len(stxt.strip()) < MIN_SEG_CHARS:
+                    ptxt, ppause = segs[-1]
+                    segs[-1] = (ptxt + stxt, pause if pause is not None else ppause)
+                else:
+                    segs.append((stxt, pause))
+            seg_clips = []
+            for si, (stxt, pause) in enumerate(segs):
+                tmp = seg / f"_{slug}_{i:03d}_{si}_brk.wav"
+                t0 = time.time()
+                tts.infer(spk_audio_prompt=REF_S1, text=stxt, output_path=str(tmp))
+                x, sr = sf.read(str(tmp), dtype="float32")
+                if x.ndim > 1:
+                    x = x.mean(1)
+                x = _trim_edges(x, sr)
+                seg_clips.append((x, sr, pause))
+                tmp.unlink(missing_ok=True)
+            if seg_clips:
+                tsr = seg_clips[0][1]
+                merged = []
+                for x, sr, pause in seg_clips:
+                    merged.append(x)
+                    if pause:
+                        # 扣掉 trim 两边各留的 50ms 垫片——接缝总静音才等于请求值
+                        net = max(0, pause - 2 * TRIM_PAD_MS)
+                        merged.append(np.zeros(int(sr * net / 1000), dtype="float32"))
+                audio = np.concatenate(merged)
+                out_turn = seg / f"{slug}_turn{i:03d}.wav"
+                sf.write(str(out_turn), audio, tsr)
+                turn_wavs.append((out_turn, tsr))
             t_total += time.time() - t0
-            print(f"  turn{i:03d}/{len(turns)} ({len(text)}字) {time.time()-t0:.1f}s", flush=True)
+            print(f"  turn{i:03d}/{len(turns)} ({len(text)}字→{len(segs)}段) {time.time()-t0:.1f}s", flush=True)
 
         # 拼接 + 响度归一化 + atempo 变速（同 singleturn）
         import librosa
