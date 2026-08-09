@@ -14,15 +14,20 @@
     "language": "zh-CN"
   },
   "format": {
-    "mode": "blog-monologue",
-    "hosts": 1,
-    "voice": "S1（老张音色 laozhang_16k.wav）",
+    "mode": "dialogue",
+    "hosts": 3,
+    "voices": {
+      "S1": "老张（主持人/推进）",
+      "S2": "阿凯（本系列作者/拉康专家）",
+      "S3": "阿哲（哲学入门读者/读者代言人）"
+    },
     "episodes_planned": 9
   },
   "tts": {
     "provider": "indextts2",
     "synth_env": "itts310",
-    "synth_script": "scripts/indextts_synth_blog.py",
-    "pronunciation": "season/pronunciation.json"
+    "synth_script": "scripts/indextts_synth_singleturn.py",
+    "pronunciation": "season/pronunciation.json",
+    "voice_samples": "shows/vllm-podcast/voice-samples/（与 vllm-podcast 共用三声线参考）"
   }
 }

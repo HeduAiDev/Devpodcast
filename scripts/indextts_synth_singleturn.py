@@ -24,15 +24,21 @@ VS = REPO / "shows" / "vllm-podcast" / "voice-samples"
 
 # IndexTTS2 用 16kHz mono 参考（已预转好）
 REFS = {
-    "S1": str(VS / "laozhang_16k.wav"),          # 老张（主持人）
-    "S2": str(VS / "akai_firered_16k.wav"),      # 阿凯（作者/技术大佬）—— FireRed 重读慢速稿+0.9x，修连读
-    "S3": str(VS / "azhe_16k.wav"),              # 阿哲（北京话主持人，Qwen dylan 克隆）——读者代言人
+    "S1": str(VS / "laozhang_16k.wav"),   # 老张（主持人）
+    "S2": str(VS / "akai_16k.wav"),       # 阿凯（作者/技术大佬）
+    "S3": str(VS / "azhe_16k.wav"),       # 阿哲（北京话主持人，Qwen dylan 克隆）——读者代言人
 }
 OUT_SR = 22050  # IndexTTS2 BigVGAN v2 输出采样率
 
 
-def load_pronunciation():
-    pron = REPO / "shows" / "vllm-podcast" / "season" / "pronunciation.json"
+def load_pronunciation(ep_dir: Path | None = None):
+    """按节目取发音表：<show>/season/pronunciation.json（show = ep_dir 的上两级）。
+    不传 ep_dir 时回退 vllm-podcast（历史默认）。"""
+    if ep_dir is not None:
+        show_dir = Path(ep_dir).resolve().parent.parent
+        pron = show_dir / "season" / "pronunciation.json"
+    else:
+        pron = REPO / "shows" / "vllm-podcast" / "season" / "pronunciation.json"
     if not pron.exists():
         return {}
     d = json.loads(pron.read_text(encoding="utf-8"))
@@ -54,7 +60,7 @@ def main():
     from scripts.script_parser import parse
     script = parse(script_md)
     turns = [t for t in script.turns if (t.text or "").strip()]
-    pron_map = load_pronunciation()
+    pron_map = load_pronunciation(ep_dir)
     print(f"[prep] {len(turns)} turns, {len(pron_map)} 发音替换规则", flush=True)
 
     ad = ep_dir / "audio"
@@ -80,6 +86,7 @@ def main():
     #   2. 每段先剪首尾静音再插精确时长——停顿可控（不会因片段自带边缘静音叠加而偏长）
     MIN_SEG_CHARS = 14
     SIL_DB = 10 ** (-45 / 20)
+    TRIM_PAD_MS = 50  # _trim_edges 两边各保留的垫片，插静音时扣掉避免叠加
 
     def _trim_edges(x, sr):
         n = int(0.02 * sr); m = len(x) // n
@@ -90,8 +97,9 @@ def main():
         idx = np.where(voiced)[0]
         if len(idx) == 0:
             return x
-        a = max(0, idx[0] * n - int(0.05 * sr))
-        b = min(len(x), (idx[-1] + 1) * n + int(0.05 * sr))
+        pad = int(TRIM_PAD_MS / 1000 * sr)
+        a = max(0, idx[0] * n - pad)
+        b = min(len(x), (idx[-1] + 1) * n + pad)
         return x[a:b]
 
     for i, t in enumerate(turns):
@@ -131,24 +139,42 @@ def main():
             for x, sr, pause in seg_clips:
                 merged.append(x)
                 if pause:
-                    merged.append(np.zeros(int(sr * pause / 1000), dtype="float32"))
+                    # 扣掉 trim 两边各留的 50ms 垫片——接缝总静音才等于请求值
+                    # （不剪更狠：削掉尾音辅音会发闷）
+                    net = max(0, pause - 2 * TRIM_PAD_MS)
+                    merged.append(np.zeros(int(sr * net / 1000), dtype="float32"))
             audio = np.concatenate(merged)
             sf.write(str(out_wav), audio, tsr)
         print(f"turn{i:03d} [{t.speaker}] done: {time.time()-t1:.1f}s ({len(seg_clips)} 段)", flush=True)
 
-    # 处理：逐 turn 响度归一化（修阿哲音量低）→ 拼接 → ffmpeg atempo 变速降速（修语速快）
+    # 处理：逐 turn 响度归一化（修阿哲音量低）+ 按角色变速 → 拼接
     # 注意：变速用 ffmpeg atempo（WSOLA，保调无回音），绝不用 librosa time_stretch（相位声码器产生回音/发散）
-    import librosa
-    SPEED_RATE = 0.88       # 0.88x ≈ 降速 12%
+    # 语速按角色分开：阿凯换 Aiden 参考后本身已慢（4.5 字/秒），不再降速；老张/阿哲维持原 0.88。
+    import librosa, subprocess
+    SPEED = {"S1": 0.88, "S2": 0.92, "S3": 0.88}
+    DEFAULT_SPEED = 0.88
     TARGET_RMS_DB = -17.0   # 目标响度（dB）
     MAX_GAIN_DB = 12.0      # 单 turn 最大增益（防过度放大底噪）
     FFMPEG = "ffmpeg"
-    print(f"[proc] 响度归一化到 {TARGET_RMS_DB}dB + 变速 {SPEED_RATE}x (ffmpeg atempo)", flush=True)
+    print(f"[proc] 响度归一化到 {TARGET_RMS_DB}dB + 按角色变速 {SPEED}", flush=True)
 
-    print("[concat] 拼接（响度归一化）...", flush=True)
+    def atempo(x, sr, rate):
+        """ffmpeg atempo 变速（WSOLA 保调）。rate=1.0 直接返回。"""
+        if abs(rate - 1.0) < 1e-6:
+            return x
+        ti, to = ad / "_sp_in.wav", ad / "_sp_out.wav"
+        sf.write(ti, x, sr)
+        subprocess.run([FFMPEG, "-y", "-i", str(ti), "-filter:a", f"atempo={rate}", str(to)],
+                       check=True, capture_output=True)
+        y, _ = sf.read(str(to), dtype="float32")
+        ti.unlink(missing_ok=True)
+        to.unlink(missing_ok=True)
+        return y.mean(1) if y.ndim > 1 else y
+
+    print("[concat] 拼接（响度归一化 + 按角色变速）...", flush=True)
     parts = []
     gap = np.zeros(int(0.1 * OUT_SR), dtype="float32")
-    for i in range(len(turns)):
+    for i, t in enumerate(turns):
         x, sr = sf.read(seg / f"turn{i:03d}.wav", dtype="float32")
         if x.ndim > 1:
             x = x.mean(1)
@@ -162,24 +188,16 @@ def main():
         pk = float(np.abs(x).max())
         if pk > 0.95:
             x = x * (0.95 / pk)
+        x = atempo(x, OUT_SR, SPEED.get(t.speaker, DEFAULT_SPEED))
         parts.append(x)
         parts.append(gap)
     out = np.concatenate(parts[:-1])
     peak = np.abs(out).max()
     if peak > 0.95:
         out = out * (0.95 / peak)
-    raw = ad / "_raw_loudnorm.wav"
-    sf.write(raw, out, OUT_SR)
-
-    # ffmpeg atempo 变速降速（专业 WSOLA 算法，保调无回音）
-    import subprocess
     final = ad / "episode.wav"
-    subprocess.run([FFMPEG, "-y", "-i", str(raw), "-filter:a", f"atempo={SPEED_RATE}", str(final)],
-                   check=True, capture_output=True)
-    raw.unlink(missing_ok=True)
-    import soundfile as _sf
-    fx, fsr = _sf.read(str(final), dtype="float32")
-    print(f"[done] episode.wav {len(fx)/fsr:.1f}s @ {fsr}Hz (变速 {SPEED_RATE}x)", flush=True)
+    sf.write(final, out, OUT_SR)
+    print(f"[done] episode.wav {len(out)/OUT_SR:.1f}s @ {OUT_SR}Hz", flush=True)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 > 一张图，九站，把雅克·拉康的欲望图（graphe du désir）从零讲到完整。
 > 读者：哲学入门者——有哲学/人文基础，但没读过拉康。
-> 形式：**博客栏目（单角色朗读稿）**，非对谈播客。递进式系列，篇间钩子咬合，术语首现必展开，引文一手核验。
+> 形式：**三人对话播客**（老张主持 / 阿凯作者讲解 / 阿哲读者代言人），与 vllm-podcast 同一套声线。
 
 ## 书源
 - kind: blog-column（无 repo2book 书源）
@@ -10,32 +10,42 @@
 - 概念库（写作基准）：`season/bible/concept-library.md`
 - 系列大纲（编排真相源）：`season/outline.md`
 
-## 篇目（9 期，朗读稿已定稿 v2，2026-08-09）
+## Phase A 进度
+- [x] season/outline.md（系列大纲 v2）
+- [x] season/voices.json（12 条真实学者声音：德勒兹/Žižek/Fink/Tallis/吴琼/马元龙/周文莲…，lint 0 BLOCKING）
+- [x] season/arc.json（9 期 opening/closing/controversy/foreshadow）
+- [x] season/bible/voice-guide.md（三人版定稿：拉康专家版阿凯 + 哲学入门版阿哲）
+- [x] season/bible/concept-library.md（概念库）
+- [x] episodes/epNN-*/article.md ×9（独白稿 v2，writer 的素材源）
+- [ ] episodes/epNN-*/script.md ×9（**writer 待写**：article.md → 三人对话逐字稿）
 
-| # | 期 | 这篇回答的问题 | script | audio |
-|---|----|----------------|--------|-------|
-| 1 | ep01-concepts-language | 能指/所指？语言为什么是链？隐喻/换喻怎么让意义动？ | [x] | [ ] |
-| 2 | ep02-concepts-speaking | 划杠主体 $？大他者 A？自我 m vs 主体？需要/要求/欲望？ | [x] | [ ] |
-| 3 | ep03-path-signifying-chain | 意义怎么滑动？après-coup 才落定？缝合点 s(A)？ | [x] | [ ] |
-| 4 | ep04-path-subject-vector | 马蹄形矢线？需要→要求→欲望→幻象怎么接？ | [x] | [ ] |
-| 5 | ep05-path-circle | 屈从为什么是圆圈？需求的环形地狱？Che vuoi 被反抛？ | [x] | [ ] |
-| 6 | ep06-path-mirror | 自我从哪来？i(a)→m？I(A) 为什么「母亲的表情」？ | [x] | [ ] |
-| 7 | ep07-path-upper-chain | 享乐 vs 快乐？S(Ⱥ)？$◇D 为什么在代码位置？语音召唤？ | [x] | [ ] |
-| 8 | ep08-full-graph | 五条路径怎么互锁？朋友圈例子走全程 + 三问自检 | [x] | [ ] |
-| 9 | ep09-critique | 中文世界怎么读？图过时了吗？德勒兹批什么？Fink vs Žižek？ | [x] | [ ] |
+## 篇目（9 期）
 
-## Phase B（TTS）
-- [ ] 全 9 期音频：待合成（`scripts/indextts_synth_blog.py`，单角色老张音色，cut5 断句已并入）
+| # | 期 | 这篇回答的问题 | article | script | audio |
+|---|----|----------------|---------|--------|-------|
+| 1 | ep01-concepts-language | 能指/所指？语言为什么是链？隐喻/换喻？ | [x] | [ ] | [ ] |
+| 2 | ep02-concepts-speaking | $、A、m？需要/要求/欲望？ | [x] | [ ] | [ ] |
+| 3 | ep03-path-signifying-chain | 意义怎么滑动？缝合点 s(A)？ | [x] | [ ] | [ ] |
+| 4 | ep04-path-subject-vector | 马蹄形矢线？逮住的鱼儿？ | [x] | [ ] | [ ] |
+| 5 | ep05-path-circle | 屈从圆圈？Che vuoi？ | [x] | [ ] | [ ] |
+| 6 | ep06-path-mirror | 镜像路 i(a)→m？I(A)？ | [x] | [ ] | [ ] |
+| 7 | ep07-path-upper-chain | 享乐 vs 快乐？S(Ⱥ)？$◇D？ | [x] | [ ] | [ ] |
+| 8 | ep08-full-graph | 五条路径怎么互锁？ | [x] | [ ] | [ ] |
+| 9 | ep09-critique | 中文接受/图过时了吗/德勒兹/Fink vs Žižek | [x] | [ ] | [ ] |
+
+## Phase B（对话稿 + TTS）
+- [ ] script.md ×9：writer 主笔（素材 = article.md + voices + arc + voice-guide）
+- [ ] audio ×9：`scripts/indextts_synth_singleturn.py`（三声线，与 vllm 共用参考音色）
 - 产物位置：`episodes/epNN-*/audio/episode.wav` + `audio/segments/`
 
 ## 环境状态
 - TTS: IndexTTS-2 定案（conda env `itts310`，`models/indextts2`）
 - 发音表：`season/pronunciation.json`（138 条拉康术语读法：`$◇D`→划杠 S 菱形 D、`Écrits`→艾克利、`Žižek`→齐泽克）
-- 参考音色：复用 vllm-podcast 的 `laozhang_16k.wav`（shows/vllm-podcast/voice-samples/）
+- 参考音色：复用 `shows/vllm-podcast/voice-samples/`（laozhang/akai/azhe 16k）
 
 ## 写作纪律（沿袭工厂铁律）
 - 来源真实：概念定义可溯源到 research/ 真实文献，引文带出处；分歧处显式标注
-- 不编造：查不到的宁可删
+- 不编造：查不到的宁可删；拉康引文页码以 r5a 一手核验为准
 - 类比承重：删掉类比后读者仍能答出「这里在讲什么逻辑」
 - 术语首现必展开：术语（法语/英语）+ 一句不靠术语的解释
 
