@@ -2,6 +2,8 @@
   "comment": "拉康欲望图博客栏目发音表（发音真相源）。TTS 合成前把朗读文本里的法语词/专名/图符号替换为中文读法。原则：法语词→中文或注音（中文 TTS 读法语重音词易崩）；专名→通行中译；图符号→口读；英文完整句/书名保留原文（IndexTTS-2 双语可读）。term 按长度降序替换（长短语优先）。",
   "terms": {
     "signifiant du manque dans l'Autre": { "replace": "大他者的能指匮乏" },
+    "le désir de l'homme est le désir de l'Autre": { "replace": "人的欲望是他者的欲望" },
+    "de": { "replace": "德" },
     "l'inconscient est structuré comme un langage": { "replace": "无意识像语言一样被结构" },
     "c'est après coup que le message prend forme": { "replace": "事后才成形" },
     "there is no Other of the Other": { "replace": "没有大他者的大他者" },
@@ -137,6 +139,9 @@
     "terada.ca": { "replace": "特拉达" },
     "schéma": { "replace": "图式" },
     "nous": { "replace": "我们" },
+    "transfert": { "replace": "特兰斯费" },
+    "anticiper": { "replace": "昂蒂西佩" },
+    "je": { "replace": "我" },
     "vs": { "replace": "对" },
     "p.": { "replace": "页" },
     "pp.": { "replace": "页" }
