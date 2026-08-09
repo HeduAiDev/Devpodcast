@@ -1,0 +1,28 @@
+{
+  "show": "lacan-desire",
+  "title": "拉康的欲望图",
+  "book_source": {
+    "kind": "blog-column",
+    "note": "博客栏目：无 repo2book 书源。一手文献核验资料见 season/research/（Seminar V/VI、Subversion 一文、中译本）",
+    "ingested_at": "2026-08-09"
+  },
+  "audience": {
+    "profile": "哲学入门者——有哲学/人文基础，但没读过拉康",
+    "assumed_knowledge": [
+      "哲学基本概念"
+    ],
+    "language": "zh-CN"
+  },
+  "format": {
+    "mode": "blog-monologue",
+    "hosts": 1,
+    "voice": "S1（老张音色 laozhang_16k.wav）",
+    "episodes_planned": 9
+  },
+  "tts": {
+    "provider": "indextts2",
+    "synth_env": "itts310",
+    "synth_script": "scripts/indextts_synth_blog.py",
+    "pronunciation": "season/pronunciation.json"
+  }
+}
