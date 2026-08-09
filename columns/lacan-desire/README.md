@@ -14,7 +14,7 @@
 | 4 | [Che vuoi? 幻象与客体小 a](posts/04-fantasy-object-a.md) | 大他者想要什么？为什么欲望没有对象？幻象 $◇a 是欲望的剧本还是欲望的崩溃阀 |
 | 5 | [大他者的匮乏与享乐](posts/05-lack-jouissance.md) | 规则缺的那颗钉子 S(Ⱥ) 在哪？为什么图的顶端是失败不是满足？J(A) 为什么不是「大他者的爽」 |
 | 6 | [驱力、语音召唤与代码](posts/06-drive-voice-code.md) | 享乐被禁了人为什么还在绕圈？代码为什么是构成层？「被喊到名字」如何先于「我说话」 |
-| 7 | [完整图合读与批判延伸](posts/07-full-graph-critique.md) | 整图三条矢线怎么同时运转？吴琼/褚译、德勒兹、Fink vs Žižek 三场争论，以及三问自检清单 |
+| 7 | [完整图合读与批判延伸](posts/07-full-graph-critique.md) | 五条路径（能指链/主体矢线/屈从圆圈/上层链/镜像路）怎么同时运转？吴琼/褚译、德勒兹、Fink vs Žižek 三场争论，以及三问自检清单 |
 
 阅读顺序：1 → 2 → … → 7。每篇结尾有「→ 下一篇」链接；第 7 篇回链开篇收束。
 
@@ -25,6 +25,8 @@ research/r1-structure.md          欲望图结构本体：四层楼、全部节�
 research/r2-origin-texts.md       原文语境：Subversion 一文、Seminar V/VI、L 图→欲望图演变、中译本
 research/r3-concept-network.md    概念网络：无意识像语言、need/demand/desire、大他者、幻象、S(Ⱥ)、语音召唤/代码
 research/r4-chinese-critical.md   中文接受史（吴琼/张一兵/李新雨）+ 批判与争议（德勒兹、后期转向、Fink vs Žižek）
+research/r5a-seminar-primary-en.md 研讨班一手文本核验（2026-08-09）：Seminar V/VI/X/XI 讲稿 +《Écrits》法文原文逐字核对；图编号定案（Graphe 1/2/3/complet）；引文勘误（代码句出处、pulsion 定义、XI 定位）
+research/r5b-seminar-primary-zh.md 中文世界可得性盘点：研讨班中译本（仅七·商务版）、褚译《拉康选集》两版、图式1 原文摘录、法/英/中公开资源入口
 analysis/concept-library.md       概念库：每个概念的定义 / 平实转述 / 图内位置 / 常见误解 / 关联（写作基准）
 outline.md                        系列大纲：串联逻辑、每篇小节、概念映射、讲解手法
 ```
@@ -58,3 +60,5 @@ python scripts/indextts_synth_blog.py columns/lacan-desire --dry-run
 
 - 拉康欲望图的通行解读（Fink / Žižek / Soler / Eidelsztein 等）在个别点上存在分歧，文章按主流共识写作，分歧处显式标出（如第 5 篇 S(Ⱥ) 与 Φ 共用符号的时间线、第 7 篇 Fink vs Žižek）。
 - 图上节点/图编号以《Écrits》(1966) 及 Fink 英译本为基准；中文译名以褚孝泉译《拉康选集》与吴琼《雅克·拉康：阅读你的症状》为准，两处不同会注明。
+- **一手核验（2026-08-09）**：图编号已逐字定案（Graphe 1 → 2 → 3 → complet，法文版 pp.805/808–809/815/816–820；「Graphe 4」是顺推叫法）；07 篇「五条路径」骨架（向量 S·S' / 向量 ΔS 双重交叉 / s(A)↔A 屈从圆圈 / 上层享乐→阉割 / 镜像路 i(a)→m）均有原文逐字依据（褚译图式1 说明 + Seminar VI 首讲）。
+- 引文勘误已按一手文本修正：06 篇「主体由代码构成…」出处为《Écrits》Graphe 1 评注段（法文版 pp.806–807）非研讨班讲稿；「le besoin devient pulsion」改为原文句 pulsion = ce qui advient de la demande…（p.817）；Seminar XI 引文定位为 1964 年 3 月驱力诸讲（法文版 p.96，回应萨福安提问）；shofar 段直引 STA-F 稿（1963-05-22 讲，Seuil 2004 pp.283–298）。
