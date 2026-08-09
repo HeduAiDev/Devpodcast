@@ -9,6 +9,51 @@ TURN_RE = re.compile(r"\[(S[123])\](.*?)\[/\1\]", re.S)
 VOICE_RE = re.compile(r"\{\{voice:([a-zA-Z0-9_-]+)\}\}")
 BREAK_RE = re.compile(r"<break\s+(\d+)ms\s*>")
 
+# 标点 → 停顿时长（ms）。IndexTTS 自己的标点停顿不受控（同一句号实测 0ms/60ms/270ms
+# 三种结果），所以抢在模型之前切开、由合成器插精确静音。冒号不切（紧跟其后的内容）。
+PUNCT_PAUSE_MS = {
+    "……": 400, "…": 400,   # 省略号：停顿感最强
+    "——": 250, "—": 250,    # 破折号：转折
+    "。": 350, "！": 350, "？": 350,
+    "；": 250,
+    "，": 200,
+    "、": 150,
+}
+# 逗号只在长片段内切——短句本就一口气说完，切开反而破坏语流
+COMMA_MIN_CHARS = 20
+_PUNCT_SPLIT_RE = re.compile(r"(……|…|——|—|[。！？；，、])")
+
+
+def auto_segment(text: str, default_pause: int | None = None) -> list[tuple]:
+    """按标点切成 [(片段, 停顿ms)]，末段停顿沿用 default_pause（手写 <break> 的值）。
+
+    手写 <break> 优先：调用方按 break 切完后，对每个片段调用本函数做细分，
+    该片段原有的 pause 作为 default_pause 留给最后一个子片段。
+    """
+    parts = _PUNCT_SPLIT_RE.split(text)
+    segs: list[tuple] = []
+    buf = ""
+    for i in range(0, len(parts), 2):
+        buf += parts[i]
+        punct = parts[i + 1] if i + 1 < len(parts) else ""
+        if not punct:
+            continue
+        buf += punct
+        pause = PUNCT_PAUSE_MS.get(punct)
+        # 逗号/顿号在短片段内不切，让语流连贯
+        if punct in ("，", "、") and len(buf.strip()) < COMMA_MIN_CHARS:
+            continue
+        if buf.strip():
+            segs.append((buf.strip(), pause))
+        buf = ""
+    tail = buf.strip()
+    if tail:
+        segs.append((tail, default_pause))
+    elif segs:
+        # 文本以标点收尾：末段停顿让位于手写 break
+        segs[-1] = (segs[-1][0], default_pause if default_pause is not None else segs[-1][1])
+    return segs or [(text.strip(), default_pause)]
+
 
 class ScriptParseError(ValueError):
     pass
@@ -49,17 +94,17 @@ def parse(path: Path) -> Script:
         body = m.group(2).strip()
         refs = VOICE_RE.findall(body)
         body_novoice = VOICE_RE.sub("", body)
-        # 按 <break Nms> 切成片段，保留每段后的停顿时长（turn 内停顿控制）
+        # 先按 <break Nms> 切（手写停顿优先），再对每片按标点细分（自动兜底）
         seg_parts = []
         last = 0
         for bm in BREAK_RE.finditer(body_novoice):
             seg_text = body_novoice[last:bm.start()].strip()
             if seg_text:
-                seg_parts.append((seg_text, int(bm.group(1))))
+                seg_parts.extend(auto_segment(seg_text, int(bm.group(1))))
             last = bm.end()
         tail = body_novoice[last:].strip()
         if tail:
-            seg_parts.append((tail, None))
+            seg_parts.extend(auto_segment(tail, None))
         if not seg_parts:  # 兜底
             seg_parts = [(body_novoice.strip(), None)]
         bm_first = BREAK_RE.search(body_novoice)
