@@ -29,6 +29,24 @@ analysis/concept-library.md       概念库：每个概念的定义 / 平实转�
 outline.md                        系列大纲：串联逻辑、每篇小节、概念映射、讲解手法
 ```
 
+## 音频生产（TTS）
+
+博客是单角色朗读（老张音色，与播客 S1 同款）。管线已就绪，待 TTS 环境（IndexTTS-2 权重 + itts310 + ffmpeg）：
+
+```bash
+# 全 7 篇
+D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire
+# 单篇重跑
+D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire --only 01
+# 无模型环境预览清洗+发音表效果（本机可跑）
+python scripts/indextts_synth_blog.py columns/lacan-desire --dry-run
+```
+
+产物：`audio/NN-slug.wav`（22050Hz）+ `audio/segments/NN-*_turn*.wav`。与播客同链：拆段护栏 / 剪边 / 插静音 / 响度 -17dB / atempo 0.88x。
+
+- **发音表**：`pronunciation.json`（发音真相源）。拉康术语/图符号→中文读法（`$◇D`→划杠 S 菱形 D、`Écrits`→艾克利、`Žižek`→齐泽克…）；英文引文/书名保留原文。改文章术语前先查这里。
+- **清洗规则**（`scripts/indextts_synth_blog.py`）：剔代码块（ASCII 图）/ 剔导航行 / 表格转口语 / 删括号内纯外语注释 / 删括号开头拉丁前缀（「（signifiant de l'Autre——中文」→「（中文」）。
+
 ## 写作纪律（本栏目沿袭 devpodcast 工厂铁律）
 
 - **来源真实**：一切概念定义可溯源到研究笔记中的真实文献（书/研讨班/论文）；引文带出处文本名；拿不准的细节标注置信度或写明「学者间有分歧」。
