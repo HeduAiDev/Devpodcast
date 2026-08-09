@@ -5,15 +5,15 @@
   "pass": true,
   "issues": [
     {
-      "problem": "script.md:133 引述边界超界：「尾延迟回归正常」位于 {{voice:voice-028}} 引述段内（「里面是这么写的——…尾延迟回归正常。这两组数字，都是论文里的实测」），但 voices.json voice-028 的 claim 记录只含「28 倍推高」与「2.6x–6.9x 吞吐提升」两组数字，没有「尾延迟回归正常」这一句。",
-      "suggested_fix": "该表述有 arc.json ep02 counter（「同时 p99 回归正常」）支撑、事实无误，可保留；但严格起见，把「尾延迟回归正常」移到引述标记之外，作为阿凯自己的总结（如：……吞吐提升 2.6 倍到 6.9 倍。这两组数字，都是论文里的实测。顺便说，同一篇论文里尾延迟也回归了正常）。",
-      "rationale": "原声保真维：引述内容以 voices.json 的 claim 记录为核对基准，引述段内不应出现 claim 记录之外的断言；arc 层支撑的结论应作为口播评论放在引述边界外，避免被听众读成论文原话。",
+      "problem": "script.md:157 voice-028 引述跨度内混入无源内容：「——吞吐提升 2.6 倍到 6.9 倍，尾延迟回归正常。这两组数字，都是论文里的实测。」——「尾延迟回归正常」不在 voices.json voice-028 的 claim 记录中（原文只有「28 倍 ITL 推高」与「2.6x–6.9x 吞吐提升」两组数据），episode-card.json 亦无支撑；但它夹在「里面是这么写的——」的归属框架之内，听众会把它当作 Sarathi-Serve 论文的实测结论。",
+      "suggested_fix": "把「尾延迟回归正常」移出引述跨度，改为阿凯自己的推论并放在引述边界外，例如：「——吞吐提升 2.6 倍到 6.9 倍。这两组数字，都是论文里的实测。尾延迟也跟着回到正常水平——这是我按 28 倍推高反推的。」或直接删去该分句。",
+      "rationale": "原声保真维：引述内容以 voices.json 的 claim 记录为核对基准，档位 (a) 重合成允许原文重读，但不允许向归属引文内添加 claim 记录之外的断言——这与「数字不漂移」同源，属引文完整性问题。",
       "blocking": false
     },
     {
-      "problem": "script.md:161 引述档位标注高估：voice-004 是 community-only（未一手核实、confidence=medium、档位 (a) 重合成）的牛客面经转述，脚本却在引述后标注「这是他的原话」，把重合成文本标成逐字原话；同一期对 voice-005（script.md:13）和 voice-003（script.md:117）都用了「原话大概这个意思」「大意是这样」的转述标记，口径不一致。",
-      "suggested_fix": "把「这是他的原话」改为「他是这么说的」或「大意是这样」，与 voice-003/voice-005 的转述标记口径对齐；若 writer 已核实面经原文为逐字，则保留并在 production-notes 说明核实依据。",
-      "rationale": "原声保真维：引述边界标注要与该条目的 verified/confidence 层次匹配——community-only 的重合成条目不应标成逐字原话，否则把「有人这么说」的层次抬高到「原话如此」。",
+      "problem": "script.md:185 引述层次标注偏高：voice-004 是 verified=community-only、confidence=medium、档位 (a) 重生成的牛客面经转述，脚本在引述收尾标注「这是他的原话」，把重合成文本标成逐字原话；同期对 voice-005（script.md:21「原话大概这个意思」）和 voice-003（script.md:141「大意是这样」）都用了转述标记，口径不一致。",
+      "suggested_fix": "把「这是他的原话」改为「他是这么说的」或「大意是这样」，与 voice-003/voice-005 的转述口径对齐；若 writer 已一手核实面经原文为逐字，可保留并在 production-notes 说明核实依据。",
+      "rationale": "原声保真维：claim vs verified 层次必须保持——community-only 的重合成条目标成「原话」，等于把「有人这么转述」的层次抬高到「原话如此」，与本维「community-only 说成事实 = 事故」的纪律同向（程度较轻，故不阻断）。",
       "blocking": false
     }
   ]

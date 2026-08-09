@@ -5,40 +5,41 @@
   "pass": false,
   "issues": [
     {
-      "problem": "script.md:57「而且这里没有 prefill 相、decode 相之分——不分成两个阶段排队」——decode 在系列内首现（ep01/script.md:269 只口头定义过 prefill，从未定义 decode），此处无任何口头解释，还叠了一个未解释的「相」（phase）；而 decode 是全期最承重的术语，后续反复出现 15+ 次（行 113、125、129、133、141、145、153、161、165），到行 113「一次 60 毫秒的 prefill，让 23 个在飞的 decode 流全排队」时，没绑定过术语的听者已经掉线。行 81「decode 一次前向，每个请求刚好吐一颗新 token」其实是 decode 的功能性解释，但没点名「decode」，绑定关系不成立。",
-      "suggested_fix": "在行 57 补一句话把两个术语绑上（顺带消掉「相」），例如：「而且这里没有先集中喂新请求、再逐个续写的两个阶段之分——prefill 就是第一次把整段提示词喂进去、算出第一颗 token 的那一趟，decode 是之后每拍续写一颗新 token 的那一趟——所有请求统一按 token 数一视同仁。」若嫌长，至少把行 81 改成点名绑定：「decode——就是每拍给每个请求续写一颗新 token——补多了也用不上」。",
-      "rationale": "口播可懂维契约：术语首现必须有口头解释（spec §12.3「术语首现有没有口头解释」）。decode 是本期批判展开（Marcus trace、Sarathi 数据、chunked prefill 对比）的前提概念，首现句还用了「相」+ 双否定结构，是闭眼听最容易脱轨的一句。",
+      "problem": "全稿 0 处 `<break 300ms>` 术语停顿（grep '<break' script.md = 0），违反 voice-guide.md 节奏纪律 §3（口播硬约束）：「之后每次出现，术语后用 <break 300ms> 垫出停顿……这是唯一可靠的停顿方式」。高频复现英文/代码术语全部裸读：execute model（L31、L233、L259、L271，L235 有逐字母拼写但前后复现位仍无停顿）、sample tokens（L31、L255、L279、L299）、update from output（L27、L31、L297）、prepend request（L213、L231）、max num batched tokens（L65）、Scheduler Output（L109）、collective RPC（L251）、check_stop（L303）。对照基准：ep01（同季同 guide、已评审归档）同规则下落实了 17 处 `<break 300ms>`；c3891ad 把节奏纪律标注为「口播硬约束」；当前 IndexTTS 单句合成管线注释实测「IndexTTS 标点停顿是随机的（句号 0.24s vs 0.02s 不稳定），可靠的停顿只能拆段插静音」（scripts/indextts_synth_singleturn.py:77）——即标点停顿顶不上，没有 break 的英文术语会被语速吞掉边界（「executeModel它」「sampleTokens收尾」连读），闭眼听众丢失术语锚点。当前 episode.wav（08-09 01:12 合成）正是按这份零 break 文本合成的，audio-qa 机械指标全过但掩盖不了术语无气口。",
+      "suggested_fix": "writer 按节奏纪律 §3 补 `<break 300ms>`：术语后、完整子句边界（前后 ≥14 字，别挂短片段后——§3 尾部护栏与合成器 MIN_SEG_CHARS=14 一致）。至少覆盖：L233/L259/L271 execute model 复现位、L255/L279/L299 sample tokens 复现位、L297 update from output、L213/L231 prepend request、L65 max num batched tokens、L109 Scheduler Output、L251 collective RPC、L303 check_stop；L31 四步连读处（schedule/execute model/sample tokens/update from output 一口气报四个名）同样需要断。补完后按 episode-pipeline 惯例重合成 episode.wav + 重跑 audio-qa（workflow 调度侧动作，同 9bf3f5f 已固化的「REVISE 后重合成」路径）。",
+      "rationale": "口播可懂维契约（spec §12.3「闭眼只听能不能跟上」）+ voice-guide.md 节奏纪律 §3（口播硬约束，术语后 break 是「唯一可靠的停顿方式」）。同季 ep01 是已通过的执行基准（17 处），ep02 现稿零落实，是硬约束级缺失而非风格裁量。",
       "blocking": true
     },
     {
-      "problem": "script.md:121「所以判据里才说，实时服务得自己加优先级队列」——「判据」在此前从未出现或定义（判据要到行 151-153 才由 S1 索要、S2 给出），此处是孤悬引用，听者会疑惑「什么判据？什么时候说过？」。",
-      "suggested_fix": "删掉孤悬引用，改为直接表述：「所以真上生产，实时服务得自己加优先级队列」，或显式预告：「这其实就是本期结尾要给你们的判据的第一条——实时服务得自己加优先级队列」。",
-      "rationale": "口播可懂维契约：闭眼只听能不能跟上。向未定义对象指代是纯听觉下无法追溯的断裂。",
+      "problem": "script.md:53「schedule 不依赖 logits」——logits 首现无任何口头解释，之后在 L237、L239、L241、L243、L255 反复出现（采样段的承重词），全期没有一句话把它绑到已知概念上。阿哲对 p50/p99（L131）、OSDI（L159）、EOS（L305）、停止词（L313）都喊停要了解释，logits 这个贯穿「盒子—采样」段落的词却零解释，与他「不懂就问」的节奏守卫人设不符；最接近的锚是 L267「从模型算出的概率分布里抽一颗」，但没点明「这概率分布就是 logits 给的」，闭眼听众无法自己完成绑定。",
+      "suggested_fix": "在 L53 或 L239 补一句 ≤10 字的直觉锚，例如 L239 改为「所有输出——logits，就是模型给每个候选词打的分，还有 hidden states——缓存在一个盒子里」；或由阿哲在 L237 顺势问一句「logits 是啥」让阿凯钉死。",
+      "rationale": "口播可懂维契约：术语首现必须有口头解释（spec §12.3）；voice-guide S2 人格「新名词先给直觉、再给准确定义」。logits 是 sample tokens 段的输入概念，缺锚则 L245-L271 的「解包盒子做采样」闭环对闭眼听众是悬空的。",
       "blocking": false
     },
     {
-      "problem": "script.md:161 voice-004 引语内含「PD 分离后的优化策略」——「PD 分离」缩写未展开；引语保真不能动，但紧随其后的 S2 应答只有一句「这是他的原话」，没有给听者补上缩写含义。",
-      "suggested_fix": "在「这是他的原话」之后补半句展开：「PD 分离，就是 prefill 和 decode 分开来算的意思」——不改引语，只扩 S2 应答。",
-      "rationale": "口播可懂维契约：术语首现口头解释。缩写是听觉上最难自解的形态；引语三档策略（voices.json 档位 (a) 重合成）不阻止应答侧补释。",
+      "problem": "script.md:145「所以判据里才说，实时服务得自己加优先级队列」——「判据」此前从未出现或定义（判据要到 L175 才由老张索要、L177 由阿凯给出），此处是向前引用断裂：纯听觉下听众无法回溯「什么判据、谁说的」。",
+      "suggested_fix": "改为直接表述：「所以真上生产，实时服务得自己加优先级队列」；或显式预告：「这就是本期结尾要给的判据的第一条——实时服务得自己加优先级队列」。",
+      "rationale": "口播可懂维契约：闭眼只听能不能跟上——指向未建立对象的指代在纯听觉下无法追溯。",
       "blocking": false
     },
     {
-      "problem": "script.md:37「多机并行或者异步调度的时候，走 step with batch queue」——「step with batch queue」首现无中文绑定（发音表 pronunciation.json 会译成「批量队列步进」，但脚本层面听者听到的是英文短语，且「step」在此的动词义「推一拍」靠前句语境才成立）。",
-      "suggested_fix": "改为中文先行：「走批量队列的 step（step with batch queue）」或「走 step with batch queue，就是带批量队列的一拍一拍推」。",
-      "rationale": "口播可懂维契约：术语首现口头解释；中文先行符合 pronunciation.json 对同类方法名的直译处理（批量队列步进）。",
+      "problem": "script.md:185 voice-004 引语内含「PD 分离后的优化策略」——「PD 分离」缩写未展开；引语保真不可动（voices.json 原话），但 L189 应答只说「那是后面讲 GPU 执行那期的事，今天先不展开」，没有给听者补缩写含义，缩写在听觉上是最难自解的形态。",
+      "suggested_fix": "不改引语，只在应答侧补半句：「PD 分离——就是 prefill 和 decode 分开跑——各自的瓶颈细节，那是后面讲 GPU 执行那期的事」。",
+      "rationale": "口播可懂维契约：术语首现口头解释；引述三档策略不阻止应答侧补释（引语不动，解说动）。",
       "blocking": false
     },
     {
-      "problem": "script.md:109「p50 从 340 毫秒降到 190 毫秒。p99 从 1.2 秒飙到 9.8 秒，p99.9 从 2.1 秒跳到 27 秒」——p50/p99/p99.9 首现无口头解释，而这些数字是本期批判的承重墙（行 111 的 8 倍、13 倍都从它们来）。",
-      "suggested_fix": "在首个数字前加半句锚定：「先解释一下：p99 就是最慢的那百分之一请求的延迟」——其余沿用。",
-      "rationale": "口播可懂维契约：术语首现口头解释；voice-guide S2 人格「数字先给量级」，先锚定百分位语义再给数字，数字才承重。",
+      "problem": "script.md:157「Sarathi-Serve 在 OSDI 2024 发了篇论文」——专名 Sarathi-Serve 无口头定位（它是什么来头），且 pronunciation.json 无该条目（replace 表无 Sarathi-Serve），听众抓到的是一个模糊外文词，紧随其后的「28 倍」「2.6 到 6.9 倍」两组承重数据的归因落不到实处。",
+      "suggested_fix": "writer 加定位语：「Sarathi-Serve，一个做推理系统优化的研究团队，在 OSDI 2024 发了篇论文」；pronunciation.json 补 Sarathi-Serve 条目属 archivist 侧动作，writer 无需动表。",
+      "rationale": "口播可懂维契约：闭眼只听能跟上——未定位的外文专名在听觉上是噪声；定位语同时让批判段的关键数据（28 倍）可归因。",
       "blocking": false
     },
     {
-      "problem": "script.md:133「Sarathi-Serve 在 OSDI 2024 发了篇论文」——专名 Sarathi-Serve 无发音指引（pronunciation.json 无条目，TTS 可能逐字母念）也无口头定位，听者抓到的是一个模糊外文词。",
-      "suggested_fix": "给专名一个口头定位：「Sarathi-Serve，一个做推理系统优化的研究团队，在 OSDI 2024 发了篇论文」。pronunciation.json 补条目属 archivist 侧，writer 只需加定位语。",
-      "rationale": "口播可懂维契约：闭眼只听能跟上——未定位的外文专名在听觉上是噪声；定位语同时让「28 倍数据出自哪里」可归因。",
+      "problem": "script.md:49「多机并行或者异步调度的时候，走 step with batch queue」——「step with batch queue」首现无中文绑定（后句「内核是同一个，只是驱动方式不同」解释了功能差异，但没给这串英文一个中文落点；pronunciation.json 中该条目 replace 为空、按原文朗读）。",
+      "suggested_fix": "中文先行绑一次：「走 step with batch queue——带批量队列的推拍方式」或「走批量队列版的 step（step with batch queue）」。",
+      "rationale": "口播可懂维契约：术语首现口头解释；长英文短语无中文落点是闭眼听众的脱轨点（该句为支线提及，故不阻断）。",
       "blocking": false
     }
-  ]
+  ],
+  "note": "本维复查范围与通过项：1) 视觉依赖表述零检出（grep「如图/看这段/这张」等无命中）；2) 术语首现口头解释纪律总体优秀——prefill/decode（L75-77 阿哲喊停、阿凯钉死）、p50/p99（L131-133）、OSDI（L159-161）、LIFO（L201）、FCFS（L213）、EOS（L305-307）、停止词（L313-315）、check_stop（L303）、collective RPC（L251）、Scheduler Output（L109）均首现即释或喊停即释；3) 口播路标清晰：四步边界有老张显式报站（L63 第一步、L191「回到心跳」、L233 第二步、L297 最后一步），L45/L331 两次复述钉住「定人算分选词记账」；4) 数字密集段（L129）有老张 L135 口语复述兜底；5) 单段长度：全文仅 L157 超 200 字（206 字，含 18 字 voice 占位符，实读约 188 字），不违 200 字纪律；6) 音频：audio-qa.json issues 为空（无削波/静音/时长问题，直接引用不重复质检）；episode.wav（08-09 01:12）晚于 script.md 定稿（08-09 00:31），旧 cycle r3 的「音频滞后于定稿」阻断项已随重合成消解。本维唯一阻断项是术语 <break 300ms> 全稿缺失（issue 1），修后需按管线惯例重合成音频。run-ledger.json 按契约由 factual_accuracy 维写入，本维不触碰。"
 }

@@ -1,15 +1,15 @@
 {
   "episode_id": "ep03",
-  "run": 1,
-  "verdict": "pass",
-  "note": "run-ledger 仅由 factual_accuracy 维写入（防 6 维并行写同一文件竞态）。r1 六维全 pass：机制断言全部有 episode-card/source-book chapter-cards 支撑（ch14/15/16/18 逐条对齐），9 处引述数字与 voices.json 无漂移；arc.json ep03 的 payoff（抢占循环 + skipped_waiting 双队列，L161-L193）与 foreshadow（block_table Triton kernel → ep04，L237-L253 + L323）均已落地；「我不知道」两处（L273/L307）复核为真不知道非回避；求职者视角恰好 2 处且均挂真实 voices（voice-009/voice-024）；voice-guide 性格契约（S1 不捧哏不假装惊叹、S2 不背书）通过，轮次比 81/81=50%。无阻断项。留档事实（非本维阻断，Lead 决策面）：成片时长 1493.9s（24.9 分钟）仅为 target 35 分钟的 71%——TTS 实际语速约 5.4 字/秒，超出 production-notes 按 4 字/秒的估算（33.5-38.3 分钟）；audio-qa 时长门禁只查上限不查下限故通过；接受 25 分钟成片 / 调 target / 扩内容三选一由 Lead 拍板（spec「单期时长 config 默认 35 分钟，随时可调」），详见 r1-spoken_clarity.json issue 3。另：r1-spoken_clarity 两条非阻断润色项（L277「UCX 钩子」补半句口头解释、L285「P90」垫一句量级）、r1-quote_fidelity 一条非阻断措辞项（L285「原话如此」/L299「这是他们的原话」与全剧转述档措辞统一），均可改可不改，writer 裁量，不影响本轮 pass。音频侧：audio-qa issues 为空，脚本定稿 04:16 早于音频合成 06:15-06:16，无版本同步遗留问题。",
+  "run": 2,
+  "verdict": "pending",
+  "note": "run-ledger 仅由 factual_accuracy 维写入（防 6 维并行写同一文件竞态）。第 2 轮（2026-08-09，针对 writer 04:39 定稿）只复审 r1 fail 的两维。factual_accuracy 维 pass：r1 唯一阻断项（L337『80%』跨来源拼接）已按 suggested_fix (a) 修复——『80%』删除、170 倍挂回 voice-007 自有实验条件（150 客户 / 每客户 6000 token 共享系统提示词），与 voices.json 逐字对齐；因定稿晚于全部 r1 评审落盘，本轮对当前稿全维重扫，9 处引述数字、时间表述、派生数字、机制断言、两处『我不知道』均复核无回退，无新增 issue。quote_fidelity 维 r2 由并行 agent 复审中（其 r1 阻断项 L139 的归属表述在当前稿已改写为『当场考点 + 这类追问一般会细到』，与其 suggested_fix 范式一致，但结论以该维 r2-quote_fidelity.json 落盘为准），本 ledger 标记 pending。critical_depth / spoken_clarity / voice_balance / job_seeker_resonance 四维 r1 均 pass（仅含非阻断项），按回环规则第 2 轮不复审，沿用 r1 结论。coverage=full，无降级知情。verdict=pending：待 quote_fidelity r2 落盘后由 workflow 汇总裁定；若其 pass 则本轮整体 pass，若仍 fail 则进入第 3 轮只看未清阻断项。",
   "dimensions": {
     "factual_accuracy": "pass",
-    "critical_depth": "pass",
-    "spoken_clarity": "pass",
-    "voice_balance": "pass",
-    "job_seeker_resonance": "pass",
-    "quote_fidelity": "pass"
+    "critical_depth": "pass (r1, 未复审)",
+    "spoken_clarity": "pass (r1, 未复审)",
+    "voice_balance": "pass (r1, 未复审)",
+    "job_seeker_resonance": "pass (r1, 未复审)",
+    "quote_fidelity": "pending (r2 复审中)"
   },
   "factual_accuracy_blockers": 0,
   "factual_accuracy_nonblocking": 0

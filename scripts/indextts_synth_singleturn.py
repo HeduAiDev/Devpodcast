@@ -24,9 +24,9 @@ VS = REPO / "shows" / "vllm-podcast" / "voice-samples"
 
 # IndexTTS2 用 16kHz mono 参考（已预转好）
 REFS = {
-    "S1": str(VS / "laozhang_16k.wav"),   # 老张（主持人）
-    "S2": str(VS / "akai_16k.wav"),       # 阿凯（作者/技术大佬）
-    "S3": str(VS / "azhe_16k.wav"),       # 阿哲（北京话主持人，Qwen dylan 克隆）——读者代言人
+    "S1": str(VS / "laozhang_16k.wav"),          # 老张（主持人）
+    "S2": str(VS / "akai_firered_16k.wav"),      # 阿凯（作者/技术大佬）—— FireRed 重读慢速稿+0.9x，修连读
+    "S3": str(VS / "azhe_16k.wav"),              # 阿哲（北京话主持人，Qwen dylan 克隆）——读者代言人
 }
 OUT_SR = 22050  # IndexTTS2 BigVGAN v2 输出采样率
 
@@ -74,36 +74,67 @@ def main():
     tts = IndexTTS2(cfg_path=CFG, model_dir=MODEL_DIR, use_fp16=False, device="cuda")
     print(f"[load] 模型加载 {time.time()-t0:.1f}s", flush=True)
 
+    # <break Nms> 拆段合成（确定性停顿）。IndexTTS 标点停顿是随机的（句号 0.24s vs 0.02s 不稳定），
+    # 可靠的停顿只能拆段插静音。但拆段会把短片段拉长（「好问题。」→「好~问题」），所以：
+    #   1. 长度护栏——片段 <14 字就并进相邻段（不孤立短片段）
+    #   2. 每段先剪首尾静音再插精确时长——停顿可控（不会因片段自带边缘静音叠加而偏长）
+    MIN_SEG_CHARS = 14
+    SIL_DB = 10 ** (-45 / 20)
+
+    def _trim_edges(x, sr):
+        n = int(0.02 * sr); m = len(x) // n
+        if m < 3:
+            return x
+        rms = np.sqrt((x[: m * n].reshape(m, n) ** 2).mean(1) + 1e-12)
+        voiced = rms > SIL_DB
+        idx = np.where(voiced)[0]
+        if len(idx) == 0:
+            return x
+        a = max(0, idx[0] * n - int(0.05 * sr))
+        b = min(len(x), (idx[-1] + 1) * n + int(0.05 * sr))
+        return x[a:b]
+
     for i, t in enumerate(turns):
         out_wav = seg / f"turn{i:03d}.wav"
         if out_wav.exists():
             continue
         ref = REFS.get(t.speaker, REFS["S1"])
         t1 = time.time()
-        # turn 内 <break Nms> 拆片段：逐段合成 + 插静音（修断句连读）
-        segs = t.segments if getattr(t, "segments", None) else [((t.text or "").strip(), None)]
-        seg_audios = []
-        for seg_text, seg_pause in segs:
-            st = apply_pron(seg_text.strip(), pron_map)
+        # 按 <break Nms> 切片段 + 长度护栏
+        raw_segs = t.segments if getattr(t, "segments", None) else [((t.text or "").strip(), None)]
+        # 护栏：把过短片段并入后一段（其 pause 也带走）
+        merged_segs = []
+        for txt, pause in raw_segs:
+            if merged_segs and len(txt.strip()) < MIN_SEG_CHARS and merged_segs:
+                # 太短 → 并到上一段末尾（pause 顺延）
+                ptxt, ppause = merged_segs[-1]
+                merged_segs[-1] = (ptxt + txt, pause if pause is not None else ppause)
+            else:
+                merged_segs.append((txt, pause))
+        # 逐段合成 + 剪边 + 按 pause 插静音
+        seg_clips = []
+        for txt, pause in merged_segs:
+            st = apply_pron(txt.strip(), pron_map)
             if not st:
                 continue
-            tmp = seg / f"_part{i:03d}_{len(seg_audios)}.wav"
+            tmp = seg / f"_brk{i:03d}_{len(seg_clips)}.wav"
             tts.infer(spk_audio_prompt=ref, text=st, output_path=str(tmp))
             x, sr = sf.read(str(tmp), dtype="float32")
             if x.ndim > 1:
                 x = x.mean(1)
-            seg_audios.append((x, sr, seg_pause))
+            x = _trim_edges(x, sr)
+            seg_clips.append((x, sr, pause))
             tmp.unlink()
-        if seg_audios:
-            target_sr = seg_audios[0][1]
+        if seg_clips:
+            tsr = seg_clips[0][1]
             merged = []
-            for x, sr, pause in seg_audios:
+            for x, sr, pause in seg_clips:
                 merged.append(x)
                 if pause:
                     merged.append(np.zeros(int(sr * pause / 1000), dtype="float32"))
             audio = np.concatenate(merged)
-            sf.write(str(out_wav), audio, target_sr)
-        print(f"turn{i:03d} [{t.speaker}] done: {time.time()-t1:.1f}s ({len(seg_audios)} 段)", flush=True)
+            sf.write(str(out_wav), audio, tsr)
+        print(f"turn{i:03d} [{t.speaker}] done: {time.time()-t1:.1f}s ({len(seg_clips)} 段)", flush=True)
 
     # 处理：逐 turn 响度归一化（修阿哲音量低）→ 拼接 → ffmpeg atempo 变速降速（修语速快）
     # 注意：变速用 ffmpeg atempo（WSOLA，保调无回音），绝不用 librosa time_stretch（相位声码器产生回音/发散）

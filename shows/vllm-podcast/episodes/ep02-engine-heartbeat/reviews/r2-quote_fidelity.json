@@ -5,22 +5,17 @@
   "pass": true,
   "issues": [
     {
-      "problem": "script.md:133 引述边界超界（r1 未清，本轮复核仍存在）：「尾延迟回归正常」与「也就是 chunked prefill」仍在 {{voice:voice-028}} 引述段内（「里面是这么写的——…也就是 chunked prefill，吞吐提升 2.6 倍到 6.9 倍，尾延迟回归正常。这两组数字，都是论文里的实测」）。voices.json voice-028 的 claim 记录止于「28 倍推高」与「2.6x–6.9x 吞吐提升」两组数字，不含「尾延迟回归正常」；「也就是 chunked prefill」是主持人对引述内容的口头标注（把口语描述绑到术语名），同样属于引述段内的叙事插入。",
-      "suggested_fix": "把「尾延迟回归正常」移到引述标记之外、作为阿凯自己的总结：「……吞吐提升 2.6 倍到 6.9 倍。这两组数字，都是论文里的实测。顺便说，同一篇论文里尾延迟也回归了正常。」「也就是 chunked prefill」同样改为引述外的口播解释：「把长 prefill 切成小块、插在 decode 批中间跑——这套做法叫 chunked prefill——吞吐提升 2.6 倍到 6.9 倍。」",
-      "rationale": "原声保真维契约（spec §12.3）：引述内容以 voices.json 的 claim 记录为核对基准，引述段内不应出现 claim 记录之外的断言或解释；arc.json ep02 counter 有「同时 p99 回归正常」支撑该事实，但 arc 层支撑的结论应作为口播评论放在引述边界外，避免被听众读成论文原话。",
+      "problem": "script.md:157 voice-028 引述跨度内仍混入无源内容（本轮 r1 非阻断项，当前稿未修）：「——吞吐提升 2.6 倍到 6.9 倍，尾延迟回归正常。这两组数字，都是论文里的实测。」——「尾延迟回归正常」不在 voices.json voice-028 的 claim 记录中（原文只有「28 倍 ITL 推高」与「2.6x–6.9x 吞吐提升」两组数据），episode-card.json 亦无支撑；但它夹在「里面是这么写的——」的归属框架之内，听众会把它当作 Sarathi-Serve 论文的实测结论。本轮逐字比对：28 倍、2.6/6.9 倍、OSDI 2024 归属、「也就是 chunked prefill」的口头标注均与 claim 一致，唯此分句无源。",
+      "suggested_fix": "把「尾延迟回归正常」移出引述跨度，改为阿凯自己的推论并放在引述边界外，例如：「——吞吐提升 2.6 倍到 6.9 倍。这两组数字，都是论文里的实测。尾延迟也跟着回到正常水平——这是我按 28 倍推高反推的。」或直接删去该分句。",
+      "rationale": "原声保真维：引述内容以 voices.json 的 claim 记录为核对基准，档位 (a) 重合成允许原文重读，但不允许向归属引文内添加 claim 记录之外的断言——这与「数字不漂移」同源，属引文完整性问题。本轮维持非阻断判定：程度较轻且无新增曲解，writer 可裁量。",
       "blocking": false
     },
     {
-      "problem": "script.md:161 引述档位标注高估（r1 未清，本轮复核仍存在）：「这是他的原话」仍标注在 voice-004 之后。voice-004 是 community-only（未一手核实、confidence=medium、档位 (a) 重合成）的牛客面经转述，重合成文本不等于逐字原话；且同稿对 voice-005（script.md:13「原话大概这个意思」）与 voice-003（script.md:117「大意是这样」）用了转述标记，口径不一致。",
-      "suggested_fix": "把「这是他的原话」改为「他是这么说的」或「大意是这样」，与 voice-003/voice-005 的转述标记口径对齐；若 writer 已核实面经原文为逐字，则保留并在 production-notes 说明核实依据。",
-      "rationale": "原声保真维契约：引述边界标注要与该条目的 verified/confidence 层次匹配——community-only 的重合成条目不应标成逐字原话，否则把「有人这么说」的层次抬高到「原话如此」，是 claim vs verified 层次失真。",
-      "blocking": false
-    },
-    {
-      "problem": "script.md:121 claim vs verified 层次的反向打破（r1 critical_strength 已记同条，本维从层次保持角度复述，避免口径冲突）：L117 刚声明 voice-003「具体场景我们没核实到」，L121 S2 即以「预算总数是对的」平直断言驳回该社区报告的账目前提。voices.json 中没有任何已核实证据支撑「预算总数是对的」这一断言——未核实的社区报告既不能被升级为事实，也不能被主持人断言压灭，两个方向的处置要对称。",
-      "suggested_fix": "把 L121 归因改为带保留语气的推断：「我们怀疑不是账算错，是默认配置里压根没写公平——但这条我们没核实，只能说到这儿。」把「是」改成「怀疑是」，推断标记为推断。",
-      "rationale": "原声保真维契约（spec §12.3）：claim vs verified 的层次必须保持——community-only 材料（voice-003，claim-self-checked 但 confidence=medium、匿名）与已核实证据（voice-027 trace）的证明力不能靠主持人断言拉平；降级标记（「没核实」）一旦给出，后续断言必须与之同层。",
+      "problem": "script.md:185 引述层次标注仍偏高（本轮 r1 非阻断项，当前稿未修）：voice-004 是 verified=community-only、confidence=medium、档位 (a) 重生成的牛客面经转述，脚本在引述收尾标注「这是他的原话」，把重合成文本标成逐字原话；同稿对 voice-005（script.md:21「原话大概这个意思」）和 voice-003（script.md:141「大意是这样」）都用了转述标记，口径不一致。",
+      "suggested_fix": "把「这是他的原话」改为「他是这么说的」或「大意是这样」，与 voice-003/voice-005 的转述口径对齐；若 writer 已一手核实面经原文为逐字，可保留并在 production-notes 说明核实依据。",
+      "rationale": "原声保真维：claim vs verified 层次必须保持——community-only 的重合成条目标成「原话」，等于把「有人这么转述」的层次抬高到「原话如此」，与本维「community-only 说成事实 = 事故」的纪律同向（程度较轻，维持非阻断）。",
       "blocking": false
     }
-  ]
+  ],
+  "r2_notes": "本轮全量复核 5 处 voice 锚点（voice-005/027/003/028/004，均在 episode-card voices_refs 内）：(1) 引述内容逐字比对 voices.json claim 记录——voice-027 全部数字（p50 340→190ms、p99 1.2s→9.8s、p99.9 2.1s→27s、60ms prefill、23 流、81% 利用率，L129/L137）精确一致；voice-003/005/004 引文与 claim 对齐，无曲解。(2) claim vs verified 层次：voice-003（medium）带「具体场景我们没核实到」对冲（L141）、voice-027（high）实名 trace 直引，层次保持；唯 voice-004「原话」标注偏高（见 issue 2）。(3) 匿名化：voice-003→「匿名用户的反馈」、voice-004→「牛客上一位做后端的前辈」，anonymized=true 条目均未泄漏 handle；voice-027 实名指名（anonymized=false）合规。(4) 引述边界：5 处均有边界标记（L21「原话大概这个意思」、L129「他给的就是这些数字」、L141「大意是这样」、L157「这两组数字，都是论文里的实测」、L185「这是他的原话」），档位 (a)/(c) 与标记口径除 voice-004 外一致。(5) 时间状语：voice-005「今年」=2026-05、voice-027「今年五月」=2026-05-28、voice-003「去年」=2025-12-15，均与 source_date 对齐。(6) 旧周期（2026-08-07）r2 档曾就 L145「预算总数是对的」提层次对称疑虑——本轮复核裁定不构成违反：该句是调度器机制层断言（token 预算记账按设计工作，episode-card ch11 有支撑），并非把 voice-003 的未核实场景说成事实，且 L141 的「没核实到」对冲未被撤销，claim vs verified 层次保持。audio-qa.json 无 issues。无新增问题；本轮 r1 两条非阻断项原样存续，severity 不变，本维 pass。"
 }

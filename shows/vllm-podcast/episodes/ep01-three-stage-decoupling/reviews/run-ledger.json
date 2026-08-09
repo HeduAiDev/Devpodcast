@@ -2,13 +2,13 @@
   "episode_id": "ep01",
   "run": 1,
   "dimensions": {
-    "factual_accuracy": {"pass": true, "blocking_issues": 0},
-    "critical_depth": {"pass": true, "blocking_issues": 0},
-    "spoken_clarity": {"pass": true, "blocking_issues": 0},
-    "voice_balance": {"pass": true, "blocking_issues": 0},
-    "job_seeker_resonance": {"pass": true, "blocking_issues": 0},
-    "voice_fidelity": {"pass": true, "blocking_issues": 0}
+    "factual_accuracy": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 1},
+    "critical_depth": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 0},
+    "spoken_clarity": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 6},
+    "voice_balance": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 0},
+    "job_seeker_resonance": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 0},
+    "quote_fidelity": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 1}
   },
   "verdict": "OK",
-  "notes": "ep01 首次评审（历史遗漏补跑，FireRedTTS2 定案首期）。6 维全 pass，无阻断项，共 11 条非阻断意见（事实准确 1、批判强度 1、口播可懂 4、双声线 2、原声保真 3）。本轮为 r1，无需回环；如有后续轮次，run 从 2 计数。"
+  "notes": "ep01 第 1 轮 6 维并行评审（2026-08-08 重跑，评审对象为当前定稿 script.md）。6 维全 pass，无阻断项；非阻断意见共 9 条（事实准确 1：script.md:135「一拍几百兆」无支撑量级；口播可懂 6；原声保真 1）。原声保真维本轮产物文件键为 quote_fidelity（r1-quote_fidelity.json），旧键 voice_fidelity 的 Aug 7 文件为上一轮遗留，不计入本轮。本 ledger 由 factual_accuracy 维单写，其余维数值镜像自各 r1-<dim>.json 落盘文件（并行写入时序以文件为准）。回环计数：run=1，无需回环；如有后续轮次 run 从 2 计数。"
 }

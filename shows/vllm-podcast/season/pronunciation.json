@@ -40,11 +40,11 @@
       "notes": "cache 读凯什（/kæʃ/，与 cash 同音，V2EX 读音共识）；绝无「凯威缓存」整词音译（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
     },
     "PagedAttention": {
-      "replace": "",
-      "official_pron": "英文原音 /ˈpeɪdʒd əˈtɛnʃən/（vLLM 论文 arXiv:2309.06180 官方术语）",
-      "zh_common": "中文书面保留英文原词（机器之心/腾讯云均不译），口语读英文原音，无中文音译流行",
+      "replace": "Paged Attention",
+      "official_pron": "Paged Attention",
+      "zh_common": "Paged Attention",
       "confidence": "medium",
-      "source_url": "https://arxiv.org/abs/2309.06180"
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
     },
     "CUDA": {
       "replace": "库达",
@@ -55,11 +55,11 @@
       "notes": "2026-08-07 试听确认：FireRed 把 CUDA 逐字母读成 C-U-D-A，需注音为「库达」。其余英文词（SGLang/vLLM/KV cache/EngineCore/ZMQ/prefill/decode）FireRed 均读对，无需注音。"
     },
     "EngineCore": {
-      "replace": "",
-      "official_pron": "本项目自造词",
-      "zh_common": "引擎核心（中文直译）",
-      "confidence": "low",
-      "notes": "自造词无官方读法；engine 与 core 连读，重音在 engine 首音节；core 勿读成「科瑞」（那是 Korea 谐音）（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
+      "replace": "Engine Core",
+      "official_pron": "Engine Core",
+      "zh_common": "Engine Core",
+      "confidence": "medium",
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
     },
     "GPU": {
       "replace": "",
@@ -369,6 +369,55 @@
       "zh_common": "切块prefill",
       "confidence": "medium",
       "notes": "机制名原形（下划线），与口语写法共用读法（2026-08-07 试听确认 FireRed 读对，恢复原文不替换）"
+    },
+    "AsyncLLM": {
+      "replace": "Async L L M",
+      "official_pron": "Async L L M",
+      "zh_common": "Async L L M",
+      "confidence": "medium",
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
+    },
+    "EngineCoreRequest": {
+      "replace": "Engine Core Request",
+      "official_pron": "Engine Core Request",
+      "zh_common": "Engine Core Request",
+      "confidence": "medium",
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
+    },
+    "InprocClient": {
+      "replace": "In-proc Client",
+      "official_pron": "In-proc Client",
+      "zh_common": "In-proc Client",
+      "confidence": "medium",
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
+    },
+    "AsyncMPClient": {
+      "replace": "Async M P Client",
+      "official_pron": "Async M P Client",
+      "zh_common": "Async M P Client",
+      "confidence": "medium",
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
+    },
+    "RequestOutputCollector": {
+      "replace": "Request Output Collector",
+      "official_pron": "Request Output Collector",
+      "zh_common": "Request Output Collector",
+      "confidence": "medium",
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
+    },
+    "FutureAGI": {
+      "replace": "Future A G I",
+      "official_pron": "Future A G I",
+      "zh_common": "Future A G I",
+      "confidence": "medium",
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
+    },
+    "GitHub": {
+      "replace": "Git Hub",
+      "official_pron": "Git Hub",
+      "zh_common": "Git Hub",
+      "confidence": "medium",
+      "notes": "2026-08-09：CamelCase 整词被 IndexTTS 按单词误读（AsyncLLM→哦新可）。按大写拆词/缩写拆字母。"
     }
   }
 }

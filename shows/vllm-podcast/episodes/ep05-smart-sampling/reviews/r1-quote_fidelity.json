@@ -5,10 +5,9 @@
   "pass": true,
   "issues": [
     {
-      "problem": "script.md:241「Triton 写的 attention 后端在 H100 上达到 FlashAttention 3 的 100.7%」的数据源是 voice-031（vLLM 官方博客 2026-03），但该处未用 {{voice:voice-031}} 嵌入、只以「官方博客也确认过」归因。数字与 voices.json voice-031 完全一致，arc.json ep05 counter 也预设了该 claim，无曲解；仅引述可追踪性弱一档。",
-      "evidence": "script.md:241；voices.json voice-031；arc.json:57",
-      "suggested_fix": "可选：嵌入 {{voice:voice-031}} 或在 production-notes 标注该句数据源为 voice-031（voice-031 writer_note 原定用于 ep04，跨期复用需 archivist 在 trace 记账）。保持现状亦可接受。",
-      "rationale": "原声保真维：引述边界标注的完整性——有归因、有数据源、无曲解；此项仅提升可追踪性，非阻断。",
+      "problem": "script.md:283「官方认账，路没走完」——voice-017 的发言者是 vLLM 官方论坛版主的个人回帖（voices.json 标 verified=claim-self-checked，个人发言层次，非项目官方立场），「官方认账」四字把版主个人发言在听感上升格为 vLLM 官方背书。同行 L281 的归属「vLLM 官方论坛的版主公开承认过」是准确的，L283 的缩略总结出现层次偏移；同稿 L247 对 voice-034 用「官方还没确认」的准确层次处理，反衬此处是口语缩略而非误解，且上下文归属已明，未造成实质曲解，故非阻断。",
+      "suggested_fix": "L283「官方认账，路没走完」改为「版主认账，路没走完」或「官方论坛上认了账，路没走完」，与 voice-017 的 claim-self-checked 个人发言层次对齐；若保留现状，需在 production-notes 注明该处「官方」特指官方论坛版主发言。",
+      "rationale": "原声保真维：claim vs verified 的层次保持——claim-self-checked 的个人发言（即使来自官方论坛版主）不等于项目官方立场；个人声音被升格为官方表述是层次事故的前兆，此处属轻微偏移，修一句即可对齐。",
       "blocking": false
     }
   ]

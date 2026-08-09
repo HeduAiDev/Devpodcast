@@ -2,21 +2,7 @@
   "episode_id": "ep05",
   "run": 1,
   "dimension": "factual_accuracy",
-  "pass": false,
-  "issues": [
-    {
-      "problem": "script.md:65 把 argmax-invariant / non-argmax-invariant 处理器的生效位置说反了。脚本声称「动不了冠军的处理器（min_p），提前在贪心快路之前跑；可能换冠军的——偏置、禁词、长度门槛——必须留到温度变换之后、真正选人那条路上再生效」。事实恰好相反：非 argmax-invariant 的四道（logit_bias / bad_words / min_tokens / penalties）在 step3-6 提前跑完，step7 的贪心快路才敢直接取 argmax；argmax-invariant 的 min_p 在 step7c（温度变换之后、随机路上）才生效，贪心快路直接跳过它（跳过不影响结果）。L69 的「安全的提前跑，不安全的押后跑，快路才敢放心抄」是同一方向的反转且自相矛盾——不安全的押后跑，快路反而是骗人的；L69「温度变换之后分岔」也错位：真实顺序是 step7a 先做 all_greedy 判定走快路，7b 才上温度。此句是脚本自认的「整个管线最关键的分叉」，是本期核心机制，属阻断级。",
-      "evidence": "script.md:65、script.md:69；episode-card.json key_mechanisms[1]（「决定 processor 在贪心快路前（step5）还是温度后随机路径上（step7c）生效」）+ episode-card.json ch30 mechanism（「apply_logits_processors 做 step3-6（logit_bias/bad_words/min_tokens/penalties）；sample 做 step7（greedy 快路 vs 随机路分叉）」）；source-book/chapter-cards/ch30.json LogitsProcessors key_class（按 is_argmax_invariant() 分两 list）；vLLM V1 sampler.py docstring：step5「Apply logit processors which are not argmax-invariant, i.e. that can impact greedy sampling」位于 step7a 贪心快路之前，step7c「Apply logit processors which are argmax-invariant, by default the min_p processor」位于 step7b 温度之后、注释明言 'that only apply to random sampling'。另与脚本自身 L45（四道先于 min_p 呈现）矛盾。",
-      "suggested_fix": "L65 改为：「可能换冠军的——偏置、禁词、长度门槛——必须提前在贪心快路之前跑，快路才敢放心直接选最大；动不了冠军的 min_p 留到温度变换之后、真正选人那条路上再生效——快路直接跳过它，因为跳过不影响结果。」L69 相应改为：「要是有个处理器能偷摸换冠军，它不先跑完，快路就是骗人的——所以能换冠军的必须先跑；动不了冠军的被快路跳过也没事，只有随机路上才需要它。」并把「温度变换之后分岔」改为「先判整批是不是全贪心：是，走快路（温度都不上）；只要有一个要随机，才上温度、走随机路」。",
-      "rationale": "事实准确维（spec §12.3）：每个技术断言要在 episode-card 找到支撑、机制不漂移；此处把采样管线最关键的分叉方向整体反转，听众会得到错误的机制模型，且修复可明确执行（对调两从句方向）。",
-      "blocking": true
-    },
-    {
-      "problem": "script.md:269「一本四十章的源码书」与书源不符：book.json 实际收录 39 章（ch01-ch39），书的前言写明「8 个 Part、37 章」（ch01 第 1.6 节）——两个数字都不等于 40。arc.json ep05 closing 也写「40 章」，脚本系沿用 arc；但 arc 是争议框架真相源，章节数字应以书为准。",
-      "evidence": "script.md:269；source-book/book.json（chapters 列表共 39 条；ch01 sections 含「1.6 全书地图：8 个 Part、37 章」）；arc.json:54（closing「一本 40 章的源码书」）",
-      "suggested_fix": "改为「一本三十七章的源码书」（按书前言）或含糊化为「一本几十章的源码书」；若改，需同步核对 arc.json（arc 属编排真相源，建议向 hook-engineer/Lead 同步修订口径）。",
-      "rationale": "事实准确维：数字不漂移（与书原文一致，spec §12.3）。",
-      "blocking": false
-    }
-  ]
+  "pass": true,
+  "issues": [],
+  "notes": "对当前 script.md 全量核对（episode-card / voices.json / 书 chapter-cards / arc-map）。上轮（2026-08-07 旧稿）唯一阻断项——argmax-invariant 分叉方向反转——在当前稿已修复：L75 min_p 正确归类为「argmax 不变的处理器」，L79/L87 正确陈述「能换冠军的四道（偏置/禁词/长度门槛/惩罚）必须在贪心快路之前跑完；min_p 留到温度之后、随机路上再生效，快路直接跳过」，L81 正确陈述「先判整批全贪心走快路（温度都不上），有一个随机才上温度走随机路」——与 episode-card key_mechanisms[1]、ch30 mechanism 及 vLLM V1 sampler.py docstring（step7a/7b/7c）一致。数字抽查零漂移：0.1ms=timeout 0.0001s（card ch31）；128 阈值/16 块（card ch32）；max_rollback=num_speculative_tokens（card ch31）；六约束形态/choice→EBNF（card ch31）；残差分布 max(0,p_target-p_draft)（card ch34）；两个调度标记 has_structured_output_requests/pending_structured_output_tokens（card ch12）；voice-033 的 1.73x/1.21x/1.96x/1.72x/42-95%、voice-034 的 232→24-157 tok/s 与 6.3s→40-60s、voice-035 的 0.91→0.78 与 0.94→0.83 均与 voices.json 原文一致；voice-034 根因保留「报告者自己追的，官方还没确认」的不确定性分层（writer_note 要求）；voice-019 加了「那是去年的剖析，现在 MTP 也进来了」的时效对冲。128000 vocab/4000 int32 为内部自洽的具体化示例（128000/32=4000，符合 card ch31 的 ceil(vocab/32) 布局），书卡片未给具体词表数，不构成漂移。「我不知道」两处（L235 投机调参无答案、L311 量化咬 JSON 原理未吃透）均为真实未知，非回避。L329「四十来章」≈书实收 39 章，近似表述在容忍区间。"
 }

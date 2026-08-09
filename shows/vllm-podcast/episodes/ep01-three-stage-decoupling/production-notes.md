@@ -1,62 +1,86 @@
 [
   {
     "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 69,
-    "note": "换气：voice-002 引述 96 字，含 5 项中英混排枚举（pagedattention、连续批处理、v0/v1 架构、chunked prefill、prefix caching），一口气读完必绊；引文内「等……」省略号在 TTS 里容易变成悬空停顿或被吞掉。建议：枚举砍到 3 项、删掉省略号，或把枚举拆成两句读（MOSS-TTSD 下给模型断句锚点，<break> 仅参考值，模型自主决定）。引文保真度由 writer/reviewer 裁，此处只管读感。",
-    "severity": "suggestion"
+    "script_line": 1,
+    "note": "谱系与停顿语义（info）：本文件全部意见针对当前三人版 script.md（行号以当前文件为准）。目录内上一份 production-notes 针对已退役的两人版（script_2person.bak.md，MOSS-TTSD 语境），其三大问题——引述展开后单段 222-306 字、总时长 9211 字顶穿上限、六处「——voice——」同型过渡——在当前版本均已解决（最长 turn 160 字、全篇 7482 字、引出句已差异化），旧意见不再适用，以本版为准。当前 tts.provider=indextts2 单句合成（逐 turn 独立）：停顿由模型生成，以下所有停顿建议均为文本节奏软提示（断句、「。——」、引出句），毫秒数仅为目标参考、模型自主决定；turn 间 100ms 静音由 pipeline 统一插入，段间无需标注；按 voice-guide 节奏纪律 2，不使用 <break> 标签。",
+    "severity": "info"
   },
   {
     "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 69,
-    "note": "引述前停顿：六处引述（69/237/245/257/269/273 行）全部是「——{{voice}}——」同一种过渡，MOSS-TTSD 靠模型生成停顿，六次同型过渡缺乏文本锚点差异，模型容易把所有引述处理成一个节奏。建议：其中两三处换成句号/冒号收尾的引出句（如「原话是。」「他是这么说的：」），其余保留破折号式，给模型不同的断句信号。",
-    "severity": "suggestion"
+    "script_line": 21,
+    "note": "三方节奏审计（info）：无问题。全篇 129 turn（S1 36 / S2 59 / S3 34，turn 占比 27.9% / 45.7% / 26.4%，三方均过 voice-guide 的 25% 底线）；无连续三段以上同方独白，最长同方连续仅 2 段（L55-57、L239-241，均为小结+转场，属合理段落呼吸）；阿哲喊停/打断/复述贯穿全程（L13、21、37、61、83、95、119、203、231 等），未被淹没；无三人连续短句的平节奏段，问答轮次长短错落。各方字数占比（S2 约 66%）属 reviewer 声线平衡维度，此处不重复开单。",
+    "severity": "info"
   },
   {
     "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 77,
-    "note": "换气：「第一段/第二段/第三段」三截枚举一镜到底（130 字），段际几乎没有呼吸点，读到第三段开头时已经需要换气。建议：三段各自独立成句，或在段际加显式断句锚点（可写 <break 300ms> 作参考值，MOSS-TTSD 下由模型自主决定；更稳的做法是改写文本节奏——每段开头重复「第一段」「第二段」「第三段」的领起词，天然生成停顿）。",
-    "severity": "suggestion"
-  },
-  {
-    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 107,
-    "note": "双声线节奏：107-203 行连续 25+ 轮「S1 短问（13-46 字）→ S2 中长答（60-130 字）」同一节拍往返，读起来是台节拍器；按字量 S1 全剧只占 25.1%（lint 按 turn 数算 50% 通过，但按听感这是典型捧哏读数）。不用改结构，建议在 2-3 处（如 155、167、175 附近）让 S1 加一句反应或自我打断，或让 S2 答到一半自打断反问一句，破掉节拍器。",
-    "severity": "suggestion"
-  },
-  {
-    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 237,
-    "note": "换气：voice-001 引述展开后整段 222 字（引文 146 字），且引文里三处括号式插入语（（FastAPI 前端）（调度+模型执行）（数据并行协调））是口播大忌——每处插入都是一次被迫中断、读感连续被切。建议：引文砍到核心判句（「这不是过度设计，而是服务千万并发请求时唯一经得起拷问的架构选型」），进程清单改用 S2 自己的口吻在引述之外说；括号务必拆出，不要让口播者读括号。",
+    "script_line": 53,
+    "note": "换气（warning）：「他原话大意是：」之后一口气列举五个术语（PagedAttention、连续批处理、v0/v1 架构、chunked prefill、prefix caching），其中三个英文多音节词，合成出来是约十秒不间断列举——念的人换不过气，听的人也接不住。建议在第 53 行把列举拆成两口气：在「v0/v1 架构」后断成句号或「。——」，后两个词另起半句（如「还有 chunked prefill、prefix caching」式领起）。拆法由 writer 裁。",
     "severity": "warning"
   },
   {
     "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 245,
-    "note": "换气/引述停顿：全剧最长口播段——voice-036 引述展开后整段 306 字（引文 239 字，约 1 分钟密集英文+数字），一口气不可能读完；且 195ms/310ms/37% 这些数字在 249 行会再讲一遍，听众被灌两遍。建议：引文砍到前两句（2-4% 打平 + 195/310 数据），RadixAttention/APC 细节留给 253 行自己的话；若保留全引文，至少断成两句并在句间给模型明确断句锚点。",
-    "severity": "warning"
+    "script_line": 53,
+    "note": "引述前停顿审计（info）：六处 voice 嵌入（L53、193、201、215、221、225）均带差异化引出句（「他原话大意是：」「他的数据是：」「先把证据摆上桌。」等），无贴脸引述，旧轮「六处同型过渡」问题已解决。本类仅 L193、L221 两处边界偏薄（已单列 suggestion），其余四处无问题。",
+    "severity": "info"
   },
   {
     "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 245,
-    "note": "时长预算：全剧按 4 字/秒估算共 9211 字 = 38.4 分钟，距 40.2 分钟（target×1.15）上限只剩约 1.9 分钟；且 6 条引述共 1012 字、英文数字密集（SGLang/p50/TTFT/prefix 等），实际语速显著低于 4 字/秒，实读大概率顶穿上限。删减优先从本行及 237/257/273 三条超长引述下手——每条压到 1-2 句，换气和时长一箭双雕。减哪儿由 writer 定。",
-    "severity": "warning"
-  },
-  {
-    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 257,
-    "note": "换气：voice-025 引述展开后整段 256 字（引文 204 字，4 句，含 --max-total-tokens/--max-model-len 英文旗标），一口气读不完；且引文末句「迁移成本被低估」与 261 行 S2 自己的话重复，收尾再讲一遍，节奏上是二次灌入。建议：引文砍到「7GB vs 21GB 乌龙 + 参数映射错误」两句，末句删掉（261 行会补这句）。",
-    "severity": "warning"
-  },
-  {
-    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 269,
-    "note": "换气：voice-021 引述展开后整段 228 字，前有 48 字引出链，引文里还有括号枚举（PagedAttention、continuous batching、prefix caching 等）；且 S2 紧接着自曝「没抓到全文、数字给不出」——这条引述本来就不承重。建议：引文压到一句（「摘掉优化、量性能损失」即可），括号枚举删掉；引出链「有人干过——一家技术媒体做过消融实验——」两个破折号之间可缩，给引述前留出干净的停顿位。",
+    "script_line": 59,
+    "note": "换气（suggestion）：「第一条/第二条/第三条」三路列举是本期骨架信息，目前三个分号一口气到底。建议在「第二条」「第三条」之前各给一次「。——」级断句（目标停顿约 300ms，模型自主决定），让三路分叉听得出落点；领起词保留，本身就是天然断句锚点。",
     "severity": "suggestion"
   },
   {
     "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
-    "script_line": 273,
-    "note": "换气/引述停顿：voice-027 引述展开后整段 249 字（引文 179 字，3 句 8 个数字：340ms/190ms/1.2s/9.8s/2.1s/27s/60ms/23 个 decode 流），数字 avalanche 一口气读不完；且引文末句「GPU 利用率 81%，瓶颈不在算力在调度」与引述后 S2 自己的点评（「GPU 利用率才 81%，瓶颈不在算力」）重叠，同一拳打两遍。建议：引文砍到前两句或只留 p99 飙升那句；引文末句与 S2 点评二选一保留。",
+    "script_line": 171,
+    "note": "换气+难点降速（warning）：四步列举（调度/执行模型前向/采样/更新状态）以分号一逗到底，且字母拼写「e-x-e-c-u-t-e 下划线 m-o-d-e-l」嵌在第二步中段，四步节奏被拉成短-长-短-短。这是本期核心机制（一拍四步），按 voice-guide 难点要慢。建议：「每一拍里有四步：」之后先给一拍；四步各自断成独立短句（分号改「。——」或句号）；拼写段前后各留半拍，让听众跟得上字母。",
     "severity": "warning"
+  },
+  {
+    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
+    "script_line": 187,
+    "note": "换气（suggestion）：末句「还有第三步采样——从 logits，就是模型给每个词打的分数，到挑出那一颗 token，那条路比你想的长」中，「从 logits……那一颗 token」是逗号级插入语，主干被绕行约 30 字，一口气绕。建议把 logits 释义独立成短句（先释义、再说「那条路比你想的长」），或在「到挑出那一颗 token」后断句。",
+    "severity": "suggestion"
+  },
+  {
+    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
+    "script_line": 193,
+    "note": "引述前停顿（suggestion）：voice-001 嵌入点，从归属（「写过一篇很出名的 vLLM 架构剖析」）到内容（「他把这套结构从头剖了一遍」）只靠单个破折号过渡，引述入场偏薄。建议把此处「——」改成「。——」（目标停顿约 300-400ms，模型自主决定），或加半句引出（如「他是这么剖的——」），给听众一个「要引别人了」的信号。",
+    "severity": "suggestion"
+  },
+  {
+    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
+    "script_line": 201,
+    "note": "换气（warning）：「他的数据是：」之后一个句子装进七个数字（2%、4%、80%、50 并发、195 毫秒、310 毫秒、37%），数字朗读展开后实际时长远超字面 160 字，且这是反方核心证据，必须颗颗听清。建议：「几乎打平」后的分号改句号，断成两口气；「50 并发时」后再给一拍；落点「差了 37%」前留半拍。另：前半句双破折号插入语「——SGLang 是另一个主流推理框架——」可考虑独立成短句，是否动由 writer 裁。",
+    "severity": "warning"
+  },
+  {
+    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
+    "script_line": 209,
+    "note": "换气（suggestion）：vLLM 侧三连从句（要手动开/只认平铺的前缀/多轮对话每轮还得重算历史）一逗到底，与 SGLang 侧之间没有换挡点。建议把「跨请求自动匹配」后的分号改成「。——」，在两家对比之间给一次换气。",
+    "severity": "suggestion"
+  },
+  {
+    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
+    "script_line": 221,
+    "note": "引述前停顿（suggestion）：voice-021 嵌入点从「量性能损失」跳到「可惜那篇全文我们没抓到」只靠单破折号，「没抓到全文」这个诚实声明容易被一带而过。建议「——」改「。——」，转折前留一拍。",
+    "severity": "suggestion"
+  },
+  {
+    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
+    "script_line": 225,
+    "note": "换气（warning）：引述内容一句六个数字（340 毫秒、190 毫秒、1.2 秒、9.8 秒、2.1 秒、27 秒），p50→p99→p99.9 三连跳是全期最硬的生产证据，一口气念完听众一个都记不住。建议：「降到 190 毫秒」后断成句号，「但 p99……」另起一口气；「p99.9」前再留半拍（目标约 300ms，模型自主决定），让 27 秒这个落点砸实。",
+    "severity": "warning"
+  },
+  {
+    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
+    "script_line": 229,
+    "note": "换气（suggestion）：括号式插入语「——就是第一次把整段提示词喂给模型那一步——」（16 字）拦腰卡在「一次 60 毫秒的 prefill」与「让 23 个在飞的请求全部排队」之间，主干两端各悬一个数字。建议把 prefill 释义前置成独立短句或挪到句尾，保持「60 毫秒导致 23 个排队」的因果一口气说完。挪法由 writer 裁。",
+    "severity": "suggestion"
+  },
+  {
+    "ep_dir": "shows/vllm-podcast/episodes/ep01-three-stage-decoupling",
+    "script_line": 259,
+    "note": "时长预算（info）：无超支。全篇口播 7482 字，按 4 字/秒约 31.2 分钟；加 129 个 turn 间 100ms 静音（约 13 秒）与四处字母拼写段（L59/79/167/171，拼写朗读比字面长约 20-30 秒），实估约 32 分钟，对 target 35 分钟利用率约 91%，距 target×1.15 上限（40.25 分钟）余量充足。lint_script.py 基线 exit 0。本期无 blocking 项。",
+    "severity": "info"
   }
 ]

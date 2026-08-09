@@ -5,41 +5,35 @@
   "pass": true,
   "issues": [
     {
-      "problem": "script.md:121「同一个方向：预算总数是对的，但默认配置下，请求之间的公平没人替你保证——所以判据里才说，实时服务得自己加优先级队列」——上轮非阻断项未处理：「判据」首次出现仍是孤悬引用，要到行 151（S1「给我判据，别和稀泥」）与行 153（S2 给出判据）才被索要和定义，此前无任何定义或预告，闭耳听者会在行 121 疑惑「什么判据？什么时候说过？」，断裂长达约 30 行。",
-      "suggested_fix": "删掉孤悬引用改为直接表述：「所以真上生产，实时服务得自己加优先级队列」；或改为显式预告：「这其实就是本期结尾要给你们的判据的第一条——实时服务得自己加优先级队列」。",
-      "rationale": "口播可懂维契约（spec §12.3「闭眼只听能不能跟上」）：向未定义对象指代是纯听觉下无法追溯的断裂。行 121 正处于批判收束前的关键过渡（voice-003 未核实反馈后的归因），最不该断线。",
+      "problem": "script.md:53「schedule 不依赖 logits」——logits 首现仍无口头解释（本轮未改），之后在 L237、L239、L241、L243、L255、L271 反复出现（采样段承重词），全期没有一句话把它绑到已知概念上；最接近的锚 L267「从模型算出的概率分布里抽一颗」未点明与 logits 的绑定关系，闭眼听众无法自己完成绑定。",
+      "suggested_fix": "在 L53 或 L239 补 ≤10 字直觉锚，例如 L239 改为「所有输出——logits，就是模型给每个候选词打的分，还有 hidden states——缓存在一个盒子里」；或由阿哲在 L237 顺势问一句让阿凯钉死。",
+      "rationale": "口播可懂维契约：术语首现必须有口头解释（spec §12.3）；voice-guide S2 人格「新名词先给直觉」。logits 缺锚则 L245-L271「解包盒子做采样」闭环对闭眼听众悬空。",
       "blocking": false
     },
     {
-      "problem": "script.md:161 voice-004 引语内含「PD 分离后的优化策略」——缩写仍无展开：引语保真不能动，但紧随其后的 S2 应答仍是「这是他的原话」，没有给听者补上缩写含义；「PD」两个字母无字面义，是听觉上最难自解的形态。",
-      "suggested_fix": "在「这是他的原话」后补半句：「PD 分离，就是 prefill 和 decode 分开来算的意思」——不改引语，只扩 S2 应答。",
-      "rationale": "口播可懂维契约：术语首现口头解释。voices.json voice-004 引述档位 (a) 重合成，应答侧补释不触碰引语边界（与 round 1 判定一致）。",
+      "problem": "script.md:145「所以判据里才说，实时服务得自己加优先级队列」——「判据」此前从未出现（本轮未改），判据要到 L175 老张索要、L177 阿凯给出，向前引用断裂，纯听觉下无法回溯「什么判据、谁说的」。",
+      "suggested_fix": "改为直接表述「所以真上生产，实时服务得自己加优先级队列」；或显式预告「这就是本期结尾要给的判据的第一条——实时服务得自己加优先级队列」。",
+      "rationale": "口播可懂维契约：闭眼只听能不能跟上——指向未建立对象的指代在纯听觉下无法追溯。",
       "blocking": false
     },
     {
-      "problem": "script.md:37「同步路径直接调 step，一拍一拍自己推；多机并行或者异步调度的时候，走 step with batch queue」——「step with batch queue」仍无中文绑定：pronunciation.json 会把它读成「批量队列步进」，但那是一个未释义的直译名，听者听到的要么是无释义英文短语、要么是无释义译名，两种都是噪声；「step」的动词义「推一拍」只靠前句语境勉强成立。",
-      "suggested_fix": "改为中文先行：「走批量队列的 step（step with batch queue）」，或「走 step with batch queue，就是带批量队列的一拍一拍推」。",
-      "rationale": "口播可懂维契约：术语首现口头解释；中文先行与 pronunciation.json 对该方法名的直译（批量队列步进）同向，脚本侧先释义，TTS 读出的译名才承重（spec §12.3）。",
+      "problem": "script.md:185 voice-004 引语内「PD 分离后的优化策略」缩写仍未展开（本轮未改）；引语保真不可动，但 L189 应答只说「那是后面讲 GPU 执行那期的事，今天先不展开」，未补缩写含义，两个字母无字面义，是听觉上最难自解的形态。",
+      "suggested_fix": "不改引语，应答侧补半句：「PD 分离——就是 prefill 和 decode 分开跑——各自的瓶颈细节，那是后面讲 GPU 执行那期的事」。",
+      "rationale": "口播可懂维契约：术语首现口头解释；引述三档策略不阻止应答侧补释（引语不动，解说动）。",
       "blocking": false
     },
     {
-      "problem": "script.md:109「p50 从 340 毫秒降到 190 毫秒。p99 从 1.2 秒飙到 9.8 秒，p99.9 从 2.1 秒跳到 27 秒」——百分位符号首现仍无口头锚定，而这些数字是本期批判的承重墙：行 111 的「8 倍、13 倍」、行 123 的「丢了尾延迟」都建立在 p99/p99.9 语义上；闭耳听者若不懂百分位记号，批判链条从第一块砖就悬空。",
-      "suggested_fix": "在首个数字前加半句锚定：「先解释一下：p99 就是最慢的那百分之一请求的延迟」——其余沿用。",
-      "rationale": "口播可懂维契约：术语首现口头解释；voice-guide.md S2 人格「数字先给量级」——先锚定百分位语义再给数字，数字才承重。",
+      "problem": "script.md:157「Sarathi-Serve 在 OSDI 2024 发了篇论文」——专名仍无口头定位（本轮未改），pronunciation.json 亦无该条目（grep 无命中），听众抓到模糊外文词，随后「28 倍」「2.6 到 6.9 倍」两组承重数据的归因落不到实处。",
+      "suggested_fix": "writer 加定位语：「Sarathi-Serve，一个做推理系统优化的研究团队，在 OSDI 2024 发了篇论文」；pronunciation.json 补条目属 archivist 侧动作（注：882fa0e 后发音表按「试听确认 FireRed 读对」原则精简，若试听确认 Sarathi-Serve 读对可不补）。",
+      "rationale": "口播可懂维契约：闭眼只听能跟上——未定位外文专名在听觉上是噪声；定位语同时让批判段关键数据可归因。",
       "blocking": false
     },
     {
-      "problem": "script.md:133「Sarathi-Serve 在 OSDI 2024 发了篇论文，里面是这么写的」——专名 Sarathi-Serve 仍无口头定位（pronunciation.json 无该条目，TTS 可能逐字母念）；OSDI 的来头有行 135 S1 提问 + 行 137 回答兜底，但 Sarathi-Serve 本身对听者仍是模糊外文词，28 倍数据与 2.6x–6.9x 提升的归属只靠这个专名承载。",
-      "suggested_fix": "给专名口头定位：「Sarathi-Serve，一个做推理系统优化的研究团队，在 OSDI 2024 发了篇论文」。pronunciation.json 补条目属 archivist 侧，writer 只需加定位语。",
-      "rationale": "口播可懂维契约：闭眼只听能跟上——未定位的外文专名在听觉上是噪声；定位语同时让「28 倍数据出自哪里」可归因（与 arc.json ep02 counter 的 Sarathi 出处对齐，spec §12.3）。",
-      "blocking": false
-    },
-    {
-      "problem": "音频版本落后于文本：audio/episode.wav 生成于 03:40、audio-qa.json 质检于 03:40，而 script.md 最后修改于 03:48——上轮阻断项（行 57「prefill 相、decode 相」）的修复发生在音频合成之后，当前 episode.wav 里仍是含旧句的朗读，行 57 的口头定义不在音频中。audio-qa.json 自身 issues 为空（削波/静音/时长无问题），此条不是音频质检项，是文本-音频版本同步事实（script.md 03:48 > audio 03:40 > r1 评审 03:42-03:45 引用的旧文本）。",
-      "suggested_fix": "workflow 调度侧动作（非 writer 改稿）：writer 本轮定稿后重新合成 episode.wav 并重跑 audio-qa，再进入归档；本维度第 3 轮若存在，应以重新合成的音频为准复核。",
-      "rationale": "口播可懂维契约（spec §12.3「闭眼只听能不能跟上」）：评审对象是文本+音频双载体——上轮判为阻断的缺陷文本已修复，但成品音频仍是修复前版本；若按当前 wav 交付，听众闭耳听到的还是那个脱轨句（行 57 未释义的「decode」）。",
+      "problem": "script.md:49「多机并行或者异步调度的时候，走 step with batch queue」——首现仍无中文绑定（本轮未改；pronunciation.json 该条目 replace 为「英文原音」，按原文朗读），长英文短语无中文落点。",
+      "suggested_fix": "中文先行绑一次：「走 step with batch queue——带批量队列的推拍方式」或「走批量队列版的 step（step with batch queue）」。",
+      "rationale": "口播可懂维契约：术语首现口头解释；支线提及故不阻断。",
       "blocking": false
     }
   ],
-  "note": "上轮唯一阻断项（行 57 prefill/decode 首现无口头解释 + 未解释的「相」）已按建议修复：现行 57 行「而且这里没有先集中喂新请求、再逐个续写的两个阶段之分——prefill 就是第一次把整段提示词喂进去、算出第一颗 token 的那一趟，decode 是之后每拍续写一颗新 token 的那一趟——所有请求统一按 token 数一视同仁」，两个术语在首现处绑定，与行 81/113/145 的后续使用一致，修复未引入新问题。本维判定通过：无阻断项；5 条上轮非阻断项原样保留（本轮是第 2 轮，第 3 轮起只看阻断项，故此处最后记录一次），加 1 条音频版本同步提示。全稿复查：无视觉依赖表述；术语首现释义齐全（四步方法名 L21、max num batched tokens L49、RUNNING/WAITING L73、Scheduler Output L89、chunked prefill L133、LIFO L177、FCFS L189、allocate slots L173、collective RPC L221、check_stop/EOS L273-277、ExecuteModelState L213、Engine Core Outputs L301）。"
+  "note": "本轮（run 2）只复审上轮 fail 的本维度。上轮唯一阻断项（全稿 0 处 <break 300ms> 术语停顿，违 voice-guide 节奏纪律 §3 口播硬约束）已完整修复，验收如下：1) 文本——grep 现稿含 21 处 <break 300ms>，上轮修复清单全数覆盖：L233/L259/L271 execute model、L255/L279/L299 sample tokens、L297 update from output、L213/L231 prepend request、L65 max num batched tokens、L109 Scheduler Output、L251 collective RPC、L303 check_stop、L31 四步连读处（3 处断在子句边界）；另加 L27/L197 allocate slots/L235 拼写句/L239/L333 Engine Core Outputs 共 5 处增量。2) 摆放合规——逐处核对 §3 尾部护栏「只放完整子句边界、前后 ≥14 字」，21 处均挂在完整子句后，无短片段孤立（最短前置段 L251「靠的就是 collective RPC」约 19 字，达标）。3) 音频链——script.md 定稿 08-09 01:40 → episode.wav 重合成 02:14 → audio-qa 重跑 02:16，修复已落到听众实际听到的音频里；audio-qa.json issues 为空（直接引用，不重复质检）。修复未引入新问题（本轮文本增量仅为 break 标签，无视觉依赖表述、无新增裸读代码术语）。5 条上轮非阻断项原样保留（行号已按现稿核对：L53/L145/L185/L157/L49 文本与上轮一致），writer 可裁量，不阻归档——与 run-ledger 中 factual_accuracy 维「非阻断参考项不阻归档」口径一致。本维无未清阻断项，第 2 轮收口。run-ledger.json 按契约由 factual_accuracy 维写入，本维不触碰。"
 }

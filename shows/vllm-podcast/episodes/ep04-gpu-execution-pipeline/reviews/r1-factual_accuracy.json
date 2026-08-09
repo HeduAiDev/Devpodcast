@@ -1,14 +1,25 @@
 {
-  "episode_id": "ep04-gpu-execution-pipeline",
+  "episode_id": "ep04",
   "run": 1,
   "dimension": "factual_accuracy",
   "pass": true,
   "issues": [
     {
-      "problem": "arc-map ep04 payoff_due 列明的「prefill/decode 瓶颈细节」只落地了 decode 半边：L117（decode 一拍几十个算子）、L125（uniform_decode 检查）、L141（固定网格空转）覆盖了 decode 侧；prefill 侧（变长形状吃不到固定录像红利、为何常回退 NONE）未显式落地，全篇无 prefill 一词",
-      "evidence": "script.md:117,125,141（decode 侧）；全篇缺 prefill 落地",
-      "suggested_fix": "在 L125-129 三级分派处或 L141 空转处补一句 prefill 的账（形状不定→录不了固定录像→只能回退 NONE/逐算子）；或与 archivist 确认该账可移交 ep05 还",
-      "rationale": "事实准确维要求技术断言与 arc.json/arc-map.json 对齐；ep04 payoff_due 明列此账，半落地属于叙事账目缺口",
+      "problem": "script.md:61「父进程有监控盯着：是方法抛了异常、还是进程整个没了，两条失败路径分开上报——不装没事，也不傻等」——worker 失败监控机制在 episode-card.json 无支撑：ch17 条（Worker 生命周期与控制平面）仅覆盖 Executor 三态分发、init_worker→init_device→load_model→READY→busy_loop、collective_rpc 广播/FIFO 收回复、三级关停，无父进程监控与「两条失败路径分开上报」内容",
+      "suggested_fix": "核对书稿 ch17 是否确有 WorkerProc 失败监控的展开：有则属 episode-card 摘录缺口，保留原文并在 episode-card.json ch17 条补记该机制出处；无则弱化为不引入新机制的表述（如「父进程盯着，死了瞒不住、也傻等不着」），删去「两条失败路径分开上报」这一具体机制断言",
+      "rationale": "reviewer 契约事实准确维：每个技术断言能在 episode-card 找到支撑（三层真相源契约：episode-card.json 是议题内容真相源）",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:177「decode 一拍几十个算子，省下来的全是赚的」——算子数量级在 episode-card.json 与 voices.json 均无出处；按 Llama 规模模型 eager 前向每层约 10 个内核、数十层估算，真实量级更可能为数百，「几十个」存在低估风险（与 ep01 run-ledger 记录的「一拍几百兆」无支撑量级同类）",
+      "suggested_fix": "若书稿（ch19/ch23 CUDA graph 相关段落）给过明确算子数，按书改；否则去掉具体量级，改为不含量级的表述，如「decode 一拍，一整串算子挨个启动，每个都要付启动开销」",
+      "rationale": "事实准确维：数字不漂移、量级断言须有出处；ep01 run-ledger 先例将无支撑量级记为非阻断项",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:155「默认切点选在注意力算子那儿——一刀下去，注意力一段，剩下的一段」及 L165「切开的两段，数据怎么接上」——单切两段的表述与 episode-card.json ch23 条不符：card 明确 split_graph 按 splitting_ops（复数，默认 _attention_ops 类）在 attention 算子处切开整张 FX 图，之后 PiecewiseCompileInterpreter「逐段遍历」——多解码层模型切出的是普通段/注意力段交替的多段，而非整张图只成两段",
+      "suggested_fix": "改为多段表述，如「每处注意力算子都是一个切点——整张图切成普通段、注意力段交替的一串」；L165「切开的两段」相应改为「相邻两段」，L167「前一段的输出，就是后一段的输入」本来就按缝讲，可保留",
+      "rationale": "事实准确维：技术断言与 episode-card 一致（card 原文「逐段遍历：非 attention 子图经 PiecewiseBackend 送 Inductor 编译并包 CUDAGraphWrapper 图捕获，attention 子图保持 eager 执行」）",
       "blocking": false
     }
   ]

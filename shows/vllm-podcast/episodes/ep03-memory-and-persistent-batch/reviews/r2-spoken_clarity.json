@@ -1,0 +1,27 @@
+{
+  "episode_id": "ep03",
+  "run": 2,
+  "dimension": "spoken_clarity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:11 PagedAttention 首现（voice-029 引述内「PagedAttention 的块大小是 16 颗 token」）时无任何口头解释，直到 script.md:47 才补「Paged，分页的」——间隔约 36 行，而 L11-15 正是全期题眼（「省的不是 token，是物理块」），闭眼听的听众要在不理解该术语的情况下接住题眼。r1 已提（非阻断），r2 稿未处理，行号不变。",
+      "suggested_fix": "在 L11 引述前后或 L15 题眼处加一句极简口头 gloss（如「PagedAttention——分页注意力，分页那套，后面细讲」）；引述原文不可改（原声保真约束），解释加在引述之外，L47 的完整展开保留。",
+      "rationale": "口播可懂维：术语首现需口头解释（spec §12.3 口播可懂「术语首现有没有口头解释」）。本期标题级术语首现裸奔 36 行，属可懂性风险而非风格偏好；因上下文可撑住理解（块粒度语义在 L11 引述内已自明），维持非阻断判定，writer 可裁量。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:289 L1/L2 首现无解释（voice-006 引述内「L1 和 L2 之间的流量跑了 800 多 MB」），全文此后也未补释。非硬件背景的听众不知道这是 GPU 两级高速缓存，「十几倍冤枉流量」（L295）的痛感会打折扣。r1 已提（非阻断），r2 稿未处理，行号不变。",
+      "suggested_fix": "引述结束后由阿凯补一句口头解释（如「L1、L2 是 GPU 上两级高速缓存，这中间跑的都是冤枉流量」）；引述原文不动。",
+      "rationale": "口播可懂维：术语首现需口头解释；解释须加在引述外以守原声保真边界（spec §12.3 口播可懂 + 原声保真）。目标听众（后端求职）大概率可推断，维持非阻断判定，writer 可裁量。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:319 RAG 首现无解释（「拿 RAG 应用做过评测」）——同句的 Groundedness 反而有口头解释（「就是答案靠不靠谱的分」），一句之内一个解释一个不解释，RAG 成了裸术语。r1 已提（非阻断），r2 稿未处理，行号不变。",
+      "suggested_fix": "在「RAG」后补半句口头展开（如「RAG——检索增强生成，先查资料再回答的那类应用」），或由阿哲以读者视角问一句。",
+      "rationale": "口播可懂维：术语首现需口头解释（spec §12.3 口播可懂）。同句内 Groundedness 已示范解释节奏，RAG 补齐即可；AI infra 求职听众大概率已知，维持非阻断判定，writer 可裁量。",
+      "blocking": false
+    }
+  ],
+  "review_note": "r2 复审范围：本维 r1 判定 pass（3 条均非阻断），本轮重点核验 writer 为修 factual_accuracy/quote_fidelity 两维阻断项所做的行内修改（script.md:139、:337）是否引入新的口播可懂问题——结论：无。L139 改写后「哈希粒度」有 L111 块级哈希讲解垫底；L337 改写后「150 个客户、每客户 6000 token 的共享系统提示词」是 L309 听众已听过的设定复述，无新裸术语、无视觉依赖表述。另对全稿 362 行重扫：其余术语首现均有口头解释或逐字母拼读（KV cache L23、128K L37-39、LRU L77、哨兵 L75、引用计数 L131、滑动窗口 L151、PD 分离 L163、lookahead L167、allocate slots L147 拼读、skipped waiting L201 拼读、持久批次 L209、update states L231、block table L247 拼读、commit L251、Triton L255、CUDA graph L263、GQA 经阿哲 L291 喊停后 L293 补释、UCX L301、P90 经阿哲 L311 反问确认、Groundedness L319）；复述/小结路标完整（L61/101/179/203/241/265/269）；无「如图/看这段代码」类视觉依赖。上列 3 条为 r1 非阻断遗留项，writer 未采纳属其裁量，本轮维持原判、不升级为阻断。"
+}

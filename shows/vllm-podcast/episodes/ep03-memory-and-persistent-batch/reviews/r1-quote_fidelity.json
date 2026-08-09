@@ -2,22 +2,21 @@
   "episode_id": "ep03",
   "run": 1,
   "dimension": "quote_fidelity",
-  "pass": true,
-  "verdict": "pass",
+  "pass": false,
   "issues": [
     {
-      "problem": "script.md:285「原话如此」与 script.md:299「这是他们的原话」两处断言逐字引用，而 voice-007/voice-026 的 claim 文本在 voices.json 中标注为引述档位 (a) 重合成（researcher 依原文重整的措辞，非逐字抄录）；同稿其余 7 处引述均用「原话大概这个意思」「大意就是这样」「原话大概这样」的转述档措辞，这两处与全剧引述纪律不一致。",
-      "suggested_fix": "统一改为转述档措辞，如「——原话大概这个意思」（L285）与「——大意就是这样，这是他们贴出的结论」（L299）。数字与含义已逐条核对无漂移，仅措辞档位对齐。",
-      "rationale": "原声保真维：引述边界与忠实度已达标（claim vs verified 层次保持、匿名化到位、9 处边界全标注），本条为措辞一致性的非阻断项——「原话如此」可能让听众误以为引述逐字来自源文，而源文为 researcher 重整文本；按 voice-guide 转述纪律统一措辞，writer 裁量。",
-      "blocking": false
+      "problem": "script.md:139 把 voice-024 的三个具体追问（哈希粒度 / 不满块能否缓存 / 命中率估算）呈现为面试现场的真实记录——「牛客上一位面过 AI Infra 实习的同学记过，面试官是这么问的——……——原话大概这个意思」。但 voices.json voice-024 的 writer_note 明确写明：「原文只列出 prefix caching 作为考点，specific 追问细节根据面经所列方向推断」——三个具体问题是 researcher 的推断产物，面经原文并无此记录。script 用「记过」「面试官是这么问的」把推断细节升格为现场原话，claim 与来源真实状态之间的层次失守。",
+      "suggested_fix": "改写行 139 的归属表述，把三个问题从「面试官原话记录」降为「考点 + 这类追问会细到的方向」，例如：「牛客上一位面过 AI Infra 实习的同学记过，prefix caching 是当场考点——这类追问一般会细到：哈希粒度是什么？不满一个块的前缀能不能缓存？系统提示词固定但 query 不同时命中率怎么估？」三个问题内容本身可保留（与 claim 文本一致，且后文逐条作答），只需去掉「面试官是这么问的」「原话大概这个意思」这层来源不支持的现场感。",
+      "rationale": "原声保真维：引述不得曲解来源状态——voices.json 的 writer_note 是真相源组成部分，已预先标注该细节为推断；把推断内容说成「面试官记过的原话」与「community-only 说成事实」同属层次失守类事故（spec 原声保真维定义）。",
+      "blocking": true
     }
   ],
   "checks_summary": {
-    "quote_by_quote": "9 处引述与 voices.json claim 逐条核对，无曲解、无增删数字：L5=voice-029 ✓、L61=voice-009 ✓、L133=voice-024 ✓、L261=voice-008 ✓、L269=voice-006 ✓、L277=voice-022 ✓、L285=voice-007 ✓、L293=voice-030 ✓、L299=voice-026 ✓（逐条对照明细见 r1-factual_accuracy.json checks_summary.voice_numbers，双向引用）。",
-    "claim_vs_verified": "claim vs verified 层次保持：community-only 两条——voice-009（confidence=low）以「有个博主转述过群里的经历」+「这事咱没法核实」呈现（L61），voice-024 以「牛客面经」+「原话大概这个意思」呈现（L133），均未升格为事实；claim-self-checked 各条均保留来源锚点（腾讯云开发者社区 / GitHub issue / Mistral AI / llm-d 团队 / FutureAGI 第三方评估团队），voice-030 特别标注「第三方评估团队」防止听众误读为官方结论。无 community-only 说成事实的事故。",
-    "anonymization": "匿名化核查：voices.json 标记 anonymized=true 的 voice-009/024/008/022/029 在稿中均未出现个人名/ID/平台账号——只提「有个博主」「牛客面经」「Mistral AI（公司主体，非个人）」；anonymized=false 的 voice-006/007/026/030 按需点名团队，未点名 voice-006 个人作者（无义务，安全处理）。spec 6.3「不点名素人」遵守。",
-    "quote_boundaries": "9 处引述边界全部有口播标注：进入（「他是这么说的——」「他们贴出的数字是——」「他贴的就是这组数」「面试官是这么问的——」）+ 退出（「原话大概这个意思」「大意就是这样」「原话大概这样」「这事咱没法核实」「原话如此」「这是他们的原话」），无一引述与主持人话语粘连；voice-029 引述（L5）因是开场题眼，退出语「原话大概这个意思」之后紧接 S1 复述消化（L7-L9），边界仍清晰。",
-    "tier_rendering": "三档策略（spec 6.4）：全稿引述统一由阿凯转述（档位 c），9/9 标注边界——(c) 是 spec 明文选项（「只标引述不带音色——由阿凯/老张转述」），(a) 为默认而非强制；当前 TTS 栈（FireRedTTS2 双声线）无外部原声素材，统一 (c) 是自洽的节目决策，且本季 ep01/ep02 同约定，无跨期不一致。",
-    "cross_episode_consistency": "「笔记」隐喻（ep01/ep02 建立）在 L21 复用；L277 的泄漏雷（引用循环）与 L125 预埋的「计数不为零」因果链一致，引用循环 → 计数不减 → 不还块 → 泄漏的链条在稿件内自洽（voice-022 原 claim 亦如此表述）。"
+    "quote_by_quote": "9 处引述与 voices.json claim 逐条核对：L11=voice-029（块释放逻辑逐字对齐，「原话大概这个意思」）✓、L59=voice-009（手写 PagedAttention 面经，转述层次三重降级标注齐）✓、L139=voice-024（见 blocking issue）✗、L281=voice-008（块大小 trade-off 递进追问，「牛客面经转述面试官」层次准）✓、L289=voice-006（800MB/64MB/约三成零漂移，L297「去年三月」与 2025-03-23 吻合 + 过期对冲「不敢替人打包票」）✓、L301=voice-022（UCX 钩子 + 引用循环 + OOM 被杀，「今年六月」与 2026-06-20 吻合）✓、L309=voice-007（16 块 H100/Qwen-32B/150 客户/6000 token/93s→0.542s/170 倍全数字精确）✓、L319=voice-030（0.55/0.88→0.69 精确，L325「第三方评估，不是同行评审」如实传达 writer_note  caution）✓、L329=voice-026（4.3s→0.6s/负载均衡器打散前缀/非开箱即用）✓。",
+    "claim_vs_verified": "community-only 两条：voice-009（confidence=low）以「一个博主转述过他群里的经历」+「快一年了，而且是转述，咱没法核实」呈现，未升格 ✓；voice-024 归属「牛客面经」保留了社区层，但把推断细节说成现场原话（见 blocking issue）。claim-self-checked 各条来源锚点齐（腾讯云开发者社区/GitHub 开发者/Mistral AI/llm-d/FutureAGI），无越层。",
+    "anonymization": "anonymized=true 的 voice-009/024/008/022/029 稿中均未出现个人 ID——只说「一个博主」「牛客上一位同学」「牛客一篇面经」「Mistral AI」（组织名在 claim 原文内，非个人）；anonymized=false 的 voice-006/007/026/030 按 claim 指名团队，未额外点名 voice-006 个人作者（允许）。匿名化契约守住。",
+    "quote_boundaries": "9 处引述均有口播边界标注：进入语（「是这么说的——」「他是这么说的——」「他们贴的数字是——」）+ 退出语（「原话大概这个意思」「大意就是这样」「他给的就是这组数」），无引述与主持人话语粘连；转述档（c）统一由阿凯口播，与本季 ep01/ep02 约定一致。",
+    "regression_check": "上版非阻断项（L285/L299「原话如此」「这是他们的原话」与重合成档不符）在当前稿已修复——现稿 L309/L329 均为「大意就是这样」，不再携带。",
+    "cross_references": "voice-022 引用循环雷与 L133-135 预埋的「计数忘减就泄漏」因果链自洽；L347「我们也没搞清楚」是真不知道（块大小 16 的推导 episode-card 未给），非回避。"
   }
 }

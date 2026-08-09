@@ -3,27 +3,48 @@
   "run": 1,
   "dimension": "factual_accuracy",
   "pass": true,
-  "verdict": "pass",
   "issues": [
     {
-      "problem": "script.md:93 「一拍几万颗 token，每拍全量重发，谁也扛不住」与同稿 L49 自己确立的预算上限矛盾：L49 说 max num batched tokens 默认 8192，episode-card.json ch13 明确「批大小的约束是 max_num_batched_tokens（默认 8192）」——一拍调度的总 token 数被该预算封顶，默认配置下一拍不可能到「几万颗」（8192 ≈ 八千，差 4 倍以上）。",
-      "suggested_fix": "把「几万颗」改为「成千上万颗」或「八千多颗」；或干脆删掉具体量级（如「一拍这么多 token，每拍全量重发，谁也扛不住」），论点（diff 省通信）不依赖这个数字。",
-      "rationale": "事实准确维：数字不漂移。这是稿内自相矛盾——同一脚本 L49 与 L93 的数字打架，听众按 L49 的 8192 交叉核对会当场抓到；且 episode-card ch13 是批大小约束的支撑条款。",
+      "problem": "script.md:49 「多机并行或者异步调度的时候，走 step with batch queue」——episode-card ch11 原文是「step_with_batch_queue()（PP/async_scheduling 时）」。PP = 流水线并行（pipeline parallelism），单机多卡也可走 PP，不等于「多机并行」。术语释义漂移，听众按「多机」理解 PP 会形成错误心智模型。",
+      "suggested_fix": "「多机并行」改为「流水线并行」（口播可展开为「模型被切成几段、摊到多张卡上那种并行」），与 episode-card 的 PP 对齐。",
+      "rationale": "事实准确维：每个技术断言能在 episode-card 找到支撑，术语释义不漂移（episode-card ch11 cross_chapter_threads 第 1 条）。",
       "blocking": false
     },
     {
-      "problem": "script.md:305 「我不知道」时刻的复核结论：前半句（8192 默认值为什么是 8192、为什么不是 16384）经查 episode-card / arc.json / 书 ch13 key classes 均无答案，是真不知道，非回避——符合 voice-guide 纪律 1，通过。但后半句「抢占之后重算的浪费到底有多大，我们也没见到系统的数」存在边界风险：voice-027 的源文章（voices.json writer_note：作者提供了实测 trace 和三种修复方案——含 preemption 控制——的量化对比）本身就含抢占代价相关量化，虽然那是端到端延迟视角而非「重算浪费」的系统性拆分，但严格讲「我们没见到系统的数」这句话有被听众查证反噬的空间。",
-      "suggested_fix": "保留「我不知道」时刻（8192 那半是真实的）；若想堵住查证反噬，可把后半句收窄为「抢占重算到底浪费多少，我们没见到公开的系统性拆分数据」——改动一个字级（加「公开的」「拆分」限定），writer 裁量；不改也可成立，因为 voices/arc/card 里确实没有重算浪费的量化。",
-      "rationale": "事实准确维：「我不知道」处必须区分真不知道与回避。本处判定为基本真实（素材范围内无答案），但措辞留有被源文章反证的敞口，收窄限定即可消除；非阻断，仅提示。",
+      "problem": "script.md:109 「已经跑过的只发增量——新 token、新块号」——chapter-card ch13 CachedRequestData 的增量字段是 new_block_ids + num_computed_tokens + num_output_tokens（进度计数），new_token_ids 仅 PP 场景才携带。常规路径的 diff 不带「新 token」本体。「新块号」对，「新 token」不精确。",
+      "suggested_fix": "改为「只发增量——新块号、算到哪了的进度」；若保留「新 token」需加限定「流水线并行时才会带上新 token」。",
+      "rationale": "事实准确维：技术断言需与真相源字段级一致（source-book/chapter-cards/ch13.json CachedRequestData 定义；episode-card 只说「增量 diff」未枚举字段，枚举错了即漂移）。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:121 「语法编译可能要上百毫秒」——「上百毫秒」量级在 episode-card（本期）、ep05 episode-card、voices.json、arc.json 中均无出处。机制本身有支撑（ep05 episode-card ch31：「JSON Schema → FSM 异步编译……compile_grammar 异步提交线程池避免阻塞调度热路径」），但具体量级是 writer 自造数字。虽有「可能」对冲，仍属无源数字。",
+      "suggested_fix": "删掉量级：「语法编译是个慢活——把 JSON 的规矩编成一台状态机，这种慢活要是堵在热路径里，整拍都得等它」；或等 ep05 落定真实数字后回链。",
+      "rationale": "事实准确维：数字不漂移的前提是数字有源（三层真相源均查无「上百毫秒」）。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:165 「模型越大，长 prefill 堵得越狠，切块的收益越猛。这组数据本身就在说：问题随规模放大」——2.6x（Mistral-7B）与 6.9x（Falcon-180B）两个数据点与 voice-028 一致，但「收益差源于模型规模」是 writer 外推：voice-028 与 arc.json 只给数字未给归因；两数据点间还隔着硬件、负载、batch 等变量，把差距单挂到「规模」是过度解读，且包装成「数据本身就在说」。",
+      "suggested_fix": "归因软化为一种读法：「这两个数摆在一起，一种读法是模型越大堵得越狠——当然负载和硬件也在变，但方向值得记住」；或只陈述数字不下规模结论。",
+      "rationale": "事实准确维：引述数字之外的因果断言同样需要支撑（voices.json voice-028 writer_note 仅担保两组数字可追溯，不担保规模归因）。",
       "blocking": false
     }
   ],
-  "checks_summary": {
-    "voice_numbers": "L109/L113/L117/L133/L141/L161 全部与 voices.json voice-027/voice-003/voice-028/voice-004/voice-005 原数一致，无漂移；L111 的 8x/13x 为 9.8/1.2 与 27/2.1 的算术复核，成立",
-    "book_detail_claims": "L193（heap + (priority, arrival_time)）、L257（共用同一 list 对象）、L289（IntEnum + > 比较）、L89（NewRequestData/CachedRequestData 全量/diff）、L213（10 字段 NamedTuple）均能在 source-book/chapter-cards 对应 key_classes 找到原文支撑",
-    "cross_episode_callbacks": "L15「喂饱还是饿死」、L169「笔记」、L299「排、算、选、记」均可在 ep01 script.md L221/L229/L225 找到原文，非虚构回指",
-    "foreshadow_due": "ep02 应还的两笔账（语法编译上百毫秒 L101、GPU worker 真实执行 L165/L265）均已落地，且指向 arc-map 登记的 ep05/ep04；L313 收尾与 arc.json ep02 closing 逐字一致",
-    "idk_moment": "L305 唯一一处「我不知道」，8192 之问在全部真相源中无答案，判定为真不知道",
-    "directional_frames": "L57/L73/L89/L201 等调度机制描述与 episode-card ch13/ch14 两阶段、skipped_waiting 双队列、抢占循环语义逐条对齐"
+  "verification_log": {
+    "numbers_checked": [
+      "L65/L89/L113 max_num_batched_tokens 默认 8192（episode-card ch13）；2000/8192≈24.4%，L89「四分之一」有「大概这么算」对冲；L113「一拍八千多颗 token」与默认值自洽（前稿「几万颗」矛盾已修）",
+      "L129 voice-027：p50 340→190ms / p99 1.2s→9.8s / p99.9 2.1s→27s 与 voices.json 逐字一致；L135「p99 翻八倍」(9.8/1.2=8.17)、「p99.9 翻十三倍」(27/2.1=12.86) 换算正确",
+      "L137 voice-027：60ms prefill、23 个 decode 流、GPU 利用率 81% 一致（原文 prefill chunk，转述丢「chunk」属档位(a)重合成容差）",
+      "L157/L161/L165 voice-028：28 倍 ITL、2.6x(Mistral-7B)、6.9x(Falcon-180B)、OSDI 2024 一致；「顶级会议、同行评审」属实",
+      "L185 voice-004：「不到三分之一」一致；speaker 匿名化正确（anonymized=true，脚本称「牛客上一位做后端的前辈」未具名）",
+      "L141 voice-003：source_date 2025-12-15，「去年就有用户反映」时间表述正确；「具体场景我们没核实到」不确定性标注到位",
+      "L21 voice-005：考点转述与 voices.json 一致，「2026 年面试高频题」时间框架正确",
+      "L239 ExecuteModelState 十个字段（chapter-card ch19「10 字段 NamedTuple」）；L243 hidden states/采样中间状态/插槽映射枚举与 ch19 一致",
+      "L319/L323 整型枚举+大于比较判完成（chapter-card ch14「IntEnum…is_finished 用 > PREEMPTED 判定」「6 个 FINISHED_* 态」；脚本说「好几种」未虚报数字）",
+      "L217 优先级队列 prepend 退化为按 (priority, arrival_time) 入堆（chapter-card ch14 支撑）",
+      "L287 输出记录与批次镜像共用同一 list 对象（chapter-card ch19「同一 list 别名」「同一对象——f13 物理载体」支撑）",
+      "L177「离线批处理裸 token 调度最省显存」「p99 两秒内」与 arc.json ep02 resolution 逐句对应"
+    ],
+    "mechanisms_checked": "四步心跳/忙循环、step 与 step_with_batch_queue 双驱动、采样拆出前向的调度重叠理由、token 预算两阶段调度（阶段一各补 1 token/阶段二接纳 WAITING）、SchedulerOutput 全量一次+diff、LIFO 抢占+PREEMPTED 回流+本拍不再放新、skipped_waiting 双队列、execute_model/sample_tokens 两阶段+入口断言、_bookkeeping_sync 写回+持久批次+闭环、check_stop 四条件（EOS/stop_strings/stop_token_ids/max_tokens）、FINISHED 家族+释放 KV+未完成回阶段一、EngineCoreOutputs 经 IPC 回传——全部命中 episode-card/chapter-card",
+    "i_dont_know_audit": "L335-337：8192 默认值来历 + 抢占重算浪费量化，阿凯答「这个我们也没搞清楚……我们也没见到系统的数」并给出难处（显存/批形状/GPU 型号权衡），不假装会、不转移话题——真不知道，非回避。通过。"
   }
 }

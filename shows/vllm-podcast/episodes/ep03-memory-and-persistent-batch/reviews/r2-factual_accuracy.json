@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep03",
+  "run": 2,
+  "dimension": "factual_accuracy",
+  "pass": true,
+  "issues": [],
+  "checks_summary": {
+    "r1_blocker_recheck": "r1 唯一阻断项已按 suggested_fix (a) 修复：script.md:337 现作「多租户 Agent 场景，150 个客户、每客户 6000 token 的共享系统提示词——170 倍的差距，不是块大小能换回来的」——『80%』已删，170 倍挂回 voice-007 自己的实验条件（16 块 H100 / Qwen-32B / 150 客户 / 每客户 6000 token 共享系统提示词，P90 TTFT 93s→0.542s），与 voices.json voice-007 claim 逐字对齐，跨来源拼接消除。判据句另一极「唯一 prompt 场景，分页只有碎片没收益，块越小越好」系机制直推（零共享前缀→分页收益为零、仅余内部碎片，voice-008「块大小设为 1 碎片是没了」+ ch15 内部碎片机制支撑），且块表暴涨的对价已在 L281-283 先行交代，听众信息完整，r1 已放行、本轮无新漂移，不重复立案。",
+    "full_draft_resweep": "writer 定稿（04:39）晚于全部 r1 评审落盘，故对当前稿全维重扫而非只验 L337：9 处引述数字与 voices.json 原 claim 逐条复核无漂移——L11（90% token / 块大小 16 / 块内剩一颗整块释放不了）=voice-029 ✓；L59（手写实现 + 与 KV cache 区别优化点 + 群里同学被问懵）=voice-009 ✓，不确定标注「快一年前、转述、没法核实」俱在；L139（哈希粒度 / 不满块能否缓存 / 命中率估算三问）问题文本与 voice-024 claim 一致 ✓（归属层次已由 quote_fidelity 维负责复审）；L281（块=1 块表暴涨 / 太大短序列浪费 / 默认 16 用 15 剩 1）=voice-008 ✓；L289（GQA 8 线程块重复加载 / L1-L2 流量 800 多 MB vs 实际 64 MB / 新内核约三成）=voice-006 ✓；L301（UCX 钩子 + 前缀缓存引用循环 / GPU worker OOM 被杀）=voice-022 ✓，L305「社区按根因修了」与 claim 修复路径记载一致；L309（16×H100 / Qwen-32B / 150 / 6000 / 93s→0.542s / 170 倍 / 唯一最重要指标）=voice-007 全数字精确（93/0.542≈171.6≈170 自洽）；L319（0.55 / 0.88→0.69 / 工具调用参数丢失 / 引用错误文档）=voice-030 ✓，L325「第三方评估，不是同行评审」如实传达 writer_note；L329（4.3s→0.6s / 负载均衡器打散前缀 / 非开箱即用）=voice-026 ✓，L333「自己搭一层全局索引」对应 KVEvents + kvcache.Index。时间表述：L297「去年三月」=2025-03-23 ✓；L301「今年六月」=2026-06-20 ✓；L59「快一年前」=2025-08-20 ✓。派生数字：L295「800 对 64，十几倍」（12.5×）✓；L313「93 秒降到半秒」（0.542s）✓。",
+    "card_mechanisms": "机制断言抽核与 r1 全绿结论一致、当前稿无回退：L51（块=16 token，ch15）、L67-L71（块池三件套 + 元数据四样，ch15）、L75/L83/L87（哨兵双向链表 / O(1) 删除 / 惰性驱逐，ch15）、L111/L119/L123/L131（满块哈希 + group_id / 只认满块 / 不去重 append-only / ref_cnt 归零才还，ch15）、L147-L175（allocate_slots 三段式 + 失败返回空，ch16）、L185/L193/L197-L203（抢占循环 / 本拍不放新 / skipped_waiting，ch14）、L209-L241（InputBatch 跨拍 / 差量更新 / 打洞压实，ch18）、L247-L263（块表双镜像 commit / slot_id=块号×16+偏移 / PAD_SLOT_ID 适配固定网格，ch18 公式逐字对应）、L277（16 为缺省值，card block_size=16 + voice-008 互证）。",
+    "idk_moment": "「我不知道」两处复核仍为真不知道、非回避：L297（GQA 内核帖为去年三月、迭代数轮后现状「不敢替人打包票」——voices 素材内无当前状态答案，voice-006 writer_note 亦要求核对当前版本）；L347（16 的推导：书里只给实现事实、论文系实验选取、换硬件负载是否成立「我们说不准」——episode-card / voices / source-book 均无推导，给出已知边界并抛评论区，满足每期至少一次真不知契约）。",
+    "audio": "audio-qa.json 由 audio-qa 独立回环负责，本维不重复质检（契约：audio-qa 的 issues 直接引用）。",
+    "coverage": "season/voices-coverage.json coverage=full（36 条、求职者 10 条），无降级知情事项。"
+  }
+}

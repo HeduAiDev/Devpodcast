@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep04-gpu-execution-pipeline",
+  "run": 1,
+  "dimension": "quote_fidelity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "两处引述边界标签过度承诺逐字保真：script.md:265（voice-031）口播「原话是——…——就这组数」，script.md:287（voice-032）口播「这是他们的原话」。两条 writer_note 引述档位均为 (a) 重合成（非逐字素材），且 voice-032 verified=community-only；口播文本相对 voices.json claim 有口语化改写（voice-031「仅用约 800 行 Triton 代码」→「只用了约 800 行代码」；voice-032「Senior+ 岗位」→「资深岗位」），与「原话」标签不符。同稿其余四处引述均为 hedged 口径（L183「原话大概这个意思」、L241/L283「大意就是这样」、L257「基本就是这个意思」），这两处口径不统一。",
+      "evidence": "script.md:265、script.md:287；voices.json voice-031/voice-032 的 claim、verified 与 writer_note 引述档位 (a)",
+      "suggested_fix": "两处改为转述口径，与同稿其余四处统一：L265「原话是」改「官方给的数字是——」或「实测结果大意是——」；L287「这是他们的原话」改「这是他们预判的大意——」。若坚持保留「原话」，则口播文本须逐字对齐 voices.json 的 claim 原文（含「Triton 代码」「Senior+」等措辞）。",
+      "rationale": "原声保真维：引述边界按三档策略标注（spec §6.4）——档位 (a) 重合成意味着非逐字音频素材，口播宣称「原话」是对保真度的过度承诺；对 community-only 条目（voice-032）宣称逐字原话，还会放大 claim vs verified 层次混淆的风险（spec §6.3②：评论≠事实，引用时必须保留层次差别）。",
+      "blocking": false
+    }
+  ]
+}
