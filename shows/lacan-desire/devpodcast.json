@@ -1,0 +1,27 @@
+{
+  "show": "lacan-desire",
+  "title": "拉康欲望图：一张图讲透欲望",
+  "book_source": {
+    "kind": "column",
+    "root": "columns/lacan-desire",
+    "instance": "lacan-desire",
+    "ingested_at": "2026-08-09",
+    "snapshot_digest": ""
+  },
+  "audience": {
+    "profile": "对哲学/精神分析有兴趣但没读过拉康的听众",
+    "assumed_knowledge": ["基本哲学常识", "对弗洛伊德有模糊印象"],
+    "language": "zh-CN"
+  },
+  "format": {
+    "hosts": 3,
+    "target_minutes": 35,
+    "episodes_planned": 9
+  },
+  "tts": {
+    "provider": "indextts2",
+    "synth_env": "itts310",
+    "note": "单句合成（逐turn独立，cut5 断句）；S1/S2 内置 laozhang/akai 16k 参考；S3 azhe 音色待补（北京话主持人，Qwen dylan 克隆）；发音表 season/pronunciation.json（拉康术语 138 条）",
+    "pronunciation": "season/pronunciation.json"
+  }
+}
