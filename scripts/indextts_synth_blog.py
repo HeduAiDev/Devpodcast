@@ -6,8 +6,8 @@
 删无中文的括号注释）→ 段落 turns → 单角色（S1 老张音色）朗读。
 
 用法（生产机，itts310 环境）：
-    D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire
-    D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire --only 01
+    D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire
+    D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire --only 01
     ... --dry-run   # 无模型环境：只输出清洗+发音表后的朗读文本预览（验证用）
 
 产物：<column>/audio/NN-slug.wav + audio/segments/NN-*_turn*.wav

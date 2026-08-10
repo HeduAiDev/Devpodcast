@@ -147,10 +147,10 @@ docs/superpowers/              设计规格 + 发车手册 + 经验台账
 
 ## TTS 环境
 
-- GPU: NVIDIA RTX PRO 6000 Blackwell 95.6GB, CUDA 13.1
+- GPU: NVIDIA GeForce RTX 5080 16GB, CUDA 13.0（2026-08-10 换机，原 RTX PRO 6000 Blackwell 95.6GB 已不在）
 - **唯一主方案: IndexTTS-2 单句合成**（2026-08-08 定案；逐 turn 独立生成，无跨 turn 上下文累积，解决 FireRed 逐段/carryover 的尾部喃喃伪影）
-- 模型环境：conda env `itts310`（Python 3.10 + torch 2.8.0+cu128），权重 `models/indextts2/`（gpt.pth 3.3G + s2mel.pth 1.2G + qwen 情感模型 1.2G）
-- 调用：`D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_singleturn.py <episode_dir>`，或 `python scripts/tts.py synthesize <script.md> --provider indextts2 --output <dir>`
+- 模型环境：conda env `itts310`（Python 3.10 + torch 2.8.0+cu128）**待重建**（换机后未恢复），权重 `models/indextts2/`（gpt.pth 3.3G + s2mel.pth 1.2G + qwen 情感模型 1.2G）**待部署**
+- 调用（恢复后）：`D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_singleturn.py <episode_dir>`，或 `python scripts/tts.py synthesize <script.md> --provider indextts2 --output <dir>`
 - 内置参考音色 laozhang/akai（16kHz mono，voice-samples/laozhang_16k.wav / akai_16k.wav），无需 voice_map
 - **发音表**：`shows/<name>/season/pronunciation.json` — 合成前替换专有名词为注音读法（CUDA→库达 等），避免逐字母念
 - 输出 22050Hz；FireRed（firered-tts2）为历史备选，已因尾部伪影弃用

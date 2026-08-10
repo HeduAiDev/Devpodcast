@@ -4,7 +4,7 @@
 检测每期 audio/segments/turn*.wav 的尾部伪影（主语音 + 静音间隙 + 短促咕哝），
 对命中的 turn 用 use_random 重生成（最多 N 次），取干净版本，重拼接 + 变速出 episode.wav。
 
-用法：D:/Env/Miniconda/envs/itts310/python.exe scripts/fix_mumble_indextts.py <episode_dir>
+用法：D:/miniconda3/envs/itts310/python.exe scripts/fix_mumble_indextts.py <episode_dir>
 """
 import sys, json, shutil
 import numpy as np

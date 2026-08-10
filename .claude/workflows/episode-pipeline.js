@@ -200,7 +200,7 @@ phase('TTS')
 const tts = await agent(
   head(null, [
     '任务：把 ' + EP + '/script.md 合成 ' + AUDIO + '/episode.wav + ' + AUDIO + '/segments/（对齐 scripts/tts.py 的 AudioBundle 契约）。',
-    '方式：用 IndexTTS-2 单句合成（2026-08-08 定案唯一主方案，解决 FireRed 尾部喃喃伪影）。直接运行：D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_singleturn.py ' + EP + '（EP 即 <show>/episodes/<slug> 目录，内含 script.md）。该脚本逐 turn 独立生成（无跨 turn 上下文），内置 laozhang/akai 16k 参考音色，自动应用 season/pronunciation.json 注音替换（CUDA→库达 等），输出 ' + AUDIO + '/episode.wav + segments/turn*.wav（22050Hz）。或经 scripts/tts.py：python scripts/tts.py synthesize ' + EP + '/script.md --provider indextts2 --output ' + AUDIO + '。',
+    '方式：用 IndexTTS-2 单句合成（2026-08-08 定案唯一主方案，解决 FireRed 尾部喃喃伪影）。直接运行：D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_singleturn.py ' + EP + '（EP 即 <show>/episodes/<slug> 目录，内含 script.md）。该脚本逐 turn 独立生成（无跨 turn 上下文），内置 laozhang/akai 16k 参考音色，自动应用 season/pronunciation.json 注音替换（CUDA→库达 等），输出 ' + AUDIO + '/episode.wav + segments/turn*.wav（22050Hz）。或经 scripts/tts.py：python scripts/tts.py synthesize ' + EP + '/script.md --provider indextts2 --output ' + AUDIO + '。',
     '说话人映射：' + SHOW + '/devpodcast.json 的 tts.voice_map（S1=老张 / S2=阿凯，voice-samples/ 音色样本）。',
     '目标时长：' + TARGET + ' 分钟（超过 20% 余量会被 audio-qa BLOCKING）。',
     '拉闸（spec §11.1）：音色样本质量不足 / 显存不够 / 模型加载失败 → status=BLOCKED。**TTS 是必经站**（spec §11.3）：环境没配好 = BLOCKED，不给「先出脚本、音频待补」的后门。',
@@ -333,7 +333,7 @@ for (let r = 1; r <= 3; r++) {
   const resynth = await agent(
     head(null, [
       '任务：' + EP + '/script.md 刚被 writer 修订，重新合成音频并重跑质检（评审以新音频为准）。',
-      '合成：D:/Env/Miniconda/envs/itts310/python.exe ' + REPO + '/scripts/indextts_synth_singleturn.py ' + EP + '（IndexTTS-2 单句，内置参考音色，自动应用发音表）',
+      '合成：D:/miniconda3/envs/itts310/python.exe ' + REPO + '/scripts/indextts_synth_singleturn.py ' + EP + '（IndexTTS-2 单句，内置参考音色，自动应用发音表）',
       '质检：python ' + REPO + '/scripts/audio_qa.py ' + AUDIO + '/episode.wav ' + AUDIO + '/audio-qa.json ' + TARGET,
       '合成完成后再跑质检；audio-qa issues 非空则如实带回（Lead 决策，不要自行改稿）。',
     ]),

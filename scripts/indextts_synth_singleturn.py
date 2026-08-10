@@ -6,7 +6,7 @@
 
 环境：conda env `itts310`（Python 3.10 + torch 2.8.0+cu128）。
 用法：
-    D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_singleturn.py <episode_dir>
+    D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_singleturn.py <episode_dir>
 产物：<episode_dir>/audio/episode.wav + segments/turn*.wav
 """
 import sys, time, json

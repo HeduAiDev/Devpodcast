@@ -4,7 +4,7 @@
 用 itts310 conda 环境跑（CUDA torch）。对比 FireRed 单句基线。
 测试：laozhang/akai/kurisu 三个参考音色，中文克隆 + CUDA 读法。
 
-运行：D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_benchmark.py
+运行：D:/miniconda3/envs/itts310/python.exe scripts/indextts_benchmark.py
 """
 import sys, time, os
 from pathlib import Path

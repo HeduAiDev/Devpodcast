@@ -40,9 +40,9 @@ outline.md                        系列大纲：串联逻辑、每篇小节、�
 
 ```bash
 # 全 9 篇
-D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire
+D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire
 # 单篇重跑
-D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire --only 03
+D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire --only 03
 # 无模型环境预览清洗+发音表效果（本机可跑）
 python scripts/indextts_synth_blog.py columns/lacan-desire --dry-run
 ```

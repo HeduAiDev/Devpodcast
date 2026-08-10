@@ -5,7 +5,7 @@
 ## 前置条件
 
 - [ ] 本机有 Python 3.11+ / pytest / torch 2.11+cu130 / soundfile / numpy
-- [ ] GPU: NVIDIA RTX PRO 6000 Blackwell 95.6GB, CUDA 13.1（其他卡需调整 TTS 选型）
+- [ ] GPU: NVIDIA GeForce RTX 5080 16GB, CUDA 13.0（2026-08-10 换机，原 RTX PRO 6000 已不在；IndexTTS-2 推理约 3-4GB 显存，16GB 可用）
 - [ ] 本仓 `git clone` 到本地，`pip install -r requirements.txt`（如有）或按 spec §7 装好依赖
 - [ ] 有一本 repo2book 产出的书（`instances/<name>/` 目录存在）
 - [ ] 读过 `docs/superpowers/specs/2026-08-01-devpodcast-design.md`（至少 §0–§5、§11）
@@ -171,7 +171,7 @@ Workflow 的 `args` 参数是 JSON 对象（不是字符串）。如果发车时
 
 ### 显存占用
 
-本机 95.6GB 显存通常有余量，但可能有其他进程占用。audio-qa 站报告 VRAM，如不足：
+本机 16GB 显存（RTX 5080），IndexTTS-2 推理约需 3-4GB。audio-qa 站报告 VRAM，如不足：
 - 检查是否有其他模型加载中（`nvidia-smi`）
 - IndexTTS-2 子进程独占加载（itts310 env），合成期间勿同时跑其他大模型
 
@@ -198,7 +198,7 @@ ep_id 可以是完整目录名（`ep01-memory-management`）或前缀（`ep01`�
 ### TTS 环境
 
 - **唯一方案：IndexTTS-2 单句合成**（`models/indextts2`，逐 turn 独立生成，解决 FireRed 尾部喃喃伪影）
-- 调用：`D:/Env/Miniconda/envs/itts310/python.exe scripts/indextts_synth_singleturn.py <episode_dir>`，或 `python scripts/tts.py synthesize <script.md> --provider indextts2 --output <dir>`
+- 调用：`D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_singleturn.py <episode_dir>`，或 `python scripts/tts.py synthesize <script.md> --provider indextts2 --output <dir>`
 - 环境：conda env `itts310`（Python 3.10 + torch 2.8.0+cu128），子进程隔离
 - 内置参考音色 laozhang/akai（`voice-samples/laozhang_16k.wav` / `akai_16k.wav`，16kHz mono），无需 voice_map
 - **发音表**：`shows/<name>/season/pronunciation.json` 自动应用（CUDA→库达 等）
