@@ -29,13 +29,13 @@
 | 4 | ep04-path-subject-vector | 马蹄形矢线？逮住的鱼儿？ | [x] | [x] | [x] 15.5min |
 | 5 | ep05-path-circle | 屈从圆圈？Che vuoi？ | [x] | [x] | [x] 14.5min |
 | 6 | ep06-path-mirror | 镜像路 i(a)→m？I(A)？ | [x] | [x] | [x] 14.3min |
-| 7 | ep07-path-upper-chain | 享乐 vs 快乐？S(Ⱥ)？$◇D？ | [x] | [x] | [ ] |
-| 8 | ep08-full-graph | 五条路径怎么互锁？ | [x] | [x] | [ ] |
-| 9 | ep09-critique | 中文接受/图过时了吗/德勒兹/Fink vs Žižek | [x] | [x] | [ ] |
+| 7 | ep07-path-upper-chain | 享乐 vs 快乐？S(Ⱥ)？$◇D？ | [x] | [x] | [x] 16.0min |
+| 8 | ep08-full-graph | 五条路径怎么互锁？ | [x] | [x] | [x] 14.8min |
+| 9 | ep09-critique | 中文接受/图过时了吗/德勒兹/Fink vs Žižek | [x] | [x] | [x] 15.9min |
 
 ## Phase B（对话稿 + TTS）
 - [x] script.md ×9：writer 主笔完成（lint 全过，三方占比均 ≥25%，各期 4500-5000 字）
-- [ ] audio ×9：已完成 6/9（ep01-06，audio-qa 全零 issue，RMS 一致 -16.93dB）——**ep07-09 待合成**（2026-08-10 10:02 自动续跑）
+- [x] audio ×9：全部完成（audio-qa 全零 issue，总时长 135.7min，RMS 一致 -16.9dB）
 - 产物位置：`episodes/epNN-*/audio/episode.wav` + `audio/segments/`
 
 ## 环境状态
