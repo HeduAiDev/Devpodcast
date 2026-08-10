@@ -6,6 +6,10 @@
     "vllm-podcast": {
       "config": "shows/vllm-podcast/devpodcast.json",
       "title": "把 vLLM 拆开讲"
+    },
+    "lacan-desire": {
+      "config": "shows/lacan-desire/devpodcast.json",
+      "title": "拉康的欲望图"
     }
   },
   "shared": {

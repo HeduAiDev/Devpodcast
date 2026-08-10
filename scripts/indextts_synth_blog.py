@@ -6,11 +6,13 @@
 删无中文的括号注释）→ 段落 turns → 单角色（S1 老张音色）朗读。
 
 用法（生产机，itts310 环境）：
-    D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire
-    D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_blog.py columns/lacan-desire --only 01
+    D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_blog.py shows/lacan-desire
+    D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_blog.py shows/lacan-desire --only 01
     ... --dry-run   # 无模型环境：只输出清洗+发音表后的朗读文本预览（验证用）
 
-产物：<column>/audio/NN-slug.wav + audio/segments/NN-*_turn*.wav
+输入：shows/<column>/episodes/epNN-<slug>/script.md（一篇=一期）
+产物：shows/<column>/episodes/epNN-<slug>/audio/episode.wav + audio/segments/NN-*_turn*.wav
+发音表：shows/<column>/season/pronunciation.json
 """
 import sys, time, json, re, subprocess
 from pathlib import Path
@@ -83,7 +85,7 @@ def clean_markdown(text: str) -> list[str]:
 
 
 def load_pronunciation(column_dir: Path):
-    pron = column_dir / "pronunciation.json"
+    pron = column_dir / "season" / "pronunciation.json"  # 标准 show 结构：发音表归 season/
     if not pron.exists():
         return {}
     d = json.loads(pron.read_text(encoding="utf-8"))
@@ -142,11 +144,12 @@ def main():
     if "--only" in sys.argv:
         only = sys.argv[sys.argv.index("--only") + 1]
 
-    posts = sorted(column.glob("posts/*.md"))
+    # 标准 show 结构：一篇 = 一期 episodes/epNN-<slug>/script.md
+    posts = sorted(column.glob("episodes/*/script.md"))
     if only:
-        posts = [p for p in posts if p.name.startswith(only + "-")]
+        posts = [p for p in posts if p.parent.name.startswith(f"ep{only.zfill(2)}-")]
     if not posts:
-        raise SystemExit(f"没有找到文章: {column}/posts/（--only 前缀匹配）")
+        raise SystemExit(f"没有找到文章: {column}/episodes/*/script.md（--only 按期号前缀匹配，如 --only 01）")
 
     pron_map = load_pronunciation(column)
     print(f"[prep] {len(posts)} 篇, {len(pron_map)} 发音规则, 参考音色 {Path(REF_S1).name}", flush=True)
@@ -155,7 +158,7 @@ def main():
         for pmd in posts:
             paras = clean_markdown(pmd.read_text(encoding="utf-8"))
             turns = build_turns(paras, pron_map)
-            print(f"--- {pmd.stem}: {len(paras)} 段 → {len(turns)} turn ---", flush=True)
+            print(f"--- {pmd.parent.name}: {len(paras)} 段 → {len(turns)} turn ---", flush=True)
             for spk, t in turns:
                 print(f"[{spk}] {t}", flush=True)
         print("[dry-run] 仅预览，未合成。")
@@ -163,16 +166,15 @@ def main():
 
     import numpy as np, soundfile as sf  # 正式合成才需要重依赖
 
-    ad = column / "audio"
-    seg = ad / "segments"
-    seg.mkdir(parents=True, exist_ok=True)
-
     for pi, pmd in enumerate(posts):
-        slug = pmd.stem
-        out_wav = ad / f"{slug}.wav"
+        slug = pmd.parent.name[2:]  # ep01-concepts-language → 01-concepts-language（segments 命名用）
+        ad = pmd.parent / "audio"
+        seg = ad / "segments"
+        seg.mkdir(parents=True, exist_ok=True)
+        out_wav = ad / "episode.wav"
         paras = clean_markdown(pmd.read_text(encoding="utf-8"))
         turns = build_turns(paras, pron_map)
-        print(f"--- {slug}: {len(paras)} 段 → {len(turns)} turn ---", flush=True)
+        print(f"--- {pmd.parent.name}: {len(paras)} 段 → {len(turns)} turn ---", flush=True)
         if out_wav.exists():
             print(f"[skip] {out_wav.name} 已存在（删掉可重合成）", flush=True)
             continue

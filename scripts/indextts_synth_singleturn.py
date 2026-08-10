@@ -10,6 +10,7 @@
 产物：<episode_dir>/audio/episode.wav + segments/turn*.wav
 """
 import sys, time, json
+import re
 import numpy as np
 import soundfile as sf
 from pathlib import Path
@@ -31,8 +32,14 @@ REFS = {
 OUT_SR = 22050  # IndexTTS2 BigVGAN v2 输出采样率
 
 
-def load_pronunciation():
-    pron = REPO / "shows" / "vllm-podcast" / "season" / "pronunciation.json"
+def load_pronunciation(ep_dir: Path | None = None):
+    """按节目取发音表：<show>/season/pronunciation.json（show = ep_dir 的上两级）。
+    不传 ep_dir 时回退 vllm-podcast（历史默认）。"""
+    if ep_dir is not None:
+        show_dir = Path(ep_dir).resolve().parent.parent
+        pron = show_dir / "season" / "pronunciation.json"
+    else:
+        pron = REPO / "shows" / "vllm-podcast" / "season" / "pronunciation.json"
     if not pron.exists():
         return {}
     d = json.loads(pron.read_text(encoding="utf-8"))
@@ -45,6 +52,19 @@ def apply_pron(text, pron_map):
     return text
 
 
+def clean_for_speech(text):
+    """口播清洗（从博客管线移植，writer 写法规范的合成侧兜底）：
+    1) 删「全角括号内无中文」的注释——「凝缩（condensation）」→「凝缩」；
+       半角 ( ) 是图记号一部分（s(A)、i(a)），绝不删。
+    2) 删全角括号开头的拉丁前缀——「（signifiant de l'Autre——大他者的能指」→「（大他者的能指」；
+       数字开头不删（「（1957 年…」保留）。"""
+    text = re.sub(r"（[^（）一-鿿]*）", "", text)
+    text = re.sub(
+        r"（(?:[^一-鿿，。；、！？「」…——0-9]+?)(?:——|—|，|,|；)?(?=[一-鿿「」『』《》0-9]|$)",
+        "（", text)
+    return text
+
+
 def main():
     if len(sys.argv) < 2:
         raise SystemExit("用法: indextts_synth_singleturn.py <episode_dir>")
@@ -54,7 +74,7 @@ def main():
     from scripts.script_parser import parse
     script = parse(script_md)
     turns = [t for t in script.turns if (t.text or "").strip()]
-    pron_map = load_pronunciation()
+    pron_map = load_pronunciation(ep_dir)
     print(f"[prep] {len(turns)} turns, {len(pron_map)} 发音替换规则", flush=True)
 
     ad = ep_dir / "audio"
@@ -116,7 +136,7 @@ def main():
         # 逐段合成 + 剪边 + 按 pause 插静音
         seg_clips = []
         for txt, pause in merged_segs:
-            st = apply_pron(txt.strip(), pron_map)
+            st = apply_pron(clean_for_speech(txt.strip()), pron_map)
             if not st:
                 continue
             tmp = seg / f"_brk{i:03d}_{len(seg_clips)}.wav"
