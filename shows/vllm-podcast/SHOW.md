@@ -25,8 +25,9 @@
 共 809 turns / 140.3 分钟，全季 RMS 一致性 ±0.08dB。
 
 ## 环境状态
-- GPU: NVIDIA GeForce RTX 5080 16GB, CUDA 13.0（**2026-08-10 换机**，原 RTX PRO 6000 Blackwell 95.6GB 已不在）— TTS 环境待重建
-- TTS: **IndexTTS-2 定案**（2026-08-08，单句逐 turn 合成）— 换机后 conda env `itts310` 与 `models/indextts2` 权重**均未恢复，待部署**（5 期音频已全部完成，短期无合成需求）
+- GPU: NVIDIA GeForce RTX 5080 16GB, CUDA 13.0（**2026-08-10 换机**，原 RTX PRO 6000 Blackwell 95.6GB 已不在）
+- TTS: **IndexTTS-2 定案**（2026-08-08，单句逐 turn 合成）— **已重建恢复**（2026-08-10：itts310 env + 权重 5.5G + 代码仓，smoke test RTF 1.73 通过）
+- ⚠️ **`azhe_16k.wav`（S3 阿哲音色）不在 git，旧机器才有**——三人脚本 REFS 引用它，全量重合成前需恢复（备份或重新克隆），否则 S3 turns 会 FileNotFoundError
 - voice-samples: `laozhang.wav` / `akai.wav`（MOSS-TTSD 官方中文示例，临时占位；正式发布前建议换自录中文样本）+ 16kHz 版（laozhang_16k/akai_16k，IndexTTS-2 用）
 
 ## 硬规则

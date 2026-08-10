@@ -286,6 +286,8 @@ NVIDIA RTX PRO 6000 Blackwell Workstation Edition
 
 CUDA 生态全可用，无 ROCm 顾虑。95.6GB 意味着 8B 级对话模型毫无压力，可并行加载多模型做对比。注意本机可能有其他进程占用显存（观测到 3.9GB），audio-qa 站报告 VRAM 占用。
 
+> **2026-08-10 换机**：本机已改为 NVIDIA GeForce RTX 5080 16GB / CUDA 13.0 / torch 2.11.0+cu130。§7.1 的硬件记录保留为原始设计上下文；IndexTTS-2 推理约需 3-4GB 显存，16GB 可用。当前实况见 CLAUDE.md「TTS 环境」。
+
 ### 7.2 选型（2026-08-08 定案）
 
 **唯一主方案：IndexTTS-2 单句合成**（逐 turn 独立生成）
