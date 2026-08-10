@@ -17,25 +17,25 @@
 - [x] season/bible/voice-guide.md（三人版定稿：拉康专家版阿凯 + 哲学入门版阿哲）
 - [x] season/bible/concept-library.md（概念库）
 - [x] episodes/epNN-*/article.md ×9（独白稿 v2，writer 的素材源）
-- [ ] episodes/epNN-*/script.md ×9（**writer 待写**：article.md → 三人对话逐字稿）
+- [x] episodes/epNN-*/script.md ×9（writer 主笔完成，lint 全过）
 
 ## 篇目（9 期）
 
 | # | 期 | 这篇回答的问题 | article | script | audio |
 |---|----|----------------|---------|--------|-------|
-| 1 | ep01-concepts-language | 能指/所指？语言为什么是链？隐喻/换喻？ | [x] | [ ] | [ ] |
-| 2 | ep02-concepts-speaking | $、A、m？需要/要求/欲望？ | [x] | [ ] | [ ] |
-| 3 | ep03-path-signifying-chain | 意义怎么滑动？缝合点 s(A)？ | [x] | [ ] | [ ] |
-| 4 | ep04-path-subject-vector | 马蹄形矢线？逮住的鱼儿？ | [x] | [ ] | [ ] |
-| 5 | ep05-path-circle | 屈从圆圈？Che vuoi？ | [x] | [ ] | [ ] |
-| 6 | ep06-path-mirror | 镜像路 i(a)→m？I(A)？ | [x] | [ ] | [ ] |
-| 7 | ep07-path-upper-chain | 享乐 vs 快乐？S(Ⱥ)？$◇D？ | [x] | [ ] | [ ] |
-| 8 | ep08-full-graph | 五条路径怎么互锁？ | [x] | [ ] | [ ] |
-| 9 | ep09-critique | 中文接受/图过时了吗/德勒兹/Fink vs Žižek | [x] | [ ] | [ ] |
+| 1 | ep01-concepts-language | 能指/所指？语言为什么是链？隐喻/换喻？ | [x] | [x] | [x] 14.2min |
+| 2 | ep02-concepts-speaking | $、A、m？需要/要求/欲望？ | [x] | [x] | [x] 15.6min |
+| 3 | ep03-path-signifying-chain | 意义怎么滑动？缝合点 s(A)？ | [x] | [x] | [x] 14.9min |
+| 4 | ep04-path-subject-vector | 马蹄形矢线？逮住的鱼儿？ | [x] | [x] | [x] 15.5min |
+| 5 | ep05-path-circle | 屈从圆圈？Che vuoi？ | [x] | [x] | [x] 14.5min |
+| 6 | ep06-path-mirror | 镜像路 i(a)→m？I(A)？ | [x] | [x] | [x] 14.3min |
+| 7 | ep07-path-upper-chain | 享乐 vs 快乐？S(Ⱥ)？$◇D？ | [x] | [x] | [ ] |
+| 8 | ep08-full-graph | 五条路径怎么互锁？ | [x] | [x] | [ ] |
+| 9 | ep09-critique | 中文接受/图过时了吗/德勒兹/Fink vs Žižek | [x] | [x] | [ ] |
 
 ## Phase B（对话稿 + TTS）
-- [ ] script.md ×9：writer 主笔（素材 = article.md + voices + arc + voice-guide）
-- [ ] audio ×9：`scripts/indextts_synth_singleturn.py`（三声线，与 vllm 共用参考音色）
+- [x] script.md ×9：writer 主笔完成（lint 全过，三方占比均 ≥25%，各期 4500-5000 字）
+- [ ] audio ×9：已完成 6/9（ep01-06，audio-qa 全零 issue，RMS 一致 -16.93dB）——**ep07-09 待合成**（2026-08-10 10:02 自动续跑）
 - 产物位置：`episodes/epNN-*/audio/episode.wav` + `audio/segments/`
 
 ## 环境状态
