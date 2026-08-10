@@ -1,0 +1,233 @@
+{
+  "chapter_id": "ch33",
+  "title": "ch33",
+  "slug": "ch33-primer-eagle",
+  "sections": [
+    "33.1 动机：草稿的两个成本，和 token 层的天花板",
+    "33.2 特征级自回归：在半成品语义上接着画",
+    "33.3 特征不确定性：为什么非要「剧透」超前一步的 token",
+    "33.4 Autoregression Head：一层 FC 加一层 decoder，其余全借",
+    "33.5 草稿头怎么训出来：两把尺子，与 0.1 的权重",
+    "33.6 验收准则：接受、拒绝与残差分布",
+    "33.7 从链到树：树验证与 EAGLE-2 的动态草稿树",
+    "33.8 落地：vLLM v1 的 EAGLE 是一条链",
+    "33.9 这章解决了什么"
+  ],
+  "key_classes": [
+    {
+      "name": "EagleProposer",
+      "file": "vllm/v1/spec_decode/eagle.py",
+      "responsibility": "EAGLE 草稿器薄壳；仅设 pass_hidden_states_to_model=True，全部逻辑继承 SpecDecodeBaseProposer"
+    },
+    {
+      "name": "SpecDecodeBaseProposer",
+      "file": "vllm/v1/spec_decode/llm_base_proposer.py",
+      "responsibility": "eagle/eagle3/mtp/draft_model 共用基类：propose() 链式草稿循环、set_inputs_first_pass() 的 token 左移、缓冲/cudagraph/attn metadata 管理"
+    },
+    {
+      "name": "EagleLlamaForCausalLM / LlamaModel",
+      "file": "vllm/model_executor/models/llama_eagle.py",
+      "responsibility": "EAGLE-1 草稿模型：fc(2h→h) 融合 [token_embed⊕feature] + 单层 decoder 预测下一特征；复用目标模型的 embed/LM Head"
+    },
+    {
+      "name": "DraftModelProposer",
+      "file": "vllm/v1/spec_decode/draft_model.py",
+      "responsibility": "对照：传统「小目标模型作草稿」的 proposer（pass_hidden_states_to_model=False），用于凸显 EAGLE 靠特征而非独立小模型"
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "feature-level-autoregression",
+      "name": "特征级自回归：为什么在第二顶层特征上做草稿",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/models/llama_eagle.py:L100-L116",
+        "vllm/v1/spec_decode/llm_base_proposer.py:L461-L473"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2401.15077",
+        "sections": [
+          "§1",
+          "§2",
+          "§3.1",
+          "Fig.4"
+        ]
+      }
+    },
+    {
+      "id": "feature-uncertainty-shifted-token",
+      "name": "特征不确定性与「超前一步 token」的消解",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/v1/spec_decode/llm_base_proposer.py:L656-L678"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2401.15077",
+        "sections": [
+          "§1",
+          "§3.1",
+          "Fig.3",
+          "§4.3.2"
+        ]
+      }
+    },
+    {
+      "id": "autoregression-head-structure",
+      "name": "Autoregression Head：FC(2h→h) 融合 + 单层 decoder + 共享 Embedding/LM Head",
+      "kind": "layout",
+      "source_anchors": [
+        "vllm/model_executor/models/llama_eagle.py:L87-L95",
+        "vllm/v1/spec_decode/eagle.py:L10-L22"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": false,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2401.15077",
+        "sections": [
+          "§3.1",
+          "Fig.6"
+        ]
+      }
+    },
+    {
+      "id": "draft-training-objective",
+      "name": "草稿头训练目标：Smooth-L1 特征回归 + 交叉熵分类（原理背景，不在推理路径）",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/models/llama_eagle.py:L87-L95"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": true,
+      "difficulty": "supporting",
+      "paper_origin": {
+        "paper": "arXiv:2401.15077",
+        "sections": [
+          "§3.2"
+        ]
+      },
+      "paper_origin_note": "纯训练期机制——vLLM 推理仓无训练代码；锚点为 locus-proxy，落在被训练的 Autoregression Head（fc 层）定义处，真相源为论文 §3.2 的 L_reg/L_cls/L 三式。"
+    },
+    {
+      "id": "speculative-sampling-acceptance",
+      "name": "投机采样接受准则与残差分布（保分布定理——回指 ch34 不重复证明）",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/v1/spec_decode/llm_base_proposer.py:L1601-L1638"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": true,
+      "difficulty": "supporting",
+      "paper_origin": {
+        "paper": "arXiv:2401.15077",
+        "sections": [
+          "§2",
+          "Appendix A.2 Alg.1"
+        ]
+      },
+      "prereq": "ch34"
+    },
+    {
+      "id": "tree-draft-verification",
+      "name": "树草稿 + 树注意力 + 树验证（多轮投机采样）",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/v1/spec_decode/llm_base_proposer.py:L1394-L1447"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2401.15077",
+        "sections": [
+          "§3.1",
+          "§3.3",
+          "Appendix A.1",
+          "Appendix A.2"
+        ]
+      }
+    },
+    {
+      "id": "eagle2-dynamic-draft-tree",
+      "name": "EAGLE-2 动态草稿树：value V_i=∏置信度、扩展 top-k、重排 top-m",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/v1/spec_decode/llm_base_proposer.py:L525-L592"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2406.16858",
+        "sections": [
+          "§4.1",
+          "§4.2",
+          "Fig.7"
+        ]
+      }
+    },
+    {
+      "id": "eagle2-well-calibrated",
+      "name": "EAGLE-2 良好校准观察：草稿置信度 ≈ 接受率（动态树可行性依据）",
+      "kind": "dataflow",
+      "source_anchors": [
+        "vllm/v1/spec_decode/llm_base_proposer.py:L386-L390"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": false,
+      "difficulty": "supporting",
+      "paper_origin": {
+        "paper": "arXiv:2406.16858",
+        "sections": [
+          "§3.1",
+          "§3.2",
+          "Fig.6"
+        ]
+      }
+    },
+    {
+      "id": "vllm-eagle-chain-drafting",
+      "name": "vLLM 落地：propose() 链式自回归草稿循环（token+特征逐步回喂）",
+      "kind": "dataflow",
+      "source_anchors": [
+        "vllm/v1/spec_decode/llm_base_proposer.py:L392-L592",
+        "vllm/v1/spec_decode/llm_base_proposer.py:L646-L678"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": false,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2401.15077",
+        "sections": [
+          "§3.1"
+        ]
+      },
+      "paper_origin_note": "这是 EAGLE §3.1 drafting 的 vLLM 链式（chain）落地；论文的动态树属原理，vLLM 此路径为其 k=1 退化。"
+    },
+    {
+      "id": "eagle-proposer-call-surface",
+      "name": "运行器调用面：target_hidden_states 选取 + next_token_ids 准备 + propose() 入参",
+      "kind": "dataflow",
+      "source_anchors": [
+        "vllm/v1/worker/gpu_model_runner.py:L4710-L4836"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": false,
+      "difficulty": "supporting",
+      "paper_origin": {
+        "paper": "arXiv:2401.15077",
+        "sections": [
+          "§3.1",
+          "§3.3"
+        ]
+      },
+      "paper_origin_note": "EAGLE 在 vLLM 里的宿主接线：把目标模型的特征/已接受 token 组织成草稿器入参。"
+    }
+  ]
+}

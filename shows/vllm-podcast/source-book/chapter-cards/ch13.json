@@ -1,0 +1,47 @@
+{
+  "chapter_id": "ch13",
+  "title": "schedule()：Token 为中心的连续批处理",
+  "slug": "ch13-scheduler",
+  "sections": [
+    "13.1 没有 prefill 相，没有 decode 相",
+    "13.2 批大小是 token 数，不是请求数",
+    "13.3 阶段一：先伺候在途请求（RUNNING）",
+    "13.4 阶段二：再接纳新请求（WAITING）",
+    "13.5 SchedulerOutput：全量发一次，之后只发 diff",
+    "13.6 update_from_output：反馈环的另一半",
+    "13.7 AsyncScheduler：让调度和执行重叠"
+  ],
+  "key_classes": [
+    {
+      "name": "SchedulerInterface",
+      "file": "vllm/v1/core/sched/interface.py",
+      "responsibility": "调度器抽象基类，定义 schedule()/update_from_output()/add_request()/finish_requests() 等契约；明确‘每个调度步=一次 forward’、schedule() 产出 {req_id: num_tokens}。同时定义 PauseState(UNPAUSED/PAUSED_NEW/PAUSED_ALL)。"
+    },
+    {
+      "name": "Scheduler",
+      "file": "vllm/v1/core/sched/scheduler.py",
+      "responsibility": "同步连续批处理调度器（SchedulerInterface 实现）。持有 self.requests/waiting/skipped_waiting/running 队列与 KVCacheManager/EncoderCacheManager；schedule() 两阶段（先 RUNNING 后 WAITING）按 token 预算分配；update_from_output() 吃模型输出、追加 token、判 stop、free、产出 EngineCoreOutputs。"
+    },
+    {
+      "name": "AsyncScheduler",
+      "file": "vllm/v1/core/sched/async_scheduler.py",
+      "responsibility": "异步调度器，继承 Scheduler，只覆写 _update_after_schedule()/_update_request_with_output()。用 num_output_placeholders 占位机制解决‘调度本拍时上一拍 token 还没算完’——允许调度与执行重叠（async_scheduling=True 时 EngineCore 实例化它）。"
+    },
+    {
+      "name": "NewRequestData",
+      "file": "vllm/v1/core/sched/output.py",
+      "responsibility": "首次被调度的请求的‘全量’数据（prompt/采样参数/block_ids/mm/num_computed_tokens）。worker 进程收到后缓存，避免后续每步重发。from_request() 工厂构造。"
+    },
+    {
+      "name": "CachedRequestData",
+      "file": "vllm/v1/core/sched/output.py",
+      "responsibility": "已调度过请求的‘增量 diff’：req_ids + resumed_req_ids(替换 vs 追加 block 语义) + new_block_ids + num_computed_tokens + num_output_tokens（PP 时还带 new_token_ids）。最小化调度器→worker 的通信量。"
+    },
+    {
+      "name": "SchedulerOutput",
+      "file": "vllm/v1/core/sched/output.py",
+      "responsibility": "一拍调度的完整产物：scheduled_new_reqs(NewRequestData 列表) + scheduled_cached_reqs(CachedRequestData) + num_scheduled_tokens(每请求 token 数) + total_num_scheduled_tokens + finished_req_ids + 各类 spec/encoder/connector 元数据。送往 model runner。"
+    }
+  ],
+  "mechanisms": []
+}

@@ -1,0 +1,43 @@
+{
+  "episodes": {
+    "ep01": {
+      "foreshadow_due": [
+        "EngineCore 一拍 = schedule → execute_model → sample_tokens → update_from_output",
+        "KV cache 块分配失败时的抢占循环与 skipped_waiting 双队列"
+      ],
+      "payoff_due": []
+    },
+    "ep02": {
+      "foreshadow_due": [
+        "execute_model：模型前向在 GPU worker 上的真实执行",
+        "语法编译要上百毫秒，不能堵在调度循环里",
+        "prefill/decode 瓶颈细节",
+        "采样参数细节"
+      ],
+      "payoff_due": []
+    },
+    "ep03": {
+      "foreshadow_due": [
+        "block_table：Triton kernel 把逻辑块号映射成 GPU 物理 slot",
+        "CUDA graph：录好的 GPU 命令原样重播的融合内核，Python 解释器都不经过"
+      ],
+      "payoff_due": []
+    },
+    "ep04": {
+      "foreshadow_due": [
+        "采样不是简单 argmax：9 步 logits 处理器管线",
+        "prefill 侧瓶颈细节（ep04 余账）：变长 prefill 形状不定吃不到固定录像红利、为何常回退 NONE"
+      ],
+      "payoff_due": []
+    },
+    "ep05": {
+      "foreshadow_due": [],
+      "payoff_due": [
+        "采样不是简单 argmax：9 步 logits 处理器管线",
+        "语法编译要上百毫秒，不能堵在调度循环里",
+        "采样参数细节",
+        "prefill 侧瓶颈细节（ep04 余账）：变长 prefill 形状不定吃不到固定录像红利、为何常回退 NONE"
+      ]
+    }
+  }
+}

@@ -1,0 +1,247 @@
+=== commits ===
+661bce1 docs: task-15-report 补 FIX ROUND 1 提交 hash
+e7c4362 fix: voices-coverage 显式落盘 + reviewer 产物命名对齐
+
+=== stat ===
+ .claude/agents/researcher.md          |   2 +-
+ .claude/agents/reviewer.md            |  31 +++++----
+ .claude/workflows/episode-pipeline.js |   6 +-
+ .claude/workflows/season-pipeline.js  |  49 +++++++++++++-
+ .superpowers/sdd/task-15-report.md    | 123 ++++++++++++++++++++++++++++++++++
+ 5 files changed, 190 insertions(+), 21 deletions(-)
+
+=== key diffs ===
+diff --git a/.claude/agents/researcher.md b/.claude/agents/researcher.md
+index e60e279..59bb606 100644
+--- a/.claude/agents/researcher.md
++++ b/.claude/agents/researcher.md
+@@ -68,16 +68,16 @@ color: magenta
+ 
+ - 每期核心议题至少各 1 条 critical + 1 条 job-seeker（找得到的话）；同一 `term` 尽量 ≥2 个不同平台（lint_voices ④ warn 线）
+ - 引述素材的原话（以 `claim` 字段存原文形态）与 `speaker_handle` 一起存，供 TTS 站三档策略取用
+ - 找不到关键声音时：优先换搜索词、换平台、看回复串再试一轮；仍然没有 → 见下
+ 
+ ## BLOCKED 与降级（spec §11.1/§11.3）
+ 
+ - 关键议题**查不到任何可信外部声音** → `status=BLOCKED` 升级 Lead（由 Lead 决定「降级为纯书内讨论」还是「换议题」），**不许编一条出来凑数**
+-- 某议题只有 critical 没有 job-seeker（或反过来）→ 允许交付，但**必须显式上报覆盖缺口**（`voices_coverage=partial` 落盘 run-ledger.json 由 workflow 执行），不许静默截断假装全覆盖
++- 某议题只有 critical 没有 job-seeker（或反过来）→ 允许交付，但**必须显式上报覆盖缺口**：workflow 在 lint_voices 门禁后统计 voices.json 落盘 `season/voices-coverage.json`（判定：job-seeker ≥1 且总数 ≥3 → `full`；job-seeker ≥1 → `partial`；无 job-seeker → `none`），partial/none 会在 workflow log 与发车返回里显式标注，reviewer 据此降权（spec §11.3），不许静默截断假装全覆盖
+ 
+ ## 收工自检
+ 
+ - [ ] `python3 scripts/lint_voices.py <show>/season/voices.json`：BLOCKING 清零（warn 可接受但逐条说明）
+ - [ ] 每条 `source_url` 是抓取/搜索实际见过内容的 URL，`source_date` 格式 `YYYY-MM-DD`
+ - [ ] confidence=low 的条目 writer_note 含「未一手核实」
+ - [ ] 每期核心议题都有声音覆盖或已显式上报缺口；无任何凭记忆编造的条目
+diff --git a/.claude/agents/reviewer.md b/.claude/agents/reviewer.md
+index 0d585a3..694bb94 100644
+--- a/.claude/agents/reviewer.md
++++ b/.claude/agents/reviewer.md
+@@ -13,38 +13,41 @@ color: red
+ ## 开工前读什么
+ 
+ 1. `shows/<name>/episodes/epNN-<slug>/script.md` — 定稿
+ 2. `shows/<name>/episodes/epNN-<slug>/episode-card.json` — 内容真相源（事实核对基准）
+ 3. `shows/<name>/season/voices.json` — 外部声音真相源（原声保真核对基准）
+ 4. `shows/<name>/season/arc.json` — 争议框架是否完整落地
+ 5. `shows/<name>/season/bible/voice-guide.md` + `arc-map.json` — 纪律与伏笔状态
+ 6. `shows/<name>/episodes/epNN-<slug>/audio/episode.wav` + `audio/audio-qa.json` — 音频（若有；audio-qa 的 issues 你直接引用）
+-7. `shows/<name>/episodes/epNN-<slug>/reviews/run-ledger.json` — 回环轮数、voices_coverage 记录
++7. `shows/<name>/episodes/epNN-<slug>/reviews/run-ledger.json` — 回环轮数、各维 pass/fail；求职者声音覆盖见 `shows/<name>/season/voices-coverage.json`（spec §11.3 降级知情）
+ 
+ ## 产物契约
+ 
+-写 `shows/<name>/episodes/epNN-<slug>/reviews/<run>-review.json`（每轮一个文件，run 从 1 计数），并更新 `reviews/run-ledger.json`（轮数 + 通过状态）：
++**每轮每维一个文件**：`shows/<name>/episodes/epNN-<slug>/reviews/r<run>-<dim>.json`（run 从 1 计数，dim = 维度 key，如 `r1-factual_accuracy.json`）。workflow 按 6 维并行调度 6 个 reviewer agent（spec §12.3）——**每维一文件正是防 6 个并行 agent 写同一文件名互相覆盖的防竞态设计**。
++
++单维文件格式（与 workflow 的返回契约一致：pass + issues，外加元信息）：
+ 
+ ```json
+ {
+   "episode_id": "ep01",
+   "run": 1,
+-  "verdict": "pending",
+-  "dimensions": {
+-    "factual_accuracy":     {"score": 4, "issues": ["script.md:55 数字与 episode-card 不一致"], "verdict": "pass"},
+-    "critical_depth":       {"score": 3, "issues": ["争议只呈现了 claim，counter 没展开"], "verdict": "fail"},
+-    "spoken_clarity":       {"score": 4, "issues": [], "verdict": "pass"},
+-    "voice_balance":        {"score": 4, "issues": [], "verdict": "pass"},
+-    "job_seeker_resonance": {"score": 3, "issues": [], "verdict": "pass"},
+-    "quote_fidelity":       {"score": 4, "issues": [], "verdict": "pass"}
+-  }
++  "dimension": "factual_accuracy",
++  "pass": true,
++  "issues": [
++    {"problem": "script.md:55 数字与 episode-card 不一致", "suggested_fix": "改用 episode-card 的数字", "rationale": "事实准确维：数字不漂移", "blocking": false}
++  ]
+ }
+ ```
+ 
++- `pass`：本维是否通过；每条 issue：`problem`（带 script 行号证据）+ `suggested_fix` + `rationale`（指到契约条款）+ `blocking`（true = 阻断项，writer 必须修；false = 参考意见）
++- 6 个维度的结论汇总进 `reviews/run-ledger.json`（轮数 + 各维 pass/fail）
++
++**run-ledger 归属（防并行竞态）**：`reviews/run-ledger.json` **只由 factual_accuracy 维写**——其余 5 维并行 agent 禁碰它（并行写同一文件会丢条目）。收工自检里的「更新 run-ledger」只对 factual_accuracy 维生效。
++
+ ## 6 维并行（spec §12.3，每一维都给结论 + 证据行号 + 可执行问题）
+ 
+ | 维度 | 看什么 |
+ |---|---|
+ | **事实准确** | 每个技术断言能在 episode-card 找到支撑；数字不漂移（与书 / voices 原文一致）；「我不知道」处是真的不知道还是回避 |
+ | **批判强度** | 是不是只有赞美？争议有没有真展开（claim/counter 都站得住）？反方立场有没有被公平呈现？批判有没有靶子（具体的人/场景）？ |
+ | **口播可懂** | 闭眼只听能不能跟上？有没有依赖视觉的表述（「如图」「看这段代码」）？术语首现有没有口头解释？ |
+ | **双声线平衡** | 两人是不是各有性格？有没有一方沦为「嗯嗯对对」的捧哏（任一方 turn 占比 <30%）？老张有没有假装惊叹、阿凯有没有背书？ |
+@@ -56,17 +59,17 @@ color: red
+ - 每轮评审的问题必须**能导向 writer 的明确修改**（带行号、指到契约），不给「仅供参考」
+ - 回环 ≤3 轮：第 2 轮起只看上轮 fail 维度；第 3 轮后仍有关键问题 → `verdict=review-exhausted` → **BLOCKED 升级 Lead**
+ - 升级时附上：哪些维度在 3 轮内改不动 + 已尝试的方向（这是 Lead 决定「改提示词还是砍期」的依据）
+ 
+ ## 铁律
+ 
+ - **评审无权因风格偏好退稿**（spec §4.1 精神）：「我觉得这句可以写得更有趣」不是问题。退稿必须指到契约——voice-guide 纪律 / episode-card 支撑 / voices 保真 / 格式契约。**怎么写是 writer 说了算，你决定它有没有违反契约**
+ - 你不改稿：产出只有 reviews 文件；修改永远是 writer 的事
+-- 降级知情（spec §11.3）：run-ledger 记录该期 `voices_coverage=partial` 时，求职者共鸣维度权重降低，**不因缺失外部声音退稿**（那是 researcher 的 BLOCKED 面）
++- 降级知情（spec §11.3）：先 Read `shows/<name>/season/voices-coverage.json`（Research 阶段由 workflow 显式落盘）——`coverage=partial/none` 时，求职者共鸣维度权重降低，**不因缺失外部声音退稿**（那是 researcher 的 BLOCKED 面）；该文件缺失（旧 season 未跑 coverage 步）时按全覆盖处理
+ - 音频问题（削波/静音/时长）引用 audio-qa.json 的 issues，不重复质检（audio-qa 已有独立回环）
+ 
+ ## 收工自检
+ 
+-- [ ] 6 个维度都有明确结论（score + issues + verdict），没有「略过」的维度
++- [ ] 本维结论明确（pass + issues），没有「略过」
+ - [ ] 每条问题带 script 行号；每条结论能指到契约条款
+ - [ ] 通过/不通过判定可执行（fail 条目 = writer 能照着改的清单）
+-- [ ] run-ledger.json 已更新（轮数 + 本轮 verdict）；无风格偏好式退稿
++- [ ] 本维文件 `r<run>-<dim>.json` 已落盘；run-ledger.json **仅 factual_accuracy 维**更新（轮数 + 各维 pass/fail），其余维禁碰（防并行写竞态）；无风格偏好式退稿
+diff --git a/.claude/workflows/episode-pipeline.js b/.claude/workflows/episode-pipeline.js
+index 4b9b5e3..cc05cf5 100644
+--- a/.claude/workflows/episode-pipeline.js
++++ b/.claude/workflows/episode-pipeline.js
+@@ -212,29 +212,29 @@ const QA_SCHEMA = {
+   properties: {
+     status: { type: 'string', enum: ['OK', 'BLOCKED'] },
+     note: { type: 'string' },
+     blocker_reason: { type: 'string' },
+     issues: { type: 'array', items: { type: 'string' } },
+     route: { type: 'string', enum: ['writer', 'tts', 'both', 'none'] },
+   },
+ }
+-async function runAudioQA() {
++async function runAudioQA(qaRound) {
+   return agent(
+     '你是质检执行员。只做一件事：运行下面命令并如实转述报告（不要修改任何文件、不要评价、不要重写）：\n' +
+     QA_CMD + '\n' +
+     '然后 Read ' + AUDIO + '/audio-qa.json，把 issues 数组逐条原样转述到 issues 字段。\n' +
+     'route 判定（机械规则，勿加判断）：issues 里「时长」开头的 BLOCKING → route 含 writer；「削波」开头的 BLOCKING → route 含 tts；两者都有 → both；无 BLOCKING → none。\n' +
+     '无 BLOCKING → status=OK；有 BLOCKING → status=BLOCKED（blocker_reason 写哪类问题）。',
+-    { schema: QA_SCHEMA, label: 'audio-qa', phase: 'AudioQA', agentType: 'claude', model: MODELS.runner },
++    { schema: QA_SCHEMA, label: 'audio-qa r' + qaRound, phase: 'AudioQA', agentType: 'claude', model: MODELS.runner },
+   )
+ }
+ let qaFixes = 0
+ for (;;) {
+-  const qa = await runAudioQA()
++  const qa = await runAudioQA(qaFixes + 1)
+   if (!qa) return { show: A.show, ep_id: A.ep_id, escalated: 'audio-qa-failed', stage: 'AudioQA', note: '质检执行 agent 失败（限流/崩溃）——audio-qa 未执行不放行' }
+   if (qa.status === 'OK') { log('AudioQA 通过'); break }
+   if (qaFixes >= 2) return { show: A.show, ep_id: A.ep_id, escalated: 'audio-qa-exhausted', stage: 'AudioQA', fixes: qaFixes, issues: qa.issues, note: 'audio-qa BLOCKING 经 2 轮修复未过——升级 Lead（spec §11.2：tts-engine ↔ audio-qa 回环上限 2）' }
+   qaFixes++
+   const route = qa.route || 'tts'
+   if (route === 'writer' || route === 'both') {
+     const fixW = await agent(
+       head('writer', [
+diff --git a/.claude/workflows/season-pipeline.js b/.claude/workflows/season-pipeline.js
+index 2f9c892..cae47ae 100644
+--- a/.claude/workflows/season-pipeline.js
++++ b/.claude/workflows/season-pipeline.js
+@@ -1,11 +1,11 @@
+ // .claude/workflows/season-pipeline.js
+ // devpodcast Phase A：整季编排（spec §3.2 / §3.3①）。Task 15 骨架。
+-// 阶段链：Plan → Research(+lint_voices 门禁) → Hooks → Slice(book-analyst×N 并行) → Bible。
++// 阶段链：Plan → Research(+lint_voices 门禁 + voices_coverage 落盘) → Hooks → Slice(book-analyst×N 并行) → Bible。
+ // args 契约：{ show: "vllm-podcast", episodes: 5 }
+ //   show：节目名（shows/<show>/ 目录）；episodes：议题数（正整数，具体议题由 planner 定）。
+ // 配置兜底（repo2book 教训：Workflow 的 args 注入不可靠）：完全未传 args 才允许脚本内 CFG；
+ //   传了 args 但解析不出关键字段 → 立即返回 { escalated: 'bad-args' } 拉闸，绝不静默默认
+ //   （repo2book 曾静默默认错实例烧 692k tokens）。
+ // 逃生舱（spec §11.1）：任一 agent 返回 { status: 'BLOCKED', blocker_reason } → 立即中止升级 Lead。
+ //   宁可拉闸，不要产出错误成果一路跑到底。
+ // 公共件（真实可用，非摆设）：STATUS_SCHEMA / head(role, ctx) / ESC / runLints()。
+@@ -164,16 +164,49 @@ for (;;) {
+     ]),
+     { schema: STATUS_SCHEMA, label: 'voices-fix r' + voicesFixes, phase: 'Research', agentType: 'researcher', model: MODELS.researcher },
+   )
+   if (!fix) return { show: A.show, escalated: 'voices-fix-failed', stage: 'Research', round: voicesFixes, note: 'researcher 修复 agent 失败（限流/崩溃）' }
+   if (fix.status === 'BLOCKED') return { show: A.show, escalated: 'voices-fix', stage: 'Research', round: voicesFixes, reason: fix.blocker_reason }
+ }
+ log('Research 完成：voices.json 过 lint_voices 门禁')
+ 
++// ---------- Research 收尾：voices_coverage 显式落盘（spec §11.3） ----------
++// 降级知情链：researcher 契约允许交付有覆盖缺口的 voices.json（某议题查不到求职者声音，
++// coverage=partial），但缺口必须显式落盘 voices-coverage.json 并在 log/返回对象标注——
++// 不许静默截断（静默截断读起来像全覆盖，实际没有，reviewer 会按全覆盖评审求职者维度）。
++// 判定：job-seeker ≥1 且 total ≥3 → full；job-seeker ≥1 → partial；job-seeker = 0 → none。
++// M0 用 python3 -c 内联（不新建脚本文件），正式化留给 M3。
++const COVERAGE_SCHEMA = {
++  type: 'object', additionalProperties: false, required: ['status', 'note', 'coverage'],
++  properties: {
++    status: { type: 'string', enum: ['OK', 'BLOCKED'] },
++    note: { type: 'string' },
++    blocker_reason: { type: 'string' },
++    coverage: { type: 'string', enum: ['full', 'partial', 'none'] },
++    total_voices: { type: 'integer' },
++    job_seeker_voices: { type: 'integer' },
++  },
++}
++const COV_CMD = 'python3 -c \'import sys,json,datetime; d=json.load(open(sys.argv[1])); vs=list(d.values()) if isinstance(d,dict) else [d]; js=sum(1 for v in vs if v.get("category")=="job-seeker"); cov="none" if js==0 else ("full" if len(vs)>=3 else "partial"); out=dict(checked_at=datetime.date.today().isoformat(), total_voices=len(vs), job_seeker_voices=js, coverage=cov, note="voice 总数 %d 条，其中求职者声音 %d 条" % (len(vs), js)); json.dump(out, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False, indent=2)\' ' + SEASON + '/voices.json ' + SEASON + '/voices-coverage.json'
++const voicesCov = await agent(
++  '你是门禁执行员。只做一件事：运行下面 1 条命令并如实转述结果（不要修改任何文件、不要评价、不要重写）：\n' +
++  COV_CMD + '\n' +
++  '然后 cat ' + SEASON + '/voices-coverage.json，把 coverage / total_voices / job_seeker_voices 如实填回返回字段。\n' +
++  '判定：命令退出码 0 → status=OK；命令失败（voices.json 缺失/解析错等）→ status=BLOCKED，blocker_reason 写清退出码与错误输出。',
++  { schema: COVERAGE_SCHEMA, label: 'voices-coverage', phase: 'Research', agentType: 'claude', model: MODELS.runner },
++)
++if (!voicesCov) return { show: A.show, escalated: 'voices-coverage-failed', stage: 'Research', note: 'coverage 执行 agent 失败（限流/崩溃）——voices_coverage 未落盘不放行（spec §11.3 不许静默）' }
++if (voicesCov.status === 'BLOCKED') return { show: A.show, escalated: 'voices-coverage', stage: 'Research', reason: voicesCov.blocker_reason }
++if (voicesCov.coverage !== 'full') {
++  log('voices_coverage=' + voicesCov.coverage + '——researcher 未找到足够求职者声音（求职者 ' + voicesCov.job_seeker_voices + ' 条 / 总 ' + voicesCov.total_voices + ' 条），reviewer 知情降权（spec §11.3），已落盘 ' + SEASON + '/voices-coverage.json')
++} else {
++  log('voices_coverage=full——voice 总 ' + voicesCov.total_voices + ' 条，其中求职者 ' + voicesCov.job_seeker_voices + ' 条，已落盘 ' + SEASON + '/voices-coverage.json')
++}
++
+ // ---------- Hooks：hook-engineer 出钩子/金句/争议框架 ----------
+ phase('Hooks')
+ const hooks = await agent(
+   head('hook-engineer', [
+     '书源快照（只读）：' + SRC + '/',
+     '议题清单：' + SEASON + '/season-plan.json',
+     '产出：' + SEASON + '/arc.json，对齐 schemas/arc.schema.json',
+     '任务：每期开场钩子/收尾金句/争议框架/伏笔映射（foreshadow_map 与 season-plan 的 foreshadow_due/payoff_due 对齐）。',
+@@ -213,17 +246,27 @@ log('Slice 完成：' + sliceOut.length + ' 张 episode-card')
+ 
+ // ---------- Bible：archivist 建 Season Bible 四件套 + trace ----------
+ phase('Bible')
+ const bible = await agent(
+   head('archivist', [
+     '输入：' + SEASON + '/season-plan.json + arc.json + voices.json + 全部 episodes/<slug>/episode-card.json',
+     '书源快照（只读，glossary 提炼来源）：' + SRC + '/',
+     '产出：' + SEASON + '/bible/ 四件套（glossary.json / voice-guide.md / arc-map.json / voices-index.json，对齐 schemas/season-bible.schema.json）+ trace 记录',
+-    '任务（Phase A 建季）：glossary 从书源快照 + episode-cards 提炼口播译名；arc-map 从 season-plan + arc 汇总伏笔登记（每期 foreshadow_due/payoff_due）；voices-index 初始为空；voice-guide.md **由 Lead 落笔**（spec §5）——你只建占位/核对其存在，绝不擅自改内容，若缺失 → status=BLOCKED。trace 至少一条 entry（建季 + 经验）。',
++    '任务（Phase A 建季）：glossary 从书源快照 + episode-cards 提炼口播译名；arc-map 从 season-plan + arc 汇总伏笔登记（每期 foreshadow_due/payoff_due）；voices-index 初始为空；voice-guide.md **由 Lead 落笔**（spec §5）——你只核对其存在，绝不建占位/改内容（空占位会废掉缺失检查，writer 照读空 guide 无从退稿），若缺失 → status=BLOCKED。trace 至少一条 entry（建季 + 经验）。',
+   ]),
+   { schema: STATUS_SCHEMA, label: 'bible', phase: 'Bible', agentType: 'archivist', model: MODELS.archivist },
+ )
+ if (!bible) return { show: A.show, escalated: 'bible-failed', stage: 'Bible', note: 'archivist agent 失败（限流/崩溃），Season Bible 未建成' }
+ if (bible.status === 'BLOCKED') return { show: A.show, escalated: 'bible', stage: 'Bible', reason: bible.blocker_reason }
+ log('Bible 完成：' + (bible.note || 'Season Bible 已建'))
+ 
+-return { show: A.show, episodes: EPS.map(function (e) { return e.slug }), note: 'Phase A 完成：' + EPS.length + ' 期议题 + Season Bible' }
++return {
++  show: A.show,
++  episodes: EPS.map(function (e) { return e.slug }),
++  voices_coverage: {
++    coverage: voicesCov.coverage,
++    total_voices: voicesCov.total_voices,
++    job_seeker_voices: voicesCov.job_seeker_voices,
++    file: SEASON + '/voices-coverage.json',
++  },
++  note: 'Phase A 完成：' + EPS.length + ' 期议题 + Season Bible' + (voicesCov.coverage === 'full' ? '' : '（voices_coverage=' + voicesCov.coverage + '，reviewer 知情降权）'),
++}

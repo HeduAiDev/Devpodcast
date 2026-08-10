@@ -1,0 +1,53 @@
+{
+  "chapter_id": "ch08",
+  "title": "Stage 3 输出处理：把一批 token 分发回 N 个流",
+  "slug": "ch08-output-processor",
+  "sections": [
+    "8.1 一句话钩子：一个函数管整批，一条队列喂一个流",
+    "8.2 生产者：`output_handler` 怎么把一批喂进单循环",
+    "8.3 主轴：`process_outputs()` 的单循环",
+    "8.4 第一个子系统：增量去 token 与停止串",
+    "8.5 三道闸门：`make_request_output` 与 DELTA 归并",
+    "8.6 `n>1` 父聚合与完成清理",
+    "8.7 跑起来看数值：交叉验证",
+    "8.8 小结：你现在掌握了什么"
+  ],
+  "key_classes": [
+    {
+      "name": "OutputProcessor",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "Stage 3 总入口。持有 request_states(内部 id→RequestState)、parent_requests、external_req_ids(外部 id→[内部 id]) 三张表。process_outputs 是唯一遍历整批的单循环；abort_requests/propagate_error 处理异常路径；_finish_request 注销。同时服务 AsyncLLM（入队）与 LLMEngine（返回列表）两条路径。"
+    },
+    {
+      "name": "RequestState",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "per-request 累积状态：detokenizer、logprobs_processor、queue(RequestOutputCollector)、parent_req、output_kind、stream_interval/sent_tokens_offset、is_prefilling、num_cached_tokens、stats。make_request_output 把本步增量变成 RequestOutput（含 stream_interval 节流、DELTA/FINAL_ONLY 分支、父聚合分流）。from_new_request 是工厂。"
+    },
+    {
+      "name": "RequestOutputCollector",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "f1：per-request 单槽队列/邮箱，连接 output_handler 生产者与 generate() 消费者。aggregate(DELTA) 时 put 调 RequestOutput.add 归并落后于消费者的 deltas；asyncio.Event 做唤醒；put 非阻塞、get 阻塞、get_nowait 快取。"
+    },
+    {
+      "name": "IncrementalDetokenizer",
+      "file": "vllm/v1/engine/detokenizer.py",
+      "responsibility": "增量去 token + 停止串检测。基类 update 逐 token 追加 output_text、min_tokens 保护、check_stop_strings 截断；get_next_output_text 给 delta/全量文本。from_new_request 按 tokenizer 类型选 Fast(DecodeStream)/Slow(python 增量)/空(无 tokenizer) 三种实现。"
+    },
+    {
+      "name": "LogprobsProcessor",
+      "file": "vllm/v1/engine/logprobs.py",
+      "responsibility": "sample/prompt logprobs 增量累积与去 token。update_from_output 分发到 _update_sample_logprobs（累 cumulative_logprob）与 _update_prompt_logprobs；pop_prompt_logprobs 在 DELTA 下一次性吐出并清空 prompt logprobs。"
+    },
+    {
+      "name": "ParentRequest",
+      "file": "vllm/v1/engine/parallel_sampling.py",
+      "responsibility": "n>1 并行采样的父请求聚合器。get_outputs 把各子 CompletionOutput 按 index 聚合（流式转发 / FINAL_ONLY 攒齐 n 个一次返回），并维护 child_requests 决定整体 finished。"
+    },
+    {
+      "name": "OutputProcessorOutput",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "process_outputs 的返回值：request_outputs(仅 LLMEngine 同步路径非空) + reqs_to_abort(因检测到停止串而需反向 abort EngineCore 的请求)。"
+    }
+  ],
+  "mechanisms": []
+}

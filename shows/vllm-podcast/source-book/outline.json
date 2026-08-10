@@ -1,0 +1,487 @@
+[
+  {
+    "part": "Part I — The Big Picture: One Request, End to End",
+    "chapters": [
+      {
+        "id": "ch01",
+        "title": "What vLLM v1 Is and How to Read This Book",
+        "subsystem": "config-and-wiring",
+        "scope": "vLLM v1 mental model, why v1 differs from v0 (async-decoupled, persistent batch, torch.compile), the offline LLM vs OpenAI server surfaces, the subtract-only companion convention, and how source-reading chapters are structured (Source Trail + Theory).",
+        "difficulty": "intro",
+        "depends_on": []
+      },
+      {
+        "id": "ch02",
+        "title": "The Lifecycle of a Request (Bird's-Eye Trace)",
+        "subsystem": "entrypoints",
+        "scope": "Walk the full spine at low resolution: generate()/HTTP -> render -> InputProcessor -> EngineCore (schedule+execute+sample+update) -> OutputProcessor -> streamed tokens. Establishes the map every later chapter zooms into. Uses async_llm.py:524, core.py:402, output_processor.py:572 as anchor points.",
+        "difficulty": "intro",
+        "depends_on": [
+          "ch01"
+        ]
+      },
+      {
+        "id": "ch03",
+        "title": "From EngineArgs to VllmConfig: Assembling the Stack",
+        "subsystem": "config-and-wiring",
+        "scope": "EngineArgs.create_engine_config() building ModelConfig/CacheConfig/ParallelConfig/SchedulerConfig/CompilationConfig into VllmConfig; optimization levels O0-O3; factory selection of Executor, Scheduler, and EngineCoreClient driven by feature flags; compute_hash().",
+        "difficulty": "core",
+        "depends_on": [
+          "ch02"
+        ]
+      }
+    ]
+  },
+  {
+    "part": "Part II — The Async 3-Stage Decoupling (Flagship)",
+    "chapters": [
+      {
+        "id": "ch04",
+        "title": "AsyncLLM: The 3-Stage Decoupled Facade",
+        "subsystem": "async-engine",
+        "scope": "The crown-jewel architecture: in-process input preprocessing, out-of-process EngineCore, in-process background output handler. generate() async generator, add_request() fan to OutputProcessor + EngineCore, lazy output_handler task, chunked processing with asyncio.sleep(0). async_llm.py:280-707.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch03"
+        ]
+      },
+      {
+        "id": "ch05",
+        "title": "Stage 1 — Input Processing: Prompt to EngineCoreRequest",
+        "subsystem": "input-processor",
+        "scope": "InputProcessor.process_inputs(): tokenization via Renderer, param validation, request-id assignment, multimodal MultiModalFeatureSpec extraction/sorting, and EngineCoreRequest construction. input_processor.py:234-377.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch04"
+        ]
+      },
+      {
+        "id": "ch06",
+        "title": "Parallel Sampling Fan-Out (n>1)",
+        "subsystem": "input-processor",
+        "scope": "ParentRequest spawning n independent child EngineCoreRequests with unique ids and deterministic seed progression; why independent scheduling beats batched n; aggregation hooks set up for the output stage. parallel_sampling.py, async_llm.py:376-412.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch05"
+        ]
+      },
+      {
+        "id": "ch07",
+        "title": "The IPC Boundary: ZMQ, msgpack, and Zero-Copy Tensors",
+        "subsystem": "engine-core",
+        "scope": "EngineCoreClient hierarchy (Inproc/Sync/AsyncMP), ZMQ DEALER sockets, EngineCoreRequestType byte-tagged protocol, msgpack encode/decode, EngineCoreProc input/output socket threads, and TensorIpcSender/Receiver drain-and-buffer for multimodal tensors. core_client.py, core.py:1320-1531, tensor_ipc.py.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch04",
+          "ch05"
+        ]
+      },
+      {
+        "id": "ch08",
+        "title": "Stage 3 — Output Processing: Tokens to RequestOutput",
+        "subsystem": "output-processor",
+        "scope": "The single-loop OutputProcessor.process_outputs(), per-request RequestState, RequestOutputCollector queues with DELTA merging, stream_interval, finish handling, and parent aggregation for n>1. output_processor.py:572-687, 45-107.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch07",
+          "ch06"
+        ]
+      },
+      {
+        "id": "ch09",
+        "title": "Incremental Detokenization and Stop Strings",
+        "subsystem": "output-processor",
+        "scope": "IncrementalDetokenizer hierarchy (Fast tokenizers.DecodeStream vs Slow Python), stop-string buffer holdback, min_tokens guard, UTF-8 boundary recovery. detokenizer.py:30-340.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch08"
+        ]
+      },
+      {
+        "id": "ch10",
+        "title": "Logprobs Assembly with Byte-Fallback Correction",
+        "subsystem": "output-processor",
+        "scope": "Sample and prompt logprobs from EngineCore tensors, context-aware UTF-8 multi-byte reconstruction, cumulative logprob tracking, flat vs nested formats. logprobs.py:30-353.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch09"
+        ]
+      }
+    ]
+  },
+  {
+    "part": "Part III — Inside EngineCore: The Busy Loop",
+    "chapters": [
+      {
+        "id": "ch11",
+        "title": "EngineCore and the Busy Loop",
+        "subsystem": "engine-core",
+        "scope": "EngineCore.step() orchestration (schedule -> execute_model non_block -> grammar bitmask -> sample_tokens -> update_from_output), run_busy_loop, lifecycle (pause/resume/sleep), and where the batch queue plugs in. core.py:91-432, 1164-1205.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch07"
+        ]
+      },
+      {
+        "id": "ch12",
+        "title": "Pipeline Parallelism in the Loop: the Batch Queue",
+        "subsystem": "engine-core",
+        "scope": "step_with_batch_queue() buffering SchedulerOutput+future pairs to keep PP stages busy, deferred sampling for structured output, async_scheduling flag. core.py:443-559.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch11"
+        ]
+      }
+    ]
+  },
+  {
+    "part": "Part IV — Scheduling and KV Cache",
+    "chapters": [
+      {
+        "id": "ch13",
+        "title": "Continuous Batching with Token Budgets",
+        "subsystem": "scheduler",
+        "scope": "Token-centric scheduling (no prefill/decode phases), RUNNING-first, max_num_scheduled_tokens budget, SchedulerOutput (NewRequestData vs CachedRequestData persistent-batch protocol), FCFS vs Priority queues. scheduler.py:352-525, output.py.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch11"
+        ]
+      },
+      {
+        "id": "ch14",
+        "title": "Preemption, Waiting Queues, and Update-From-Output",
+        "subsystem": "scheduler",
+        "scope": "Preemption loop on allocation failure, dual waiting/skipped queues for head-of-line avoidance, update_from_output token append + stop detection + request lifecycle/cleanup. scheduler.py:466-846, 1290-1551.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch13"
+        ]
+      },
+      {
+        "id": "ch15",
+        "title": "Paged KV Cache: Block Pool and Prefix Caching",
+        "subsystem": "kv-cache",
+        "scope": "BlockPool, KVCacheBlock, FreeKVCacheBlockQueue doubly-linked LRU, block hashing with extra keys (MM/LoRA/salt), BlockHashToBlockMap, reference counting touch/free. block_pool.py, kv_cache_utils.py.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch13"
+        ]
+      },
+      {
+        "id": "ch16",
+        "title": "Allocation and Multi-Attention Coordination",
+        "subsystem": "kv-cache",
+        "scope": "KVCacheManager three-stage allocate_slots (free skipped / prefix hits + external / new + lookahead), KVCacheCoordinator (Unitary vs Hybrid), fixed-point cache-hit search for hybrid full+SWA+MLA models. kv_cache_manager.py:225-416, kv_cache_coordinator.py:487-591.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch15"
+        ]
+      }
+    ]
+  },
+  {
+    "part": "Part V — Execution: Workers, Runner, Kernels",
+    "chapters": [
+      {
+        "id": "ch17",
+        "title": "Executors and Worker Lifecycle",
+        "subsystem": "worker-and-executor",
+        "scope": "Executor.get_class() factory (uni/mp/ray), collective_rpc, MultiprocExecutor shared-memory MessageQueues + FutureWrapper + worker monitoring, WorkerWrapperBase lazy init, GPU memory profiling before KV allocation. abstract.py, multiproc_executor.py, gpu_worker.py.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch11"
+        ]
+      },
+      {
+        "id": "ch18",
+        "title": "The Persistent Batch and _prepare_inputs",
+        "subsystem": "model-runner",
+        "scope": "InputBatch persisting across iterations (slot reuse via batch_update_builder), _update_states reconciling SchedulerOutput, _prepare_inputs (token index_select, positions, block table commit, Triton slot_mapping), CachedRequestState. gpu_model_runner.py:1065-1936, gpu_input_batch.py, block_table.py.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch17",
+          "ch14",
+          "ch16"
+        ]
+      },
+      {
+        "id": "ch19",
+        "title": "Decoupled Forward and Sampling: ExecuteModelState",
+        "subsystem": "model-runner",
+        "scope": "Two-phase execute_model() returning None + caching ExecuteModelState, sample_tokens() unpacking it, _bookkeeping_sync writing tokens back, CUDA graph dispatch. gpu_model_runner.py:378-391, 3825-4225.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch18"
+        ]
+      },
+      {
+        "id": "ch20",
+        "title": "Distributed Parallelism: Groups and Collectives",
+        "subsystem": "distributed-parallelism",
+        "scope": "GroupCoordinator (TP/PP/DP/EP), CPU(gloo)+device(NCCL) groups, all_reduce/all_gather/reduce_scatter, custom-op registration for torch.compile, P2P for PP. parallel_state.py:290-809, communication_op.py.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch17"
+        ]
+      },
+      {
+        "id": "ch21",
+        "title": "Async Communication and Data Parallelism",
+        "subsystem": "async-engine",
+        "scope": "AsyncIntermediateTensors lazy PP sync (isend/irecv), DPCoordinator wave synchronization with all-reduce consensus, DP load balancing (DPLBAsyncMPClient). gpu_worker.py:74-861, coordinator.py, core.py:1622-1863.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch20",
+          "ch12"
+        ]
+      }
+    ]
+  },
+  {
+    "part": "Part VI — 模型、算子、注意力与采样 (Models, Kernels, Attention, Sampling)",
+    "chapters": [
+      {
+        "id": "ch22",
+        "title": "Model Definitions and Weight Loading: The Llama Baseline",
+        "subsystem": "model-definitions",
+        "scope": "Establish the canonical vLLM v1 model contract using Llama as the simplest reference. The (vllm_config, prefix) constructor convention (llama.py:256, 354, 518); the four-level module nesting LlamaForCausalLM -> LlamaModel -> LlamaDecoderLayer -> {LlamaAttention(qkv_proj), LlamaMLP(gate_up/down)} (llama.py:81,124,253,350,501); ColumnParallel/RowParallel/QKVParallel linear with TP sharding and get_rope() factory; the forward signature (input_ids, positions, intermediate_tensors, inputs_embeds) and what each argument carries from the model runner; the weight-loading pipeline initialize_model -> load_weights -> process_weights_after_loading, AutoWeightsLoader, and stacked_params_mapping that fuses checkpoint q/k/v into qkv_proj and gate+up into gate_up_proj (llama.py:436-471). This is the foundation every later model chapter (custom ops, DeepSeek-V4) builds on. Contrast hook: explicitly note what Llama LACKS (no compression, no experts, no latent bottleneck, no hybrid-compute residual) so the DeepSeek-V4 chapter can introduce each addition as a delta.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch20"
+        ]
+      },
+      {
+        "id": "ch23",
+        "title": "Custom Operators and torch.compile: Plugging Kernels into the Graph",
+        "subsystem": "custom-ops-and-compilation",
+        "scope": "How a model layer becomes a fused, graph-captured kernel. Two-tier dispatch: the CustomOp base class selecting forward_cuda vs forward_native once at __init__ via dispatch_forward() and current_platform (custom_op.py:103-208), the op_registry enable/disable via compilation_config.custom_ops with +name/-name and the enabled()/default_on() check (custom_op.py:272-305), and PluggableLayer for out-of-tree replacement (custom_op.py:32). Binding C++/CUDA: vllm/_custom_ops.py Python wrappers calling torch.ops._C.* (paged_attention, rms_norm), torch.library.register_fake() shape stubs for compile-time shape inference (_custom_ops.py:83-104), and platform.import_kernels() loading vllm._C/_moe_C. Compilation: the @support_torch_compile decorator (decorators.py:118-252) shown decorating the real LlamaModel (llama.py:340), dynamic_arg_dims inference and mark_dynamic/mark_unbacked (decorators.py:414-501), TorchCompileWithNoGuardsWrapper guard dropping (wrapper.py:147), and piecewise CUDA-graph capture/replay via PiecewiseBackend shape-range dispatch + CUDAGraphWrapper batch_descriptor keying (piecewise_backend.py:86-150, cuda_graph.py:145-200). This chapter is the prerequisite vocabulary (torch.ops.vllm.* registration, custom-op dispatch, compile boundaries) that the DeepSeek-V4 chapter relies on for mhc_pre/post, mega-MoE, and MLA custom ops.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch22"
+        ]
+      },
+      {
+        "id": "ch25",
+        "title": "Attention Backends and Metadata",
+        "subsystem": "attention",
+        "scope": "AttentionBackend abstraction + registry + selector, CommonAttentionMetadata -> backend-specific metadata (FlashAttention/FlashInfer/Triton), KV cache shape/stride (NHD vs HND), AOT scheduler for FA3, cascade and DCP. Adds an MLA-backend on-ramp: the MLAAttention base class (mla_attention.py:318) and its compute-friendly forward_mha (prefill, mla_attention.py:2251) vs data-movement forward_mqa (decode, mla_attention.py:2324) split, the kv_b_proj W_UK/W_UV transforms and nope/rope query split, MLA backend selection (TRITON_MLA/FLASHMLA_SPARSE/FLASHINFER_MLA_SPARSE, mla_attention.py:374), MLAAttentionSpec KV-cache allocation, and the unified_mla_kv_cache_update / unified_mla_attention_with_output custom ops. This makes MLA an attention-backend concept here so the DeepSeek-V4 chapter can focus on model assembly (the latent projections) rather than re-deriving the attention kernel. backend.py, selector.py, backends/flash_attn.py, mla_attention.py.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch22",
+          "ch23",
+          "ch16",
+          "ch18"
+        ]
+      },
+      {
+        "id": "ch27",
+        "title": "Lightning Indexer 与 IndexCache:DSA 稀疏注意力的索引器,从论文推导到 vLLM 源码",
+        "subsystem": "attention",
+        "scope": "Lightning Indexer 打分数学(top-k 索引选择)→ IndexCache 缓存工程(DeepseekV32/V4IndexerCache)→ SparseAttnIndexer CustomOp 与 mla/indexer.py 后端→ use_fp4_indexer_cache 量化变体;论文推导+真实源码落地(同 ch24 FA 先例)",
+        "mode": "primer",
+        "final_position_note": "临时尾号生产;APPROVED 后 --insert @before:ch29-model-architecture(阅读流 ch25 注意力→ch26 量化→本章→DeepSeek-V4 整读)",
+        "key_source_paths": [
+          "vllm/model_executor/layers/deepseek_v4_attention.py",
+          "vllm/model_executor/layers/sparse_attn_indexer.py",
+          "vllm/v1/attention/backends/mla/indexer.py",
+          "vllm/model_executor/models/deepseek_v2.py"
+        ],
+        "deps": [
+          "ch25",
+          "ch26"
+        ]
+      },
+      {
+        "id": "ch28",
+        "title": "Reading a Full Model: DeepSeek-V4 (MLA + MoE + MTP)",
+        "subsystem": "model-architecture",
+        "scope": "The capstone model-reading chapter: assemble DeepSeek-V4 end to end as a stack of deltas over the Llama baseline (ch22). (1) Entry + skeleton: DeepseekV4ForCausalLM -> DeepseekV4Model -> DeepseekV4DecoderLayer (deepseek_v4.py:1507,1220,1089), the forward loop with hc_mult expansion (deepseek_v4.py:1315) and final_norm. (2) MLA model side: DeepseekV4Attention (deepseek_v4.py:921) wrapping DeepseekV4MultiHeadLatentAttentionWrapper (deepseek_v4_attention.py:106) — fused_wqa_wkv low-rank projection (q_lora_rank/kv_lora_rank), q/kv RMSNorm, wq_b latent->full-q expansion, wo_a/wo_b output projection with inverse RoPE + FP8 einsum, and multi-stream gemm parallelism (deepseek_v4_attention.py:337); the actual attention kernel is deferred to ch25. (3) Dual-backend MoE: DeepseekV4MoE (deepseek_v4.py:707) selecting DeepseekV4MegaMoEExperts (deep_gemm, deepseek_v4.py:392) via use_mega_moe vs the tensor-parallel FusedMoE path, gate router topk + shared_experts aggregation (deepseek_v4.py:854-919), expert sharding via FusedMoE expert_map (fused_moe/layer.py:71-158). (4) Hybrid-Computation residual: hc_pre/hc_post via torch.ops.vllm.mhc_pre and the hc_head final mixing (deepseek_v4.py:1166-1193,1274-1329) with learnable hc_{attn,ffn}_{fn,base,scale}. (5) MTP draft interface: the pre-hc_head _mtp_hidden_buffer (deepseek_v4.py:1297-1327) and DeepSeekV4MTP (deepseek_v4_mtp.py:244) consumed by speculative decoding (ch34). (6) Weight loading deltas: stacked expert mapping, expert-dtype resolution (DeepseekV4FP8Config MXFP4 vs FP8, deepseek_v4.py:121), float8_e8m0fnu -> uint8 raw-bit view, and lazy finalize_weights for deep_gemm scale layout. Every subsystem (custom ops, compile boundary, attention backend, MoE) is cross-referenced to its dedicated chapter.",
+        "difficulty": "high",
+        "depends_on": [
+          "ch22",
+          "ch23",
+          "ch25"
+        ]
+      },
+      {
+        "id": "ch29",
+        "title": "From Model Code to Architecture Diagram: A Worked Example",
+        "subsystem": "model-architecture",
+        "scope": "A methodology chapter that turns the DeepSeek-V4 source (ch28) into a precise architecture diagram, teaching a repeatable code->diagram procedure the reader can apply to any model. Procedure: (1) extract the module tree by reading __init__ (which nn.Module owns which children) — DeepseekV4ForCausalLM -> DeepseekV4Model -> DeepseekV4DecoderLayer[] -> {DeepseekV4Attention(MLA wrapper), DeepseekV4MoE(gate + experts + shared_experts)}; (2) extract the data-flow edges by reading forward() in tensor order (embed -> hc expand -> per-layer attn/MoE residual with hc_pre/post -> hc_head -> final_norm -> lm_head), annotating tensor shapes [B,H]/[B,hc_mult,H] and the prefill/decode branch; (3) mark subsystem boundaries (which boxes are custom ops vs torch.compile regions vs collective ops) so the diagram doubles as a subsystem map; (4) render with the svg-diagram skill (Python script -> xmllint validate -> ImageMagick PNG), using nested containers for the module tree and directed arrows for the forward data flow, exactly the dense-many-element case the skill exists for. Deliverable: a layered SVG architecture diagram of DeepSeek-V4 plus the narration of how each box/edge was read out of the source. Doubles as the template for diagrams in earlier chapters.",
+        "difficulty": "intermediate",
+        "depends_on": [
+          "ch28"
+        ]
+      },
+      {
+        "id": "ch30",
+        "title": "The Sampling Pipeline",
+        "subsystem": "sampling",
+        "scope": "Sampler 9-step pipeline (raw logprobs, penalties, bad words, logits processors argmax-invariant vs not, temperature, top-k/top-p), multi-backend TopKTopPSampler dispatch, persistent batch BatchUpdate for logits processors. sampler.py, ops/topk_topp_sampler.py, logits_processor/.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch19"
+        ]
+      },
+      {
+        "id": "ch31",
+        "title": "约束解码 I:语法编译与后端契约",
+        "subsystem": "structured-output",
+        "scope": "约束解码(structured output / guided decoding)的前半场——**语法怎么变成一个能逐 token 判合法的对象**。①动机与位置:约束解码不是改采样算法,而是在 logits 上加一层「哪些 token 现在合法」的掩码;入口是 SamplingParams.structured_outputs(json/regex/grammar/choice/structural_tag),落点在 EngineCore 循环里。②**异步语法编译与 WAITING_FOR_FSM 门**:StructuredOutputManager.grammar_init 把编译扔进线程池(编译 JSON schema→FSM 可能上百毫秒,不能阻塞调度循环),请求进 RequestStatus.WAITING_FOR_FSM;StructuredOutputRequest 持 Future,is_grammar_ready 门控何时能被调度(request.py:42-73 _check_grammar_completion/is_grammar_ready)。③**后端契约(六方法 ABC)**:StructuredOutputGrammar 的 accept_tokens/validate_tokens/rollback/fill_bitmask/is_terminated/reset + StructuredOutputBackend 的 compile_grammar/allocate_token_bitmask(backend_types.py)——读者要看懂这六个方法为什么是这六个(尤其 rollback 是为投机解码留的口子、accept_tokens 是状态推进)。④**四后端对照**:xgrammar(默认,压缩状态机)/guidance/outlines/lm_format_enforcer 各自怎么实现同一契约、能力与取舍差异(auto 回退逻辑)。⑤per-request 语法状态机与 structured_output_key 复用(同 schema 的请求共享编译结果)。deep,内嵌真源码。",
+        "difficulty": "hard",
+        "depends_on": [
+          "ch30",
+          "ch11",
+          "ch13"
+        ]
+      },
+      {
+        "id": "ch32",
+        "title": "约束解码 II:bitmask 如何落到 logits",
+        "subsystem": "structured-output",
+        "scope": "约束解码的后半场——**掩码怎么真的改变这一步采样**,以及它与调度/投机解码/推理模型的三处耦合。①**调度侧门控与装配**:scheduler 的 has_structured_output_requests 标记、get_grammar_bitmask 在每步调度时按 batch 顺序装配位掩码(scheduler.py:1224+),prefill chunk 不参与;②**并行填充**:StructuredOutputManager.grammar_bitmask 用线程池 _async_submit_fill_bitmask/_fill_bitmasks 让每个请求的 grammar 各自 fill_bitmask 到自己那一行(__init__.py:185-300),这是每步都要做的热路径;③**worker 侧落地(payoff)**:StructuredOutputsWorker.apply_grammar_bitmask 先 async_copy_to_gpu 把 bitmask 搬上卡,再构造 bitmask→logits 的行映射,最后由一个 **Triton kernel** `_apply_grammar_bitmask_kernel` 把非法 token 的 logit 打成 -inf(worker/gpu/structured_outputs.py)——读者亲眼看见「语法」最终变成一次 kernel 上的位运算;④**与投机解码的耦合**:草稿 token 被拒时必须 rollback 语法状态(这解释了 ABC 里的 rollback),spec_decode/utils.py 的交互;⑤**与推理模型的耦合**:should_advance/should_fill_bitmask 让 reasoning 段(<think>…)不受语法约束、推理结束后才开始约束(_get_reasoner);⑥诚实边界:哪些约束形态实际支持、backend auto 回退、以及 bitmask 的批内对齐约束。deep,内嵌真源码 + 一次真实位掩码数值轨迹。",
+        "difficulty": "hard",
+        "depends_on": [
+          "ch31",
+          "ch30",
+          "ch13",
+          "ch34"
+        ]
+      },
+      {
+        "id": "ch34",
+        "title": "Speculative Decoding: Proposers and Rejection Sampling",
+        "subsystem": "spec-decode",
+        "scope": "Proposers (ngram CPU/GPU, EAGLE, DFlash, and the DeepSeek-V4 MTP draft from ch28 via DeepSeekV4MTP), SpecDecodeMetadata index indirection, rejection sampling (probabilistic vs synthetic) against target logits, fused Triton slot-mapping kernels with rejection masking. llm_base_proposer.py, rejection_sampler.py, spec_decode/metadata.py, deepseek_v4_mtp.py, utils.py.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch30",
+          "ch28",
+          "ch14",
+          "ch25"
+        ]
+      },
+      {
+        "id": "ch24",
+        "title": "FlashAttention 原理：从 online-softmax 到 IO-aware 注意力",
+        "subsystem": "attention",
+        "scope": "【原理篇·论文精读】online-softmax(1805.02867)→FA(2205.14135)→FA-2(2307.08691),附 LSE 合并小节;四段式,落地 vllm attention 后端调用面",
+        "mode": "primer",
+        "final_position_note": "交错后插于 ch25-attention 之前(临时尾号)"
+      },
+      {
+        "id": "ch26",
+        "title": "量化数学：从 scale/zero-point 到 GPTQ、AWQ、SmoothQuant",
+        "subsystem": "sampling",
+        "scope": "【原理篇·论文精读】GPTQ(2210.17323)/AWQ(2306.00978)/SmoothQuant(2211.10438);vllm 落地锚点 quant_method.apply/FP8 装载面独立重写",
+        "mode": "primer",
+        "final_position_note": "交错后插于 ch29-model-architecture(DeepSeek-V4) 之前(临时尾号)"
+      },
+      {
+        "id": "ch33",
+        "title": "EAGLE 原理：特征级自回归与树验证",
+        "subsystem": "spec-decode",
+        "scope": "【原理篇·论文精读】EAGLE(2401.15077)/EAGLE-2(2406.16858):特征层草稿自回归+动态树验证;拒绝采样定理链接 ch34 已有推导",
+        "mode": "primer",
+        "final_position_note": "交错后插于 ch34-spec-decode 之前(临时尾号)"
+      }
+    ]
+  },
+  {
+    "part": "Part VII — Prefill/Decode 分离 (Disaggregation)",
+    "chapters": [
+      {
+        "id": "ch35",
+        "title": "PD Disaggregation I — The KV Connector Contract and Scheduler Integration",
+        "subsystem": "pd-disaggregation",
+        "scope": "Why prefill and decode get split across engines, and the abstraction that makes it work. The KVConnectorBase_V1 role-split contract (base.py:170): KVConnectorRole.SCHEDULER (metadata planning + state) vs WORKER (load/save execution), built as two separate instances to enforce separation (factory.py:69-82). Scheduler-side lifecycle inside scheduler.py: get_num_new_matched_tokens for remote-prefix matching (scheduler.py:620-647), update_state_after_alloc after block reservation, the WAITING_FOR_REMOTE_KVS state machine and skipped-waiting queue (scheduler.py:770-805), build_connector_meta at step-end (scheduler.py:947-950), async-free decision via request_finished, and the load-error recovery path get_block_ids_with_load_errors -> _update_requests_with_invalid_blocks resetting num_computed_tokens to the longest valid prefix. The factory registry, lazy-load-by-name, signature evolution, and HMA/SupportsHMA gating (factory.py:27-143, base.py:84-113). Establishes the metadata-driven, plan-then-execute design that Chapter ch36 turns into actual cross-process transfers.",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch14",
+          "ch16",
+          "ch20"
+        ]
+      },
+      {
+        "id": "ch36",
+        "title": "PD Disaggregation II — Worker Execution and Pluggable Backends (P2P/NIXL/Offloading)",
+        "subsystem": "pd-disaggregation",
+        "scope": "The worker half of the contract and the concrete transports. Worker-side lifecycle: ActiveKVConnector.pre_forward binding metadata + start_load_kv, per-layer save_kv_layer during the model forward, post_forward wait_for_save + get_finished (kv_connector.py:62-102), wrapped by KVConnectorModelRunnerMixin's _get_kv_connector_output context manager and the cross-layer-blocks / uniform-KV-cache optimization (kv_connector_model_runner_mixin.py:84-190). Producer/consumer role split via is_kv_producer (prefill sends, decode receives). Three backends compared: P2pNcclConnector direct NCCL send/recv with extract/inject per layer (p2p_nccl_connector.py:74-312); OffloadingConnector facade delegating to scheduler/worker with OffloadingManager, HMA, and async transfer-job tracking (offloading_connector.py:46-192); NixlConnector handshake + side-channel metadata negotiation and async P2P (nixl/connector.py). The end-to-end data-flow walk: scheduler plan -> metadata delivery -> worker load -> forward+save -> get_finished -> scheduler completion, including the layer-by-layer pipelining interface (start_load_kv bulk async, wait_for_layer_load, save_kv_layer, wait_for_save). Closes with how this integrates with the model runner forward (ch19) and where it surfaces in engine operation.",
+        "difficulty": "high",
+        "depends_on": [
+          "ch35",
+          "ch19",
+          "ch25"
+        ]
+      }
+    ]
+  },
+  {
+    "part": "Part VIII — 服务接口 (The Serving Surface)",
+    "chapters": [
+      {
+        "id": "ch37",
+        "title": "The Offline LLM API",
+        "subsystem": "entrypoints",
+        "scope": "LLM class: generate/chat/embed/encode, EngineArgs -> LLMEngine over EngineCore, request batching and rendering, the sync LLMEngine.step() path vs async. llm.py, v1/engine/llm_engine.py.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch08",
+          "ch11"
+        ]
+      },
+      {
+        "id": "ch38",
+        "title": "The OpenAI-Compatible Server",
+        "subsystem": "entrypoints",
+        "scope": "FastAPI lifespan + build_async_engine_client, OpenAIServing base + chat/completion handlers, Renderer, tool/reasoning parsers, SSE streaming vs JSON, launcher (uvicorn, watchdog, SSL). api_server.py, openai/*/serving.py, launcher.py.",
+        "difficulty": "core",
+        "depends_on": [
+          "ch37",
+          "ch04"
+        ]
+      },
+      {
+        "id": "ch39",
+        "title": "Advanced Engine Operation: Elastic Scaling and Multi-Turn",
+        "subsystem": "engine-core",
+        "scope": "Elastic EP scale-up/scale-down state machine, Responses API multi-turn/tool context (PD/KV-connector material moved to Part VII).",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch38",
+          "ch21",
+          "ch14"
+        ]
+      },
+      {
+        "id": "ch40",
+        "title": "DeepSeek-V4-Flash 部署与调参实战(以 0731 为例)",
+        "subsystem": "deployment",
+        "scope": "「把 304B 模型装进单卡 96GB」全流程实战:显存账与量化档位决策树(官方 FP4 167GB vs GGUF 各档)→ 官方权重「自带 4-bit」格式解读(convert.py 的 int8 容器 = 打包 fp4 e2m1fn;vllm deepseek_v4 expert_dtype=fp4/MXFP4 支持)→ vLLM 官方服务配方(4×GB300)EngineArgs 逐旋钮解读(kv-cache-dtype fp8/block-size 256/enable-expert-parallel/moe-backend deep_gemm_mega_moe/dspark 推测)→ 为什么 vLLM 今天服务不了 deepseek4 GGUF(gguf_loader arch 映射 + transformers GGUF_CONFIG_MAPPING 源码)→ 本机实跑:llama.cpp llama-server 服务 UD-IQ1_S 82.5GB + 调参(ngl/context/FA/KV quant/并发)真实数字 → CUDA vs Ascend 实现差异对照(引 ascend 书 ch22/24/26/30/37)。量化落地补充:ch26 是量化数学,本章补「实战选档决策树」。",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch26",
+          "ch28",
+          "ch38",
+          "ch34"
+        ],
+        "kind": "meta",
+        "skip_impl": true
+      },
+      {
+        "id": "ch41",
+        "title": "DSpark 原理:置信度调度的半自回归投机解码(前瞻)",
+        "subsystem": "spec-decode",
+        "scope": "DSpark 论文(arXiv 2607.05147)推导:并行骨干(基础 logits 只看上下文,一次算完)+ 序列 Markov 头(块内依赖 = softmax 前低秩加性偏置)+ 置信度头与温度校准 + 硬件感知动态调度(Algorithm 1);vLLM 主线 PR #46995(f5a8d73,未入 pin v0.21.0)源码前瞻解读;0731 模型卡 dspark 配置字段(dspark_block_size=5/markov_rank=256/noise_token_id/spec tokens=7)落地映射。",
+        "difficulty": "advanced",
+        "depends_on": [
+          "ch34",
+          "ch28",
+          "ch33"
+        ],
+        "kind": "primer",
+        "forward": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,42 @@
+{
+  "chapter_id": "ch09",
+  "title": "增量去 token 化与 stop string：把 id 流变成会停的文字流",
+  "slug": "ch09-detokenization",
+  "sections": [
+    "9.1 三路工厂：一个 tokenizer 决定走哪条路",
+    "9.2 主流程：update 一次做完解码、min_tokens、查 stop",
+    "9.3 holdback：流式输出为什么要扣住尾巴",
+    "9.4 check_stop_strings：只搜该搜的那一小段",
+    "9.5 慢路径：双 offset 窗口怎么对抗空格清理",
+    "9.6 快路径：DecodeStream 与 UTF-8 错误恢复",
+    "9.7 闭环：stop_string 怎么反向通知 EngineCore"
+  ],
+  "key_classes": [
+    {
+      "name": "IncrementalDetokenizer",
+      "file": "vllm/v1/engine/detokenizer.py",
+      "responsibility": "层级根 + 空壳实现（无 tokenizer 或 detokenize=False 时使用）：只累积 token_ids，update 返回 None、get_next_output_text 返回空串。同时持有工厂 from_new_request，按 tokenizers 版本与 tokenizer 类型三路分派。"
+    },
+    {
+      "name": "BaseIncrementalDetokenizer",
+      "file": "vllm/v1/engine/detokenizer.py",
+      "responsibility": "抽象基类（ABC）：承载与具体 tokenizer 无关的全部公共逻辑——stop/min_tokens 解析、stop_buffer_length holdback 计算、update 主流程（跳过 stop token、逐 token decode_next、min_tokens 推进 stop_check_offset、check_stop_strings 截断）、get_next_output_text 的 delta/cumulative 取文本与尾字符扣留。decode_next 是抽象方法，两个子类各自实现。"
+    },
+    {
+      "name": "FastIncrementalDetokenizer",
+      "file": "vllm/v1/engine/detokenizer.py",
+      "responsibility": "快路径：用 Rust tokenizers 库的 DecodeStream，构造时以 prompt_token_ids 做 native prefill 预热流；decode_next 调 stream.step；_protected_step 兜两类异常——(OverflowError, TypeError) 吞掉返回 None，'Invalid prefix encountered' 则重建 DecodeStream 恢复（修复 UTF-8 非单调无效输出破坏内部状态）。可选抑制相邻特殊 token 间空格。"
+    },
+    {
+      "name": "SlowIncrementalDetokenizer",
+      "file": "vllm/v1/engine/detokenizer.py",
+      "responsibility": "慢路径（纯 Python 回退，非 fast tokenizer 或 tokenizers<0.22.0）：以 prompt 预填 tokens 并算初始 prefix_offset/read_offset；decode_next 调 detokenize_incrementally 维护双 offset 窗口。覆写 output_token_ids/num_output_tokens 以剔除 prompt 部分（token_ids 含 prompt，与 Fast 路径不同）。"
+    },
+    {
+      "name": "OutputProcessor",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "Stage-3 输出处理器，唯一遍历 EngineCoreOutputs 的单循环。本章只关心其 process_outputs 中对 detokenizer.update() 的调用：把返回的 stop_string 转成 finish_reason=STOP / stop_reason，并在 EngineCore 自己没结束时把 req_id 放入 reqs_to_abort 回灌给 EngineCore。"
+    }
+  ],
+  "mechanisms": []
+}

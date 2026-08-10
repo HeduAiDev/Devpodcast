@@ -1,0 +1,50 @@
+[project]
+name = "devpodcast"
+version = "0.1.0"
+description = "把一本技术书变成一季双人对谈播客——议题驱动、批判先行、引真实社区声音、本地 GPU 合成音频"
+requires-python = ">=3.11"
+readme = "README.md"
+
+dependencies = [
+    "numpy>=1.26",
+    "soundfile>=0.13",
+    "jsonschema>=4.19",
+    "certifi>=2024",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+]
+tts = [
+    "torch>=2.9",
+    "transformers>=5.0",
+    "safetensors>=0.6",
+    "einops>=0.8",
+    "librosa>=0.11",
+    "torchaudio>=2.9",
+    "tiktoken>=0.12",
+    "orjson>=3.11",
+    "pybase64",
+]
+# MOSS-TTSD 不在 PyPI 发布，通过 HuggingFace AutoModel 加载：
+#   AutoModel.from_pretrained("OpenMOSS-Team/MOSS-TTSD-v1.0", trust_remote_code=True)
+# 首次加载会自动下载 ~16GB 权重到 HF cache
+# F5-TTS 仅用于 M0 环境验证（CC-BY-NC，不进生产）
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.uv]
+# MOSS-TTSD 需要 flash-attn；Windows 上可能需要手动构建
+# 如不可用，模型 fallback 到 SDPA（sdpa）
+constraint-dependencies = []

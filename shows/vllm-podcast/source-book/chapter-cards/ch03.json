@@ -1,0 +1,103 @@
+{
+  "chapter_id": "ch03",
+  "title": "从 EngineArgs 到 VllmConfig：把整套引擎装配起来",
+  "slug": "ch03-config-and-wiring",
+  "sections": [
+    "3.1 一句话钩子：扁平进去，结构化出来",
+    "3.2 第一级映射：EngineArgs 是个扁平的参数袋子",
+    "3.3 create_engine_config：把扁平参数重新打包",
+    "3.4 VllmConfig.__post_init__：跨子配置的校验与推导中枢",
+    "3.5 async_scheduling 三态决策：默认开，但会自动退化",
+    "3.6 第二级映射之一：执行器工厂 Executor.get_class",
+    "3.7 第二级映射之二：调度器工厂 get_scheduler_cls",
+    "3.8 第二级映射之三：IPC 客户端工厂 make_client",
+    "3.9 O0–O3 优化级：一个声明式的旋钮",
+    "3.10 compute_hash：计算图的 10 位指纹",
+    "3.11 汇合点：EngineCore.__init__，三个工厂的产物落地",
+    "3.12 跑一遍：观察装配的实际数值",
+    "3.13 小结：抓住两级映射，启动就不神秘了"
+  ],
+  "key_classes": [
+    {
+      "name": "EngineArgs",
+      "file": "vllm/engine/arg_utils.py",
+      "responsibility": "扁平的用户级参数 dataclass（字段默认值借自各子 Config 类）；__post_init__ 做 dict→Config 升格与插件加载；create_engine_config() 是核心：把扁平参数组装成 VllmConfig；create_model_config/create_load_config/create_speculative_config 为子构造器。AsyncEngineArgs 是其子类（多 enable_log_requests）。"
+    },
+    {
+      "name": "AsyncEngineArgs",
+      "file": "vllm/engine/arg_utils.py",
+      "responsibility": "EngineArgs 的异步变体（AsyncLLM/OpenAI server 用），仅增加 enable_log_requests 与异步专属 CLI 参数。"
+    },
+    {
+      "name": "VllmConfig",
+      "file": "vllm/config/vllm.py",
+      "responsibility": "聚合所有子配置（model/cache/parallel/scheduler/compilation/kernel/...）的总配置体，下游只需传它一个。__post_init__ 做跨子配置交叉校验与默认推导（async_scheduling 决策、O0-O3 应用、compilation/cudagraph 落定）；compute_hash() 产计算图指纹；持 optimization_level(默认 O2)/performance_mode(默认 balanced)。"
+    },
+    {
+      "name": "OptimizationLevel",
+      "file": "vllm/config/vllm.py",
+      "responsibility": "IntEnum O0-O3，表达启动时间 vs 运行性能权衡；经 OPTIMIZATION_LEVEL_TO_CONFIG 映射到一组 compilation/kernel 默认值字典。"
+    },
+    {
+      "name": "ModelConfig",
+      "file": "vllm/config/model.py",
+      "responsibility": "模型相关配置（HF config、dtype、max_model_len、runner_type、is_moe/is_multimodal 等派生属性）；许多其他子配置从它派生关键标志。"
+    },
+    {
+      "name": "CacheConfig",
+      "file": "vllm/config/cache.py",
+      "responsibility": "KV cache 配置（block_size、gpu_memory_utilization、enable_prefix_caching、cache_dtype 等）。"
+    },
+    {
+      "name": "ParallelConfig",
+      "file": "vllm/config/parallel.py",
+      "responsibility": "并行配置（TP/PP/DP/CP 各 size、distributed_executor_backend）；其 __post_init__ 推导 world_size 与 executor backend 默认值（mp/uni/ray）。"
+    },
+    {
+      "name": "SchedulerConfig",
+      "file": "vllm/config/scheduler.py",
+      "responsibility": "调度配置（max_num_batched_tokens/max_num_seqs、enable_chunked_prefill、policy、async_scheduling、scheduler_cls）；get_scheduler_cls() 是调度器工厂。"
+    },
+    {
+      "name": "CompilationConfig",
+      "file": "vllm/config/compilation.py",
+      "responsibility": "torch.compile 与 cudagraph 配置（mode、cudagraph_mode、pass_config 各 fusion 开关）；优化级默认值落到此对象。"
+    },
+    {
+      "name": "Executor",
+      "file": "vllm/v1/executor/abstract.py",
+      "responsibility": "执行器抽象基类；静态方法 get_class(vllm_config) 是执行器工厂，按 distributed_executor_backend 选 Uni/Multiproc/Ray/ExternalLauncher 子类；supports_async_scheduling() 反哺 async_scheduling 决策。"
+    },
+    {
+      "name": "EngineCoreClient",
+      "file": "vllm/v1/engine/core_client.py",
+      "responsibility": "IPC 客户端抽象基类；make_client/make_async_mp_client 是 IPC 工厂，按 (multiprocess_mode, asyncio_mode) 与 DP 维度选 Inproc/SyncMP/AsyncMP/DP* 客户端。"
+    },
+    {
+      "name": "EngineCore",
+      "file": "vllm/v1/engine/core.py",
+      "responsibility": "引擎核心；__init__ 是三工厂产物的汇合点——实例化 executor_class、调用 get_scheduler_cls 选并实例化调度器、初始化 KV cache。本章止于此（运行循环属后续章节）。"
+    },
+    {
+      "name": "LLMEngine",
+      "file": "vllm/v1/engine/llm_engine.py",
+      "responsibility": "v1 同步引擎门面；from_engine_args 串起 create_engine_config + Executor.get_class + EngineCoreClient.make_client(asyncio_mode=False)，是本章数据流的起点入口。"
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "ch03-compute-hash",
+      "name": "compute_hash：计算图指纹（torch.compile 缓存键）",
+      "kind": "algorithm",
+      "difficulty": "core",
+      "source_anchors": [
+        "vllm/config/vllm.py:L362-L468"
+      ],
+      "needs_worked_example": true,
+      "needs_figure": true,
+      "depth": "shallow",
+      "figure": "missing",
+      "note": "外科回修体检登记：本章点名的算法机制，但缺『机制含数值推演』这一层——3.10 节把『收什么/不收什么』讲清了，却没有 factors 列表→10 位指纹的实际 trace，也没有『改 TP/优化级 → 指纹变 / 改 max_num_seqs → 指纹不变』的 before/after 数值例子（该结论只在 3.10 尾以散文断言）。3.12『跑一遍』只验证 backend/async/优化级三项，独漏 compute_hash。全章亦无对应配图。kind=algorithm → needs_worked_example=true。其余机制（两级映射/async 三态/优化级/三工厂）体检合格，属外科范围外，本次不登记。"
+    }
+  ]
+}

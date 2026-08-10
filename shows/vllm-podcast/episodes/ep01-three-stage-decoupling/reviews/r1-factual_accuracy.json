@@ -1,0 +1,23 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimension": "factual_accuracy",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:135 S2 说「大张量一拍几百兆，这笔账很硬」——「一拍几百兆」是作为事实给出的具体量级数字，episode-card、source-book（ch07 7.10-7.12 相关条目）与 voices.json 均无此数，属于无支撑量级。",
+      "evidence": "script.md:135",
+      "suggested_fix": "虚化为口语量级或删去数字，例如「大张量那体量，一拍搬一回就是一笔硬账」；保留论证、去掉无出处的具体数字。",
+      "rationale": "事实准确维：数字不漂移（与书 / voices 原文一致）；每个技术断言须能在 episode-card 找到支撑，无支撑的具体量级数字即为漂移（与上轮「几亿次」同类，writer 已按此标准修过一处）。",
+      "blocking": false
+    }
+  ],
+  "notes": [
+    "技术断言全量核对（均通过 episode-card / source-book 支撑）：L11/L249 两次跨进程（ch04 三段扇出、arc.json ep01 opening）；L19-23 v0 单进程同步（ch01 1.2 + ch07 InprocClient「V0 风格 LLMEngine（同步、单进程）」）；L45/L49 一套内核两种驱动 InprocClient/AsyncMPClient、LLM/AsyncLLM（ch01 1.3）；L59 add_request 三路扇出（ch04 4.4）；L63-67 两进程各记一份账、generate 只摸信箱（ch02 2.5/2.9）；L71 RequestOutputCollector（ch02 2.4/ch04 4.6）；L79 output_handler 与「解多路复用」（ch04 4.5/4.7）；L89 三道票（空/超长/越界）+归一化切字+多模态展平排序+SamplingParams 克隆补全（ch05 5.2-5.7）；L93 EngineCoreRequest（ch05 5.8）；L101 msgspec 三特性（array_like/omit_defaults/gc=False，ch05 EngineCoreRequest 条目）；L109-125 ZMQ+msgpack、两守护线程、主线程忙循环、DEALER 收/PUSH 发（ch07 EngineCoreProc 条目）；L131 多帧零拷贝三档（小张量内联/大张量 aux_buffers 旁路/多模态共享内存带外，ch07 7.11/7.12）；L147-161 process_outputs 单循环四件事+节流/归并+n>1 父聚合+完成清理（ch08 8.3-8.6）；L167-179 run_busy_loop、四步一拍（schedule→execute_model→sample_tokens→update_from_output）、ADD/ABORT 排队不打断、关停三档+暂停（ch11 11.3-11.6、EngineShutdownState/PauseState 条目）；L183 KV cache 名词与第三期伏笔（arc ep02→ep03 foreshadow）；L187 logits 名词与「最后一期」伏笔（arc ep01 foreshadow→ep05）；L243-247 并发判据（arc.json ep01 resolution 原句，10 并发/三位数并发一致）。",
+    "数字核对（voices 原文逐一对照，全部一致）：L201 2%-4% 打平、80% 共享前缀 50 并发、195ms/310ms/差 37%（voice-036，(310-195)/310=37.1% 自洽）；L213-215 7GB vs 21GB、参数口径 --max-total-tokens ≠ --max-model-len（voice-025）；L225 p50 340→190ms、p99 1.2→9.8s、p99.9 2.1→27s（voice-027 逐字一致）；L229 60ms prefill、23 个在飞、GPU 利用率 81%（voice-027）；时间锚点「今年六月」（voice-036 source_date 2026-06-24）、「今年五月」（voice-027 2026-05-28）、「快一年前」（voice-001 2025-09-05，约 11 个月）均准确。L101「哪怕一处只省一纳秒，乘以几亿次」为「哪怕…都」条件式修辞、非事实断言，上轮同类问题（旧稿「一天跑几亿次」）已由 writer 修为此形式，本维认可该修法。",
+    "代码名拼写核对（口播逐字母展开均正确）：add_request(L59)、output_handler(L79)、run_busy_loop(L167)、execute_model(L171)。",
+    "「我不知道」检查：L137-141 零拷贝大小分界线——经全书快照检索，book.json 仅在小张量/大张量定性分档（ch07 7.11），无任何字节阈值（全库「阈值」仅出现于结构化输出并行填充 128，与零拷贝无关），故 S2「书里没写死，我凭记忆说不准，不敢瞎编」为真不知道、非回避；S1 接「我也不知道」并邀请评论区补充，符合 voice-guide 纪律 1（每期至少一次「我不知道」，答不上来就明说）。L221 voice-021「全文我们没抓到，具体数字给不出」同样诚实标注 confidence（该条 fetch 403、confidence=medium）。",
+    "voice 引用核对：{{voice:voice-002}}(L53)、voice-001(L193)、voice-036(L201)、voice-025(L215)、voice-021(L221)、voice-027(L225) 均真实存在于 voices.json；voice-025/021 writer_note 明确「用在 ep01」，voice-027 虽 writer_note 写「用在 ep02」，但 arc.json ep01 controversy.counter 显式引用 Marcus Chen 生产 trace 作为反方证据，ep01 使用有争议框架授权。",
+    "已核但未列为问题的口语量级：L75「几百个请求」、L147/L153「几十个请求」为条件句内假设性虚指（「跟你没关系」「混在一起」的语境示例），非事实断言；L237「微秒到毫秒级」（IPC 量级的宽区间，工程常识内正确）与「上万个核」（现代数据中心 GPU CUDA 核数万级，如 H100 约 1.7 万，表述成立）均为可辩护的工程常识量级，不漂移。L213「当时吓跑一堆人」较 voice-025「引发社区讨论」语气略强，属引述语气问题，归原声保真维，本维不重复计。"
+  ]
+}

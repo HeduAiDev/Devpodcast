@@ -1,0 +1,23 @@
+{
+  "episode_id": "ep02",
+  "run": 3,
+  "dimension": "factual_accuracy",
+  "pass": true,
+  "verdict": "pass",
+  "issues": [
+    {
+      "problem": "script.md:305 「我不知道」时刻终审（r2 非阻断项，本轮收口复核维持原判定）：8192 为何是 8192（而非 16384）之问，在 episode-card / arc.json / voices.json / source-book chapter-cards 均无答案，判定为真不知道、非回避（voice-guide 纪律 1 通过）。后半句「抢占之后重算的浪费到底有多大，我们也没见到系统的数」——voices/arc/card 内确无重算浪费的系统性量化；voice-027 源文章含的是 chunked prefill / SJF / preemption 控制三种修复方案的端到端延迟对比，不构成对「重算浪费无系统数」的直接反证。措辞查证敞口仍在，属可改可不改，writer 裁量。",
+      "suggested_fix": "可选收窄：「抢占重算到底浪费多少，我们没见到公开的系统性拆分数据」（加「公开的」「拆分」限定即可；不改也可成立，writer 裁量）。",
+      "rationale": "事实准确维「我不知道」须区分真不知道与回避——本处三轮复核一致判定为基本真实；r2 判定「不改也可成立」，本轮维持非阻断，仅保留可选收窄项，作为本维收口记录。",
+      "blocking": false
+    }
+  ],
+  "checks_summary": {
+    "r2_blocker_check": "script.md:93 阻断项已清：现文（03:55 版）为「一拍八千多颗 token，每拍全量重发，谁也扛不住」，落在 r2 建议的「八千多颗」选项内，与同稿 L49「max num batched tokens，默认 8192」（episode-card ch13「批大小的约束是 max_num_batched_tokens（默认 8192）」支撑）自洽，L69「2000 token 吃掉四分之一预算」（2000/8192 ≈ 24.4%）亦随之闭合——L49/L69/L93 三角数字不再互搏，论点（diff 省通信）不依赖具体数字，改动未引入新漂移。",
+    "voice_numbers": "全稿数字与 voices.json 原数逐条复核（03:55 版全稿）：L109（340/190ms、1.2/9.8s、2.1/27s）与 voice-027 claim 一致；L113（60ms prefill、23 个在飞 decode 流、81% 利用率）与 voice-027 一致；L133/L141（28x、2.6x/6.9x、Mistral-7B/Falcon-180B）与 voice-028 一致；L161（不到三分之一）与 voice-004 一致；L13（2026 年高频题、「为什么这样设计」）与 voice-005 一致；L111 的 8x/13x 为 9.8/1.2、27/2.1 的算术复核，成立。无漂移。",
+    "card_mechanisms": "机制断言与 episode-card ch11/ch13/ch14/ch19 对齐：L49（8192）、L73（两阶段调度）、L89（全量一次后 diff）、L93（八千多颗）、L173（allocate_slots 返回 None → 抢占循环）、L177（LIFO 释放队尾 + PREEMPTED 回流）、L189（FCFS + prepend_request 回队头）、L193（优先级队列堆、按优先级/到达时间重入堆）、L197（抢占后本拍不放新请求）、L201（skipped_waiting 双队列）、L205（skipped 靠 prepend 重排）、L213（ExecuteModelState 10 字段）、L221（collective RPC 广播）、L229（入口断言空盒子）、L249（CPU 镜像记账）、L253（持久批次装空位/留洞/填洞）、L257（输出记录与批次镜像同一 list）、L269（num_computed_tokens 推进）、L273（check_stop 四道关卡）、L297（阶段一重入）、L301（EngineCoreOutputs 经 IPC 回传）。其中 L257「共用同一个 list 对象」本轮新增核对：source-book ch19 原文「req_output_token_ids（与各 CachedRequestState.output_token_ids 同一 list 别名）」「其 output_token_ids 与 InputBatch.req_output_token_ids[slot] 是同一对象——这是 f13 的物理载体」——书有支撑，非漂移。",
+    "idk_moment": "L305 为全稿唯一「我不知道」，两半句三轮复核均为素材范围内无答案，非回避。",
+    "audio": "audio-qa.json issues 为空，无音频质检问题可引用。留档：episode.wav/audio-qa.json 合成于 03:40，script.md 定稿于 03:55——r2 spoken_clarity 非阻断项「文本-音频版本同步」仍在（r2 判为非阻断、workflow 调度侧动作）；本维不重复质检（契约：audio-qa 的 issues 直接引用，不重复质检）。",
+    "coverage": "season/voices-coverage.json coverage=full，无降级知情事项。"
+  }
+}

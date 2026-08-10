@@ -1,0 +1,23 @@
+{
+  "episode_id": "ep02",
+  "run": 2,
+  "dimension": "critical_depth",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:141 阿凯断言「普遍。」——r1 遗留项，当前修订稿未采纳收窄建议，原文保留。此刻呈堂证据仍只有 voice-027 一条实名 trace 加 voice-003 一条匿名且自承「具体场景我们没核实到」的论坛反馈，「普遍」的论断强度略超提出时刻的证据基线；该现象的结构普遍性要到 L157 Sarathi-Serve 同行评审数据落地后才真正站稳。writer 对非阻断项行使裁量权，维持记录、不阻断。",
+      "suggested_fix": "（结转 r1，writer 可继续裁量）把 L141 的「普遍。」收窄为「不是孤例。」（或「至少不止他一个人。」），论断强度即与当下证据匹配；L157 论文数据出场后普遍性自然成立，后文一字不用动。",
+      "rationale": "批判强度维（spec §12.3）：claim/counter 都站得住——claim 方的推广性论断不能在其提出时刻超出已呈证据，否则批判本身成了把柄；一词之修让 claim 无懈可击，不动争议结构，非风格偏好。",
+      "blocking": false
+    }
+  ],
+  "checks_summary": {
+    "revision_impact_check": "本轮修订（补 <break 300ms>，落实 r1 口播维阻断项）未触碰争议段：L125-181 claim/counter/resolution 文本实质不变，voice-027/voice-003/voice-028 三段引语完整，归属框架与降级标记（「大意是这样」「具体场景我们没核实到」）均在；修订未引入新的批判强度问题",
+    "only_praise_check": "无——L17 立靶（「代价被严重低估」）、L101 自铸标签「长请求暴政」并预告开刀、L125 兑现「开刀时间」、L127「拿数据，你说了不算」、L129-137 实测数据（p99 1.2s→9.8s / p99.9 2.1s→27s）、L141 社区痛点、L209-213 抢占代价「拿时间换显存」、L335-337 结尾保留「8192 谁定的/抢占重算浪费没人量化过，我们也没搞清楚」的未定价批判线程——批判是本期主体而非点缀",
+    "claim_counter_check": "两方均站得住：claim 侧 voice-027（confidence=high、实名可追溯 trace）+ voice-003（匿名、带降级标记）；counter 侧 voice-028（OSDI 2024 同行评审）+ L153 GPU FLOPS 论证 + L173「默认配置没开」。老张/阿哲对两侧证据均施压（L127 拿数据 / L155 光说理论拿证据 / L159 质疑 28 倍与 OSDI 来头 / L163 质疑 2.6-6.9 跨度），counter 方 L165 主动从己方数据读出 claim 侧含义（「问题随规模放大」）——争议真展开，不是空对空",
+    "counter_fairness_check": "辩护方拿到最强证据（peer-reviewed）、最优点（L173）、完整论证（L149-157）且被盘问；社区批判方（voice-003）被定向认同（L143-145「同一个病/同一个方向」）+ 机制解释 + 优先级队列对症药方，未被断言压灭；阿凯 L149「我先不护短」先承认问题真实，守 voice-guide「不护短」纪律——反方公平呈现到收束处",
+    "target_check": "靶子全部具体且落在真实 voices 条目：Marcus Chen 生产系统（dev.to 2026-05，60ms prefill 堵 23 个在飞 decode 流、GPU 利用率 81%，voice-027）、vLLM 官方论坛匿名用户（discuss.vllm.ai 2025-12，voice-003，匿名化与未核实层次保留）、Sarathi-Serve OSDI 2024 论文（voice-028）——voice-guide 三条内容纪律 #2「批判必须有靶子」守住",
+    "arc_landing_check": "arc.json ep02 claim（L101-147）/counter（L149-173）/resolution（L177 与 arc 原文实质一致：实时 API p99<2s 须配 chunked prefill+优先级队列 / 离线批处理裸调度最省显存）/closing（L339-345 显存收束 + ep03 分页预告）全部落地；ep04 execute_model GPU 执行伏笔在 L295 记账——与 r1 判定一致，修订未扰动",
+    "prior_cycle_note": "2026-08-07 旧周期 r2/r3 档的两条非阻断收口项（收束段「免罪」修辞、「预算总数是对的」断言）对应文本在当前稿实质相同，旧周期三轮复核结论（writer 裁量空间、非契约违约）仍成立，不重复开张"
+  }
+}

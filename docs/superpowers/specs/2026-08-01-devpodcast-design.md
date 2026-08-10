@@ -286,41 +286,31 @@ NVIDIA RTX PRO 6000 Blackwell Workstation Edition
 
 CUDA 生态全可用，无 ROCm 顾虑。95.6GB 意味着 8B 级对话模型毫无压力，可并行加载多模型做对比。注意本机可能有其他进程占用显存（观测到 3.9GB），audio-qa 站报告 VRAM 占用。
 
-### 7.2 选型（2026-08 调研结论）
+### 7.2 选型（2026-08-08 定案）
 
-**默认：MOSS-TTSD v1.0**（OpenMOSS，8B，Apache-2.0）
+**唯一主方案：IndexTTS-2 单句合成**（逐 turn 独立生成）
 
 | 判据 | 数据 |
 |---|---|
-| 原生对话建模 | `[S1]`–`[S5]` 行内标签，1–5 说话人，单次最长 60 分钟；轮转/停顿/接话由**模型生成**而非拼接 |
-| 对话场景中文开源第一 | TTSD-eval ZH：SIM 0.7949 / WER 4.85%（闭源豆包播客 0.8034 / 4.72%） |
-| 协议 | 代码与权重均 Apache-2.0，商用无忧 |
-| 活跃度 | last push 2026-07-26 |
-| 显存 | 8B 在 95.6GB 上无压力 |
-| 配套 | 官方 Podever 播客流水线（PDF/URL/文本 → 播客）可参考分段策略 |
+| 合成方式 | **逐 turn 独立生成**（`indextts_synth_singleturn.py`），无跨 turn 上下文累积 —— 解决 FireRed 逐段/carryover 的尾部喃喃伪影 |
+| 中文克隆质量 | laozhang/akai 参考克隆清晰，无读标签、无明显音色漂移；**尾部伪影仅 4/156（ep01），且可重生成修复**（FireRed 为 16/156） |
+| 参考音色 | 内置 laozhang/akai（16kHz mono，零样本克隆，无需 voice_map） |
+| 协议 | Apache-2.0（权重开源，IndexTeam/IndexTTS-2） |
+| 显存/环境 | conda env `itts310`（Python 3.10 + torch 2.8.0+cu128），子进程隔离 |
+| 速度 | RTF ~1.8-2.0（单句逐 turn；比 FireRed 1.2 略慢但**干净**） |
 
-**已知的坑（写进 SHOW.md）**：
-- README 未提 CUDA/Blackwell 要求；8B + flash-attn 在 sm_120 上大概率要手动装 torch cu128 系列
-- 无 pip 包、无 Docker；SGLang 要从 `moss-ttsd-v1.0-with-cat` 分支源码装，需先跑 codec 融合脚本
-- 多说话人必须开 `--sample_rate_normalize`，始终开 `--text_normalize`
-- 克隆用 `voice_clone_and_continuation` 模式效果最好
-- 长度换算 **1s ≈ 12.5 tokens**，用于 `--max_new_tokens` 与时长预算
+**定案理由（2026-08-08 实测）**：
+- FireRed 逐段合成存在**尾部喃喃伪影**（模型说完正文后多吐一段不成语言的咕哝），ep01 实测 16 处，逐段/carryover 两种分段策略均触发；carryover 还引入 S1/S2 串色（上下文污染）。
+- IndexTTS-2 单句合成逐 turn 独立，天然免疫上下文污染类伪影；ep01 全量检测仅 4 处轻微伪影，且换 seed 重生成即修复。
+- IndexTTS-2 附带原生拼音/IPA 发音标注能力（备用，可正面替代"CUDA→库达"谐音替换）。
 
-**Fallback：Fun-CosyVoice3-0.5B-2512_RL**（Apache-2.0，test-zh CER 0.81%）
-- 何时切：MOSS-TTSD 装不起来 / 长稿音色漂移 / 吞吐不够
-- 代价：退回逐句合成 + 规则补停顿（说话人切换 350–500ms，同一人句间 150–250ms）
-- 好处：fastapi/grpc/vLLM/Triton 部署现成，0.5B 可并发跑十几个实例
+**FireRed（firered-tts2）已弃用**（尾部伪影不可接受），保留代码仅作历史参考。其余历史排除项（MOSS-TTSD / SoulX / Qwen3 / CosyVoice3 / vLLM-Omni / F5-TTS / VibeVoice 等）同 2026-08-07 调研结论。
 
-**环境试金石：F5-TTS**
-- 调研中**唯一有社区实测在 RTX PRO 6000 跑通**的项目
-- 权重 CC-BY-NC **不进生产**，但装它验证 CUDA/torch/flash-attn 链路比装 8B 快得多
-- **M0 阶段先用它打通环境**，再上 MOSS-TTSD——环境问题与模型问题不缠在一起
-
-**明确排除**：IndexTTS 2（不支持对话，时长控制至今未开放）、GPT-SoVITS（sm_120 有报错 issue、权重协议未明、每音色要训练）、Fish Audio S2（质量最强但 Research License 禁商用）、VibeVoice（微软已下架 TTS 代码）、ChatTTS / MetaVoice / MaskGCT / NaturalSpeech 3（能力不匹配或已死）、SoulX-Podcast（方言唯一选择但停更 8 个月，仅作实验分支）。
+**发音表（2026-08-07 researcher 调研）**：`shows/<name>/season/pronunciation.json` — 合成前把专有名词替换为注音读法（SGLang→SG浪、vLLM→V-L-L-M、CUDA→库达、KV cache→K-V缓存 等），防 TTS 逐字母念。词条带 confidence + source_url。
 
 ### 7.3 抽象层
 
-对话模型与逐句模型接口不同，抽象层要区分：
+唯一 provider 为 IndexTTS-2，抽象层保留以隔离 CLI/工作流：
 
 ```python
 class TTSProvider(Protocol):
@@ -330,26 +320,22 @@ class TTSProvider(Protocol):
     def native_dialogue(self) -> bool: ...
 
 class LocalTTSProvider:
-    """本地基类：GPU 设备管理、batch、模型预热、显存监控"""
+    """本地基类：GPU 设备管理、模型预热、显存监控"""
     def warmup(self): ...
     def vram_report(self) -> dict: ...
 
-class DialogueTTSProvider(LocalTTSProvider):
-    """整段对话一次性合成（MOSS-TTSD）。
-    Script → [S1]/[S2] 标签串 → 单次生成。
+class IndexTTS2Provider(LocalTTSProvider):
+    """IndexTTS-2 单句合成（唯一主方案）。
+    子进程调用 conda env itts310 的 indextts_synth_singleturn.py：
+    逐 turn 独立 infer（无跨 turn 上下文），按 S1/S2 选内置参考音色，
+    应用 pronunciation.json 注音替换，concat 输出 22050Hz episode.wav。
     停顿由模型生成，production-notes 的停顿建议是软提示（改写文本节奏）。"""
     native_dialogue = True
-
-class SegmentedTTSProvider(LocalTTSProvider):
-    """逐句合成 + 拼接（CosyVoice3）。停顿由 pipeline 插入静音。"""
-    native_dialogue = False
-    PAUSE_SPEAKER_SWITCH_MS = (350, 500)
-    PAUSE_SAME_SPEAKER_MS = (150, 250)
 ```
 
-**输入是结构化 `Script` 对象**（不是 raw markdown）——说话人/停顿/重音/引述嵌入点全是结构化字段，provider 自己负责标签或 SSML 转换。同一份 Script 跑不同 provider 出不同 AudioBundle，writer 不关心用了哪家。
+**输入是结构化 `Script` 对象**（不是 raw markdown）——说话人/停顿/重音/引述嵌入点全是结构化字段，provider 自己负责标签转换。
 
-**对 producer 的影响**：停顿建议在两类 provider 下语义不同——对话模型下是"改写文本节奏引导模型"，分段模型下是"插入具体毫秒静音"。producer 契约要写清这个分支。
+**对 producer 的影响**：IndexTTS-2 单句模式下停顿由**模型生成**，停顿建议是"改写文本节奏引导模型"的软提示，不写死毫秒。
 
 ---
 
@@ -611,7 +597,7 @@ tests/test_linters.py           每个 linter 的正例/反例
 
 | M | 验收标准 | 阻塞什么 |
 |---|---|---|
-| **M0 骨架 + 环境** | CLAUDE.md + 8 个 agent 提示词骨架 + 空 workflows + devpodcast.json + README + show_resolver 跑得通；**用 F5-TTS 打通 GPU/torch/flash-attn 链路**（环境试金石，不进生产）；再装 MOSS-TTSD 并跑通一段样例合成 | 一切 |
+| **M0 骨架 + 环境** | CLAUDE.md + 8 个 agent 提示词骨架 + 空 workflows + devpodcast.json + README + show_resolver 跑得通；**用 IndexTTS-2 跑通一段样例合成**（2026-08-08 定案） | 一切 |
 | **M1 一期能听** | 书源摄入 → Phase A → ep01 → 脚本 + wav + audio-qa.json；**人工完整听一遍**，通过 §12.4 三问 | pipeline 真伪验证 |
 | **M2 一季跑通** | 整季 5–8 期全部走通；Season Bible 在最后两期被有效回收 | 整季编排是否可行 |
 | **M3 抽象层验证** | 写一个 MarkdownSource（或 EpubSource），用它产出一期对比；BookSource 抽象真的不用重构 | "给一本书就能生成"承诺的真伪 |
@@ -625,8 +611,8 @@ tests/test_linters.py           每个 linter 的正例/反例
 
 | # | 风险 | 应对 |
 |---|---|---|
-| 1 | **TTS 是单点故障** — 模型加载失败、显存抖动、合成超时 | 抽象层先封好；M0 用 F5-TTS 独立验证环境；装好 CosyVoice3 作 fallback |
-| 2 | **MOSS-TTSD 在 Blackwell 上的未知数** — README 未提 CUDA 要求，8B + flash-attn 在 sm_120 要自己趟 | M0 就验证，不拖到 M1；失败即切 fallback |
+| 1 | **TTS 是单点故障** — 模型加载失败、显存抖动、合成超时 | IndexTTS-2 子进程隔离（独立 conda env itts310）；加载失败即 BLOCKED 升级 Lead，无静默降级 |
+| 2 | **TTS 尾部喃喃伪影** — 自回归模型正文后多吐咕哝声 | IndexTTS-2 单句逐 turn 独立生成（无上下文累积）大幅规避；残余伪影换 seed 重生成修复 |
 | 3 | **求职者声音过时** — 面经半年就过时 | 写进 SHOW.md：voices 有 3 个月保质期，到期刷新 |
 | 4 | **researcher 找不到某议题的声音** | §11.1 逃生舱兜底，允许议题降级或删除，不许编 |
 | 5 | **book-analyst 跨章切片质量** — 这是 devpodcast 的新增逻辑，最容易踩坑 | M1 选最容易切片的议题验证（如内存管理天然跨多章） |

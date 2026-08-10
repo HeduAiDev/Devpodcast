@@ -1,0 +1,14 @@
+{
+  "episode_id": "ep05",
+  "run": 1,
+  "dimension": "critical_depth",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:295-303 阿凯的 counter（「看遮挡」立场）全部论据来自书内设计（4000 个 int32、copy_stream 重叠、V2 Triton 内核）和上期书内数据（800 行 Triton 的 100.7%），反方有 5 条外部 voices（voice-016/017/033/034/035）撑腰，正方却没有任何一条外部第三方声音佐证「掩码开销真的能被前向遮盖」——争议两边的证据来源不对称。",
+      "suggested_fix": "非必改。script.md:303-305 已用「遮不住它就是真的慢，别硬吹」「上机测最靠谱」把未证实部分交还给听众自测，缓解了不对称；若 writer 想更稳，可在 295-299 段补一句明示「遮盖得住这一点，目前书里给了设计、还没有第三方实测」，把证据等级说破。",
+      "rationale": "批判强度维：争议要 claim/counter 都站得住。counter 的立场本身成立且判据可执行（303 行），但正方证据全部书内自证，评审记录此不对称供 writer 参考；不构成退稿，因 voice-guide「批判必须有靶子」已满足（反方靶子具体：版主 RunLLM 的 4090 场景、SqueezeBits benchmark、MLSys 论文、GitHub issue #49548、FutureAGI 量化评测），且 arc.json ep05.controversy 的 claim/counter/resolution 三段已完整落地。",
+      "blocking": false
+    }
+  ]
+}

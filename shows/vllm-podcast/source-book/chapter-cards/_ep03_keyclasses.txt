@@ -1,0 +1,64 @@
+===== ch14 抢占与请求生命周期回流：分配失败之后 =====
+[sec] 14.1 要不到块：抢占循环
+[sec] 14.2 回流：被抢请求去哪了
+[sec] 14.3 抢占之后，本拍不再放新请求
+[sec] 14.4 双队列：别让一个阻塞请求饿死整队
+[sec] 14.5 回流闭环：update_from_output
+[sec] 14.6 停止判定：check_stop，以及它不是 stop string
+[sec] 14.7 状态机：一次整型比较判完成
+[class] Scheduler | vllm/v1/core/sched/scheduler.py | 持有 running/waiting/skipped_waiting 三队列；schedule() 内嵌抢占循环；_preempt_request 执行抢占副作用；update_from_output 驱动请求生命周期回流（追加 token/停止/完成/spec 回退）
+[class] AsyncScheduler | vllm/v1/core/sched/async_scheduler.py | Scheduler 子类；覆写 _update_request_with_output 处理 num_output_placeholders 回扣与强制抢占下的异步 token 丢弃；spec 占位簿记
+[class] RequestStatus | vllm/v1/request.py | IntEnum 请求状态机；WAITING/RUNNING/PREEMPTED + 6 个 FINISHED_* 态；is_finished 用 > PREEMPTED 判定
+[class] FCFSRequestQueue / PriorityRequestQueue | vllm/v1/core/sched/request_queue.py | 队列抽象。FCFS 是 deque，prepend_request=appendleft（抢占回队头、skipped 重排靠它）；PRIORITY 是 heap，prepend 退化为按 (priority, arrival_time) 入堆
+[class] SchedulerOutput | vllm/v1/core/sched/output.py | 本章相关字段：preempted_req_ids（本拍被抢占的请求集，给 v2 model runner）、finished_req_ids（通知 worker 释放）
+===== ch15 分页 KV 缓存机制：块池与前缀缓存 =====
+[sec] 15.1 分页：为什么 KV 缓存要切块
+[sec] 15.2 一个块：KVCacheBlock
+[sec] 15.3 空闲块怎么排队：FreeKVCacheBlockQueue
+[sec] 15.4 引用计数：谁在用这块
+[sec] 15.5 块哈希：前缀缓存的钥匙
+[sec] 15.6 查表与命中：从 block_hashes 到物理块
+[sec] 15.7 三段式分配：allocate_slots
+[sec] 15.8 小结：一张图看懂分页 KV 缓存
+[class] KVCacheBlock | vllm/v1/core/kv_cache_utils.py | 单个 KV 块的元数据：block_id、ref_cnt 引用计数、_block_hash（满块且被缓存时的 hash+group_id 键）、prev/next_free_block（构成 free 链表的指针）、is_null（占位块标记）。@dataclass(slots=True)。
+[class] FreeKVCacheBlockQueue | vllm/v1/core/kv_cache_utils.py | 空闲块的双向链表，用 fake head/tail 哨兵；前端=LRU 最先驱逐，尾端=最近释放。直接操作块上的 prev/next 指针不分配 Python 对象，支持 O(1) 中间删除（remove）以便 touch 时把命中块从驱逐候选中摘除。
+[class] BlockHashToBlockMap | vllm/v1/core/block_pool.py | 前缀缓存的查找表：{BlockHashWithGroupId -> KVCacheBlock | dict[block_id, KVCacheBlock]}。同一 hash 可对应多块（不去重内容、保证 block_id 不变以维持 block table append-only），union 类型省 GC。
+[class] BlockPool | vllm/v1/core/block_pool.py | 全局块管家：持有 blocks 列表、free_block_queue、cached_block_hash_to_block、null_block。提供 get_new_blocks（取块+惰性驱逐+引用计数）、touch、free_blocks、cache_full_blocks、get_cached_block、_maybe_evict_cached_block。
+[class] SingleTypeKVCacheManager / FullAttentionManager | vllm/v1/core/single_type_kv_cache_manager.py | 单一注意力类型的块账本：req_to_blocks（请求→已分配块）、num_cached_block（请求→已缓存满块数）。负责 get_num_blocks_to_allocate、allocate_new_(computed_)blocks、cache_blocks、free，以及类方法 find_longest_cache_hit（沿哈希链查最长前缀命中）。
+[class] UnitaryKVCacheCoordinator | vllm/v1/core/kv_cache_coordinator.py | 单 KV cache group 的协调器（本章主路径）：直接把请求委派给唯一的 single_type_manager；find_longest_cache_hit 返回命中块与命中 token 数。HybridKVCacheCoordinator（多组）为可省略分支。
+[class] KVCacheManager / KVCacheBlocks | vllm/v1/core/kv_cache_manager.py | 对 Scheduler 的门面：get_computed_blocks（查前缀命中）、allocate_slots（三段式分配）、free、reset_prefix_cache。KVCacheBlocks 是隐藏内部结构的分配结果（按 group 分组的块序列）。
+===== ch16 KV 块分配与多注意力协调 =====
+[sec] 16.1 三阶段的全貌：allocate_slots 摊开看
+[sec] 16.2 阶段一：释放窗外块 + 预算检查
+[sec] 16.3 准入上限：SWA 凭什么敢少留块
+[sec] 16.4 阶段二、三：挂命中块、新建、缓存
+[sec] 16.5 协调层：三态工厂
+[sec] 16.6 Hybrid 的不动点迭代：让所有注意力达成一致
+[sec] 16.7 小结：分配决策与多注意力协调
+[class] KVCacheManager.allocate_slots | vllm/v1/core/kv_cache_manager.py | 对外分配入口；编排三阶段（释放 skipped → 挂前缀/外部命中块 → 新建 new+lookahead 块 → 缓存满块）。委托 coordinator 做跨组逻辑；预算不足返回 None。本章主骨架。
+[class] KVCacheCoordinator (ABC) | vllm/v1/core/kv_cache_coordinator.py | 协调多个 KV cache group 的抽象基类。持有 BlockPool + 每组一个 single_type_manager + eagle_group_ids。把 get_num_blocks_to_allocate / allocate_new_computed_blocks / allocate_new_blocks / cache_blocks / remove_skipped_blocks / free 逐组转发并累加。find_longest_cache_hit 为抽象方法。
+[class] KVCacheCoordinatorNoPrefixCache | vllm/v1/core/kv_cache_coordinator.py | 关前缀缓存时的退化实现；支持任意组数（含 0 组），find_longest_cache_hit 恒返回空命中、common prefix 恒 0。
+[class] UnitaryKVCacheCoordinator | vllm/v1/core/kv_cache_coordinator.py | 单一注意力类型（恰好 1 个 KV cache group）。断言 hash_block_size==block_size、组数==1；find_longest_cache_hit 直接委托唯一 manager，命中长度 = 命中块数 * block_size。最常见路径。
+[class] HybridKVCacheCoordinator | vllm/v1/core/kv_cache_coordinator.py | 混合注意力（多 KV cache group，如 full + sliding window）。verify_and_split_kv_cache_groups 按 spec 分桶、full attn 排首、算 lcm_block_size；find_longest_cache_hit 用不动点迭代让所有注意力类型对同一命中长度达成一致。断言 DCP/PCP==1、至少两类注意力组。
+[class] SingleTypeKVCacheManager (ABC) | vllm/v1/core/single_type_kv_cache_manager.py | 单一注意力类型的块管理：get_num_blocks_to_allocate（需块数推算）、allocate_new_computed_blocks（挂命中+null 填 skipped+external 分配）、remove_skipped_blocks（窗外块换 null 并归还）、get_num_skipped_tokens（基类默认 0）。
+[class] SlidingWindowManager | vllm/v1/core/single_type_kv_cache_manager.py | 滑动窗口注意力管理器；get_num_skipped_tokens=max(0,num_computed-sliding_window+1)，使窗外块被 remove_skipped_blocks 换成 null 回收。携带 recycling-aware admission cap。
+[class] ChunkedLocalAttentionManager | vllm/v1/core/single_type_kv_cache_manager.py | 分块本地注意力管理器；get_num_skipped_tokens 向下取整到 chunk 边界，复用 FullAttentionManager 的命中查找但窗外块归零。携带 recycling-aware admission cap。
+[class] get_kv_cache_coordinator | vllm/v1/core/kv_cache_coordinator.py | 三态工厂：!enable_caching → NoPrefixCache；单组 → Unitary；多组 → Hybrid。
+[class] get_manager_for_kv_cache_spec | vllm/v1/core/single_type_kv_cache_manager.py | spec 类型 → manager 类映射（spec_manager_map）；对 SWA/chunked-local 注入 max_admission_blocks_per_request。
+===== ch18 持久化批次与输入准备：把一张工单翻译成张量 =====
+[sec] 18.1 每拍的入口：先调和状态，再准备输入
+[sec] 18.2 为什么不每拍重建：持久批次的赌注
+[sec] 18.3 _update_states 之一：用 SchedulerOutput 当差量
+[sec] 18.4 _update_states 之二：在途请求就地更新 + 统一并入
+[sec] 18.5 slot 的回收与复用：打洞、复用、压实
+[sec] 18.6 _prepare_inputs：二维坐标拍扁成一维收集
+[sec] 18.7 位置、序列长与 slot_mapping：装配 attention 输入
+[sec] 18.8 block_table 的 CPU/GPU 双镜像与 position→slot 映射
+[sec] 18.9 交叉验证：在数值上看持久批次收敛
+[sec] 18.10 本章总结：持久批次，把工单翻译成张量
+[class] GPUModelRunner | vllm/v1/worker/gpu_model_runner.py | 每拍编排器：execute_model 在 synchronize_input_prep 上下文里先 _update_states(用 SchedulerOutput 调和持久批次)、再 _prepare_inputs(收集 input_ids/positions/slot_mapping)、_build_attention_metadata(装配 attn 输入)，然后前向。持有 self.requests(req_id→CachedRequestState 全量缓存) 与 self.input_batch(持久批次)。
+[class] InputBatch | vllm/v1/worker/gpu_input_batch.py | 跨迭代存活的多请求容器：token_ids_cpu(max_num_reqs × max_model_len 的 int32 全长缓冲，一行一请求)、num_prompt_tokens/num_computed_tokens_cpu/num_tokens_no_spec 等 CPU 镜像、block_table(MultiGroupBlockTable)、全套采样参数列、req_id_to_index 映射。增删通过 add_request/remove_request+condense，靠 batch_update_builder 复用空 slot。
+[class] CachedRequestState | vllm/v1/worker/gpu_input_batch.py | worker 端单请求快照(dataclass)：prompt_token_ids、output_token_ids、block_ids(每 KV group 一个 list)、num_computed_tokens、sampling_params、generator、(可选) mrope/xdrope positions。num_tokens = num_prompt_tokens + len(output_token_ids)。让 worker 缓存请求、调度器后续只发差量。
+[class] BatchUpdateBuilder | vllm/v1/sample/logits_processor/state.py | 记录本拍持久批次的 removed(降序)/added/moved 变更。pop_removed() 返回当前最小空 slot 供复用，peek_removed() 配合 condense 找最小空洞；get_and_reset 生成 logitsprocs 的 BatchUpdate。slot 复用的真正实现者。
+[class] MultiGroupBlockTable / BlockTable | vllm/v1/worker/block_table.py | MultiGroupBlockTable 按 KV cache group 持有多个 BlockTable。BlockTable 维护 block_table(CpuGpuBuffer, max_num_reqs × max_num_blocks_per_req)：append_row/add_row 改 CPU 镜像，commit_block_table 批量拷到 GPU，compute_slot_mapping 启动 Triton kernel 把 position 映射成物理 slot；支持 hybrid kernel block 细分与 CP/DCP 分片。
+[class] _compute_slot_mapping_kernel | vllm/v1/worker/block_table.py | Triton JIT kernel：每个 program 处理一请求，slot_id = block_table[req, pos//block_size] * block_size + pos%block_size（非 CP 简化形态）；最后一 program 把尾部 padding 成 PAD_SLOT_ID 以适配 CUDA graph。

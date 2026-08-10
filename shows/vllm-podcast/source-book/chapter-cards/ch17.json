@@ -1,0 +1,66 @@
+{
+  "chapter_id": "ch17",
+  "title": "执行器与 Worker 生命周期",
+  "slug": "ch17-worker-and-executor",
+  "sections": [
+    "17.1 控制平面长什么样",
+    "17.2 工厂：一个字符串挑出执行器",
+    "17.3 一切引擎指令，都是 collective_rpc",
+    "17.4 最简对照：UniProcExecutor",
+    "17.5 MultiprocExecutor：把 N 个 worker 拉起来",
+    "17.6 collective_rpc 的 mp 实现：广播一次，按需收回",
+    "17.7 worker 子进程：出生、服役、死亡",
+    "17.8 WorkerWrapperBase：延迟出生",
+    "17.9 两条失败路径：方法错 vs 进程死",
+    "17.10 三级关停：优雅 → SIGTERM → SIGKILL",
+    "17.11 本章总结：一层抽象，撑起所有并行"
+  ],
+  "key_classes": [
+    {
+      "name": "Executor",
+      "file": "vllm/v1/executor/abstract.py",
+      "responsibility": "执行器抽象基类：静态工厂 get_class() 三态分发；__init__→_init_executor() 钩子；把 execute_model/sample_tokens/determine_available_memory/add_lora/sleep 等所有引擎指令统一实现为 collective_rpc 调用（控制平面唯一入口）"
+    },
+    {
+      "name": "UniProcExecutor",
+      "file": "vllm/v1/executor/uniproc_executor.py",
+      "responsibility": "单进程执行器：driver_worker 就在本进程，collective_rpc 退化为同进程 run_method 直调。作为 mp 的最简对照"
+    },
+    {
+      "name": "MultiprocExecutor",
+      "file": "vllm/v1/executor/multiproc_executor.py",
+      "responsibility": "多进程执行器：一个执行器进程 + N 个 worker 子进程；建广播 MessageQueue 把 RPC 一次性发给所有 worker、用 FutureWrapper 异步收回复、起监控线程做失败传播、统一关停"
+    },
+    {
+      "name": "FutureWrapper",
+      "file": "vllm/v1/executor/multiproc_executor.py",
+      "responsibility": "concurrent.futures.Future 子类：把『worker 回复尚未到达』包成 future；result() 按发出顺序排空 futures_queue（底层 MQ 是 FIFO），可选 aggregate 聚合多 rank 输出"
+    },
+    {
+      "name": "WorkerProc",
+      "file": "vllm/v1/executor/multiproc_executor.py",
+      "responsibility": "把一个 Worker 跑在独立子进程里的包装：worker_main 入口、READY/death pipe 握手、worker_busy_loop 取 RPC 执行回写、异常转 FAILURE、shutdown 清理分布式组"
+    },
+    {
+      "name": "UnreadyWorkerProcHandle / WorkerProcHandle",
+      "file": "vllm/v1/executor/multiproc_executor.py",
+      "responsibility": "父进程侧对 worker 子进程的句柄：进程对象、rank、response MQ、death_writer。Unready→Ready 经 wait_for_ready 转换"
+    },
+    {
+      "name": "WorkerWrapperBase",
+      "file": "vllm/v1/worker/worker_base.py",
+      "responsibility": "进程内对 worker 的延迟初始化包装：先记 rpc_rank，init_worker 时按 worker_cls qualname 解析真实 Worker 类实例化；__getattr__ 透传——使 collective_rpc 的 getattr 能命中具体方法"
+    },
+    {
+      "name": "WorkerBase",
+      "file": "vllm/v1/worker/worker_base.py",
+      "responsibility": "硬件无关的 worker 接口：execute_model/sample_tokens/init_device/load_model/determine_available_memory/add_lora 等纯虚方法，供各硬件后端实现"
+    },
+    {
+      "name": "Worker",
+      "file": "vllm/v1/worker/gpu_worker.py",
+      "responsibility": "WorkerBase 的 GPU/CUDA 具体实现：init_device 建设备+分布式环境+内存快照并构造 model_runner，execute_model 包 model_runner 前向（含 PP 通信），determine_available_memory 剖析显存定 KV 容量。本章作生命周期锚点，前向/KV 剖析细节留后章"
+    }
+  ],
+  "mechanisms": []
+}

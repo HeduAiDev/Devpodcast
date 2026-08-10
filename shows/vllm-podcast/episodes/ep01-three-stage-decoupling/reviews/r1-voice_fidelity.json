@@ -1,0 +1,36 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimension": "voice_fidelity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:269 「让 23 个在飞的请求全排队」——voice-027 原文是「让 23 个在飞的 decode 流全部排队」，「请求」是「decode 流」的口语压缩（语义保留：23 个正处于解码阶段的请求），非曲解但层次略降。",
+      "evidence": "script.md:269",
+      "suggested_fix": "改为「让 23 个正在解码的请求全排队」，更贴原文层次且不失口语。",
+      "rationale": "原声保真维：引述不曲解，术语层次尽量贴近 voices 原文；decode 流→请求属可接受压缩，给出口语化等价项即可。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:241 「SGLang 的 p50 是 195 毫秒，vLLM 是 310 毫秒」——voice-036 原文是「p50 TTFT」，脚本丢掉了 TTFT 限定词，听感上可能被当作整体延迟指标而非首字延迟。",
+      "evidence": "script.md:241",
+      "suggested_fix": "补回限定：「SGLang 的 p50 首字延迟是 195 毫秒」；若嫌拗口可改「等第一个字出来的时间，SGLang 的中位数是 195 毫秒」。",
+      "rationale": "原声保真维：数字不漂移、指标口径不漂移；丢 TTFT 属于指标口径压缩，须补回或转述成口头等价。",
+      "blocking": false
+    },
+    {
+      "problem": "voice-002（community-only，source_date 2026-03-03）voices.json writer_note 明确要求「标注过期风险」；voice-001（source_date 2025-09-05）writer_note 要求「引用时核对当前 vLLM 版本」——两处引述在 script.md:69 与 L233 均无时间锚点，听众无法判断引述时效。",
+      "evidence": "script.md:69, 233",
+      "suggested_fix": "L69 引出句加时间锚：「今年三月，牛客上一位面过 AI Infra 实习的同学…」；L233 加「去年九月，有位社区技术作者…」。",
+      "rationale": "原声保真维：researcher 在 voices.json writer_note 里写的标注指令是引述契约的一部分；无时间锚点会让 5 个月/10 个月前的引述听起来像当下事实。",
+      "blocking": false
+    }
+  ],
+  "notes": [
+    "六条引述（voice-001/002/021/025/027/036）逐一对照 voices.json 原文：数字全部对得上（2-4%、195/310ms、37%、7GB/21GB、1.2s→9.8s、60ms、23 个、81%），事实断言未加码未删减。",
+    "claim vs verified 层次保持：voice-002（community-only）以「一位面过实习的同学写过一篇面经」呈现，未说成事实；S2 的「确实是高频考点」是 S2 自己的判断口吻，不冒充引述者结论。voice-021 未拿到全文的部分如实自曝（L265「没抓到全文，具体数字给不出」），没有用置信度不足的引述硬撑论点。",
+    "引述边界（三档策略）标注：六处均有明确引出标记（「他原话大意是」「他的结论是」「原话大意」「发帖说」「量性能损失——不过」），符合 voices.json 各条 writer_note 的档位（voice-001/021/025 为 (c) 转述用「大意」口吻；voice-027/036 为 (a) 重合成用「结论是/原话大意」口吻，一致）。",
+    "匿名化检查：voice-002（anonymized=true）未露 handle（只说「牛客上一位同学」）✓；voice-025/027/001/036（anonymized=false）未指名不违规（只降识别度不升）✓；无把匿名声音点名的行为。",
+    "引文括号检查：voice-001 原引文的括号插入语（FastAPI 前端等）已在定稿中拆出为 S2 自己的话（L233），口播不读括号。"
+  ]
+}

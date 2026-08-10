@@ -1,0 +1,46 @@
+{
+  "chapter_id": "ch12",
+  "title": "step_with_batch_queue：用 (SchedulerOutput, future) 对填满流水线",
+  "slug": "ch12-engine-core",
+  "sections": [
+    "12.1 一句话钩子：流水线里的空座位",
+    "12.2 启动期：队列从哪来，step 绑哪个",
+    "12.3 上半段：填管道优先于取结果",
+    "12.4 下半段：pop 队尾，取出最旧那个批",
+    "12.5 deferred sampling：当采样必须等上一步",
+    "12.6 小结：一个方法，两种受益"
+  ],
+  "key_classes": [
+    {
+      "name": "EngineCore.step_with_batch_queue",
+      "file": "vllm/v1/engine/core.py",
+      "responsibility": "本章主角。流水线并行（或 async_scheduling）下取代普通 step 的单步方法：维护一个深度 = batch_queue_size 的 deque，新批 appendleft 入队、队首 pop 取结果；『填满流水线优先于取模型输出』，让多个批在 PP 不同 stage 上同时在飞以消除气泡。返回 (engine_core_outputs|None, model_executed)。"
+    },
+    {
+      "name": "EngineCore.batch_queue",
+      "file": "vllm/v1/engine/core.py",
+      "responsibility": "deque[tuple[Future[ModelRunnerOutput], SchedulerOutput, Future[Any]]]，maxlen=batch_queue_size。元素 = (采样结果 future, 该批的 SchedulerOutput, execute_model 的 future) 三元组。仅当 batch_queue_size>1 时创建，否则为 None。"
+    },
+    {
+      "name": "EngineCore.batch_queue_size / step_fn / async_scheduling",
+      "file": "vllm/v1/engine/core.py",
+      "responsibility": "batch_queue_size = model_executor.max_concurrent_batches；step_fn 在 __init__ 静态绑定为 step（队列为 None）或 step_with_batch_queue（队列存在）；async_scheduling 是 SchedulerConfig 标志，间接经 max_concurrent_batches 决定队列是否启用。"
+    },
+    {
+      "name": "Executor.max_concurrent_batches",
+      "file": "vllm/v1/executor/abstract.py / multiproc_executor.py / uniproc_executor.py",
+      "responsibility": "决定 batch_queue_size 的源头。基类默认 1；MultiprocExecutor 返回 pp_size（或 pp<=1 且 async_scheduling 时 2）；UniProcExecutor 返回 2（async_scheduling）或 1。这是『async_scheduling 标志决定绑定哪个 step』的实现路径。"
+    },
+    {
+      "name": "SchedulerOutput.has_structured_output_requests / pending_structured_output_tokens",
+      "file": "vllm/v1/core/sched/output.py",
+      "responsibility": "两个布尔标志（仅 async scheduling 下置位）：前者表示本批有结构化输出请求；后者表示本批还缺算 grammar bitmask 所需的输出 token，是触发 deferred sampling 的开关。"
+    },
+    {
+      "name": "Scheduler.get_grammar_bitmask",
+      "file": "vllm/v1/core/sched/scheduler.py",
+      "responsibility": "为结构化输出请求计算 grammar bitmask，依赖 scheduled_spec_decode_tokens——这正是 spec decode + structured output 必须把采样推迟到拿到上一步 draft token 之后的根因。"
+    }
+  ],
+  "mechanisms": []
+}

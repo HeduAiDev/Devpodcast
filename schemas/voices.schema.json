@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "definitions": {
+    "voice-record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "term", "claim", "verified", "source_url",
+                   "source_date", "source_platform", "speaker_handle", "anonymized",
+                   "confidence", "writer_note"],
+      "properties": {
+        "id": {"type": "string"},
+        "category": {"enum": ["critical", "job-seeker"]},
+        "term": {"type": "string"},
+        "claim": {"type": "string"},
+        "verified": {"enum": ["official", "claim-self-checked", "community-only"]},
+        "source_url": {"type": "string", "minLength": 8},
+        "source_date": {"type": "string", "pattern": "^20\\d\\d-\\d\\d-\\d\\d$"},
+        "source_platform": {"enum": ["zhihu", "v2ex", "niuke", "maimai", "xhs", "bili",
+                                     "jike", "reddit", "hn", "x", "blind", "linkedin",
+                                     "official", "paper", "github-issue"]},
+        "speaker_handle": {"type": "string"},
+        "anonymized": {"type": "boolean"},
+        "confidence": {"enum": ["high", "medium", "low"]},
+        "writer_note": {"type": "string"}
+      }
+    }
+  },
+  "anyOf": [
+    {"$ref": "#/definitions/voice-record"},
+    {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/definitions/voice-record"}
+    }
+  ]
+}

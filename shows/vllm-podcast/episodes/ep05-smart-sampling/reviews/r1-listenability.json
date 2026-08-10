@@ -1,0 +1,36 @@
+{
+  "episode_id": "ep05",
+  "run": 1,
+  "dimension": "listenability",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:109 六英文标识符一口气中英混排（json、regex、choice、grammar、json_object、structural_tag），其中 json_object / structural_tag 长驼峰/下划线词口播必卡（producer 意见第 4 条同源，writer 保留未改）。含义可跟、但 TTS 逐字母念的风险存在。",
+      "evidence": "script.md:109；production-notes.md:22-25",
+      "suggested_fix": "拆两拍：json、regex、choice、grammar 一顿；json_object、structural_tag 单列并各带半句用途（如「json_object 就是强制整段必须是 JSON 对象」）；或确认 pronunciation.json 覆盖这两个词条的注音替换。",
+      "rationale": "口播可懂维：术语首现要有口头可跟随性；闭眼听时中英混排长词是唯一可能掉线点。非阻断（语义可恢复、TTS 注音表可兜底）。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:223 / 229 outlines、LLGuidance 首现无一句口头解释（「反而比 outlines 还慢」「动态复杂的格式下，LLGuidance 反超」）。上下文可推出是同类库，但第一次听全季的听众会卡半秒。",
+      "evidence": "script.md:223、script.md:229",
+      "suggested_fix": "任选一处加半句：「outlines 是另一家做结构化输出的库」「LLGuidance，另一个引导解码库」。",
+      "rationale": "口播可懂维：外部库名首现给一句定性，闭眼听不丢帧。非阻断。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:65「温度变换」首现无定义（至 L141 才有半句「温度一缩，可能又被拉回可选范围」）。采样温度是标准术语，但首现位置恰在将被重写的 L65——建议顺带补一句口头定义。",
+      "evidence": "script.md:65、script.md:141",
+      "suggested_fix": "改 L65 时顺带加半句：「温度变换，就是把分数整体缩一缩再选」。",
+      "rationale": "口播可懂维：术语首现口头解释。非阻断（与事实维修复绑定，一处顺手）。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:161/173/177/185/213/221/229/249/273 双侧破折号「——{{voice:xx}}——」在占位符剥离后合成文本为四连破折号（如 L161「提过————他的大意」），TTS 可能读出异常长停顿（producer 意见第 5 条，suggestion 级，writer 保留）。",
+      "evidence": "production-notes.md:29-31；script.md:161",
+      "suggested_fix": "只留左侧引出「——」，右侧改逗号/句号再接「他的大意：」；9 处同改。",
+      "rationale": "口播可懂维：文本节奏引导，防合成长停顿糊音。非阻断（audio-qa 无相关 issue，属文本级软提示）。",
+      "blocking": false
+    }
+  ]
+}

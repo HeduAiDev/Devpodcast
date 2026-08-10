@@ -1,0 +1,14 @@
+{
+  "episode_id": "ep05",
+  "run": 1,
+  "dimension": "quote_fidelity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:283「官方认账，路没走完」——voice-017 的发言者是 vLLM 官方论坛版主的个人回帖（voices.json 标 verified=claim-self-checked，个人发言层次，非项目官方立场），「官方认账」四字把版主个人发言在听感上升格为 vLLM 官方背书。同行 L281 的归属「vLLM 官方论坛的版主公开承认过」是准确的，L283 的缩略总结出现层次偏移；同稿 L247 对 voice-034 用「官方还没确认」的准确层次处理，反衬此处是口语缩略而非误解，且上下文归属已明，未造成实质曲解，故非阻断。",
+      "suggested_fix": "L283「官方认账，路没走完」改为「版主认账，路没走完」或「官方论坛上认了账，路没走完」，与 voice-017 的 claim-self-checked 个人发言层次对齐；若保留现状，需在 production-notes 注明该处「官方」特指官方论坛版主发言。",
+      "rationale": "原声保真维：claim vs verified 的层次保持——claim-self-checked 的个人发言（即使来自官方论坛版主）不等于项目官方立场；个人声音被升格为官方表述是层次事故的前兆，此处属轻微偏移，修一句即可对齐。",
+      "blocking": false
+    }
+  ]
+}

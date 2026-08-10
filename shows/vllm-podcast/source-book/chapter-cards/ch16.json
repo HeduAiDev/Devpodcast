@@ -1,0 +1,67 @@
+{
+  "chapter_id": "ch16",
+  "title": "KV 块分配与多注意力协调",
+  "slug": "ch16-kv-cache",
+  "sections": [
+    "16.1 三阶段的全貌：allocate_slots 摊开看",
+    "16.2 阶段一：释放窗外块 + 预算检查",
+    "16.3 准入上限：SWA 凭什么敢少留块",
+    "16.4 阶段二、三：挂命中块、新建、缓存",
+    "16.5 协调层：三态工厂",
+    "16.6 Hybrid 的不动点迭代：让所有注意力达成一致",
+    "16.7 小结：分配决策与多注意力协调"
+  ],
+  "key_classes": [
+    {
+      "name": "KVCacheManager.allocate_slots",
+      "file": "vllm/v1/core/kv_cache_manager.py",
+      "responsibility": "对外分配入口；编排三阶段（释放 skipped → 挂前缀/外部命中块 → 新建 new+lookahead 块 → 缓存满块）。委托 coordinator 做跨组逻辑；预算不足返回 None。本章主骨架。"
+    },
+    {
+      "name": "KVCacheCoordinator (ABC)",
+      "file": "vllm/v1/core/kv_cache_coordinator.py",
+      "responsibility": "协调多个 KV cache group 的抽象基类。持有 BlockPool + 每组一个 single_type_manager + eagle_group_ids。把 get_num_blocks_to_allocate / allocate_new_computed_blocks / allocate_new_blocks / cache_blocks / remove_skipped_blocks / free 逐组转发并累加。find_longest_cache_hit 为抽象方法。"
+    },
+    {
+      "name": "KVCacheCoordinatorNoPrefixCache",
+      "file": "vllm/v1/core/kv_cache_coordinator.py",
+      "responsibility": "关前缀缓存时的退化实现；支持任意组数（含 0 组），find_longest_cache_hit 恒返回空命中、common prefix 恒 0。"
+    },
+    {
+      "name": "UnitaryKVCacheCoordinator",
+      "file": "vllm/v1/core/kv_cache_coordinator.py",
+      "responsibility": "单一注意力类型（恰好 1 个 KV cache group）。断言 hash_block_size==block_size、组数==1；find_longest_cache_hit 直接委托唯一 manager，命中长度 = 命中块数 * block_size。最常见路径。"
+    },
+    {
+      "name": "HybridKVCacheCoordinator",
+      "file": "vllm/v1/core/kv_cache_coordinator.py",
+      "responsibility": "混合注意力（多 KV cache group，如 full + sliding window）。verify_and_split_kv_cache_groups 按 spec 分桶、full attn 排首、算 lcm_block_size；find_longest_cache_hit 用不动点迭代让所有注意力类型对同一命中长度达成一致。断言 DCP/PCP==1、至少两类注意力组。"
+    },
+    {
+      "name": "SingleTypeKVCacheManager (ABC)",
+      "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+      "responsibility": "单一注意力类型的块管理：get_num_blocks_to_allocate（需块数推算）、allocate_new_computed_blocks（挂命中+null 填 skipped+external 分配）、remove_skipped_blocks（窗外块换 null 并归还）、get_num_skipped_tokens（基类默认 0）。"
+    },
+    {
+      "name": "SlidingWindowManager",
+      "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+      "responsibility": "滑动窗口注意力管理器；get_num_skipped_tokens=max(0,num_computed-sliding_window+1)，使窗外块被 remove_skipped_blocks 换成 null 回收。携带 recycling-aware admission cap。"
+    },
+    {
+      "name": "ChunkedLocalAttentionManager",
+      "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+      "responsibility": "分块本地注意力管理器；get_num_skipped_tokens 向下取整到 chunk 边界，复用 FullAttentionManager 的命中查找但窗外块归零。携带 recycling-aware admission cap。"
+    },
+    {
+      "name": "get_kv_cache_coordinator",
+      "file": "vllm/v1/core/kv_cache_coordinator.py",
+      "responsibility": "三态工厂：!enable_caching → NoPrefixCache；单组 → Unitary；多组 → Hybrid。"
+    },
+    {
+      "name": "get_manager_for_kv_cache_spec",
+      "file": "vllm/v1/core/single_type_kv_cache_manager.py",
+      "responsibility": "spec 类型 → manager 类映射（spec_manager_map）；对 SWA/chunked-local 注入 max_admission_blocks_per_request。"
+    }
+  ],
+  "mechanisms": []
+}

@@ -1,0 +1,254 @@
+{
+  "chapter_id": "ch27",
+  "title": "ch27",
+  "slug": "ch27-primer-lightning-indexer",
+  "sections": [],
+  "key_classes": [
+    {
+      "name": "Indexer",
+      "file": "vllm/model_executor/models/deepseek_v2.py",
+      "responsibility": "V3.2 lightning indexer（compress_ratio=1，无压缩）：低秩出 indexer query、fused wk+weights_proj 出 key 与逐头权重、k_norm+RoPE+FP8 量化，然后调 SparseAttnIndexer 出 top-k。落地 Eq.(1)-(2)。"
+    },
+    {
+      "name": "DeepseekV32IndexerCache",
+      "file": "vllm/model_executor/models/deepseek_v2.py",
+      "responsibility": "索引器专属 KV 缓存（AttentionLayerBase）：MLAAttentionSpec，num_kv_heads=1，head_size=132（128 fp8 + 4B fp32 scale），与主 KV cache 完全独立分配。"
+    },
+    {
+      "name": "DeepseekV4Indexer",
+      "file": "vllm/model_executor/layers/deepseek_v4_attention.py",
+      "responsibility": "V4/CSA lightning indexer（compress_ratio>1）：用 DeepseekCompressor 建压缩索引键 K^IComp、支持 MXFP4 缓存、fused_indexer_q_rope_quant 融合 RoPE+量化。落地 Eq.(16)-(17)。"
+    },
+    {
+      "name": "DeepseekV4IndexerCache",
+      "file": "vllm/model_executor/layers/deepseek_v4_attention.py",
+      "responsibility": "V4 索引器缓存：与 V3.2 同布局但页对齐 576B（与 FlashMLA/compressor 状态打包），compress_ratio 使缓存以压缩块为单位增长。"
+    },
+    {
+      "name": "SparseAttnIndexer",
+      "file": "vllm/model_executor/layers/sparse_attn_indexer.py",
+      "responsibility": "CustomOp：封装重核（mqa_logits/paged_mqa_logits/top_k_per_row），CUDA/ROCm/XPU 分派；把 q_fp8/k/weights 变成写入 topk_indices_buffer 的 top-k 索引。"
+    },
+    {
+      "name": "DeepseekV32IndexerMetadataBuilder",
+      "file": "vllm/v1/attention/backends/mla/indexer.py",
+      "responsibility": "索引器后端 metadata builder：prefill 按 workspace/logits 预算分块、decode 展开（MTP/flatten/native）、compress_ratio 时把 seq_lens 与 slot_mapping 转成压缩坐标。"
+    },
+    {
+      "name": "DeepseekV32IndexerBackend / DeepseekV4IndexerBackend",
+      "file": "vllm/v1/attention/backends/mla/indexer.py",
+      "responsibility": "索引器 KV cache 后端：get_kv_cache_shape=(num_blocks, block_size, head_size)、num_kv_heads==1 断言、支持头维 {32,64,128}；V4 子类改 kernel block size 为 256。"
+    },
+    {
+      "name": "DeepseekCompressor",
+      "file": "vllm/model_executor/layers/deepseek_compressor.py",
+      "responsibility": "V4 KV/索引键压缩器：fused_wkv_wgate 出 KV 与门控分数，按 softmax 权重把每 m 个条目压成 1 个（Eq.9-12/K^IComp），写进对应缓存。"
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "index-score-formula",
+      "name": "Lightning indexer 打分函数 I_{t,s}=Σ w·ReLU(q·k)",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/models/deepseek_v2.py:L676-L737",
+        "vllm/model_executor/layers/sparse_attn_indexer.py:L223-L230"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2512.02556",
+        "sections": [
+          "§2.1",
+          "Prototype of DSA",
+          "Eq.(1)"
+        ]
+      },
+      "paper_origin_v4": {
+        "paper": "arXiv:2606.19348",
+        "sections": [
+          "§2.3.1 Lightning Indexer for Sparse Selection",
+          "Eq.(15)-(16)"
+        ]
+      },
+      "notes": "逐头点积→ReLU→逐头权重加权求和。落地：q_fp8·k 的点积+ReLU+加权在 fp8_fp4_mqa_logits 核内；per-head weights=w^I，softmax_scale/q_scale 折进 weights。worked example：小 H^I（如 2 头）手算一个 I_{t,s}。"
+    },
+    {
+      "id": "topk-selection",
+      "name": "细粒度 top-k 选块（Eq.2/17）+ 写共享 topk_indices_buffer",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/layers/sparse_attn_indexer.py:L233-L258",
+        "vllm/model_executor/models/deepseek_v2.py:L1217-L1227"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2512.02556",
+        "sections": [
+          "§2.1",
+          "Prototype of DSA",
+          "Eq.(2)"
+        ]
+      },
+      "paper_origin_v4": {
+        "paper": "arXiv:2606.19348",
+        "sections": [
+          "Eq.(17)"
+        ]
+      },
+      "notes": "top_k_per_row_{prefill,decode}/persistent_topk 从 I_{t,:} 选前 k 索引写进全模型共享 buffer（-1 填充）。worked example：给一行 logits，手挑 top-k 索引。"
+    },
+    {
+      "id": "independent-small-heads",
+      "name": "独立小头架构（H^I 与主注意力头解耦，可 FP8）",
+      "kind": "config",
+      "source_anchors": [
+        "vllm/model_executor/models/deepseek_v2.py:L621-L659",
+        "vllm/model_executor/models/deepseek_v2.py:L986-L1005"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": false,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2512.02556",
+        "sections": [
+          "§2.1",
+          "Instantiate DSA Under MLA"
+        ]
+      },
+      "notes": "字面证据：n_head/head_dim/rope_dim 来自 config.index_* 前缀；indexer 有独立 wq_b/wk_weights_proj/k_norm/k_cache 与专属 RoPE。配 Fig.2（DSA 在 MLA-MQA 之下如何用独立小头挑 top-k、跨头共享 latent KV）。"
+    },
+    {
+      "id": "kl-alignment-separate-optimization",
+      "name": "分离优化：indexer 独立参数 + KL 对齐损失（detach）",
+      "kind": "protocol",
+      "source_anchors": [
+        "vllm/model_executor/models/deepseek_v2.py:L740-L777",
+        "vllm/model_executor/models/deepseek_v2.py:L627-L644"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": false,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2512.02556",
+        "sections": [
+          "§2.1.1 Continued Pre-Training",
+          "Eq.(3)",
+          "Eq.(4)"
+        ]
+      },
+      "phase_note": "KL 损失 L^I 本身是训练期概念（Eq.3/4，vLLM 不含反向）；此处 source_anchors 落在推理侧的'分离参数'实证——indexer 有自己一套投影（wq_b/wk_weights_proj）+ 专门的 FP8 indexer 权重加载路径 _try_load_fp8_indexer_wk（正因 indexer 单独 detach 优化、常以独立 FP8 checkpoint 存放）。writer 讲清'为何打分可信'。"
+    },
+    {
+      "id": "complexity-honest-account",
+      "name": "复杂度诚实账 O(L²)→O(Lk)（indexer 自身仍 O(L²)）",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/layers/sparse_attn_indexer.py:L223-L258",
+        "vllm/v1/attention/backends/mla/indexer.py:L219-L229"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2512.02556",
+        "sections": [
+          "§2.3 Inference Costs"
+        ]
+      },
+      "notes": "主注意力 O(L²)→O(Lk)，indexer 打分仍 O(L²) 但常数远小（少头/低精度/无反向）。worked example：L≈128k、k≈2048 代入，量化主注意力省的核算量与 indexer 打分的相对开销；prefill logits 预算 M·N·4≤max_logits_bytes 的分块正是 O(L²) 内存的直接体现。"
+    },
+    {
+      "id": "indexcache-layout-independence",
+      "name": "IndexCache 张量布局与对主 KV cache 的独立性（K^IComp）",
+      "kind": "layout",
+      "source_anchors": [
+        "vllm/model_executor/models/deepseek_v2.py:L575-L601",
+        "vllm/model_executor/layers/deepseek_v4_attention.py:L1048-L1086"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": false,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2606.19348",
+        "sections": [
+          "§2.3.1",
+          "Compressed Key-Value Entries",
+          "Lightning Indexer for Sparse Selection",
+          "Eq.(9)-(19)"
+        ]
+      },
+      "paper_origin_v32": {
+        "paper": "arXiv:2512.02556",
+        "sections": [
+          "§2.1 Instantiate DSA Under MLA"
+        ]
+      },
+      "notes": "K^IComp∈R^{n/m×c^I} 与主 C^Comp 并行产出、各自缓存。落地：DeepseekV32/V4IndexerCache 各自 MLAAttentionSpec（num_kv_heads=1，head_size=132=128fp8+4scale），与主 KV cache 分开分配；V4 页对齐 576B。配 Fig.3（K^IComp 与 C^Comp 的空间关系）。"
+    },
+    {
+      "id": "kcache-build-quant-gather",
+      "name": "索引器 KV cache 的量化写入与 prefill/decode 收集",
+      "kind": "dataflow",
+      "source_anchors": [
+        "vllm/model_executor/layers/sparse_attn_indexer.py:L165-L205",
+        "vllm/model_executor/layers/sparse_attn_indexer.py:L260-L319"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": false,
+      "difficulty": "supporting",
+      "paper_origin": {
+        "paper": "arXiv:2606.19348",
+        "sections": [
+          "§2.3.4 Efficiency Discussion"
+        ]
+      },
+      "notes": "本小节讲 vLLM 侧的 FP8 量化写入与 prefill/decode 收集内核，论文根基是 §2.3.4 的混合 FP8 存储（RoPE 维 BF16、其余 FP8）；压缩操作本身 Eq.(9)-(12) 归 indexcache-layout-independence 机制（正文 §五 独立性小节已引 Eq.(9)-(12)/(16)/(17)）。indexer_k_quant_and_cache（k FP8 量化+插入，与 q 分开）；prefill 逐 chunk cp_gather_indexer_k_quant_cache 从 paged cache 收集历史 key 到 workspace；decode 用 fp8_fp4_paged_mqa_logits 直接 paged 打分。V4 由 DeepseekCompressor 在插入前完成压缩（skip_k_cache_insert=True）。"
+    },
+    {
+      "id": "fp4-mxfp4-variant",
+      "name": "FP4/MXFP4 indexer 缓存变体（use_fp4_indexer_cache）",
+      "kind": "config",
+      "source_anchors": [
+        "vllm/model_executor/layers/sparse_attn_indexer.py:L39-L81",
+        "vllm/model_executor/layers/deepseek_v4_attention.py:L1113-L1117",
+        "vllm/v1/attention/backends/mla/indexer.py:L255-L278"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": false,
+      "difficulty": "supporting",
+      "paper_origin": {
+        "paper": "arXiv:2606.19348",
+        "sections": [
+          "§2.3.4 Efficiency Discussion",
+          "§5.2.1 FP4 Quantization-Aware Training"
+        ]
+      },
+      "notes": "MXFP4 布局=2 值/字节 + ue8m0 per-32 scale；index 分数 FP32→BF16；QAT 保 99.7% 召回、top-k 选择器 2x。仅 Blackwell 数据中心 GPU（sm_10x）。配 Fig.1 右（局部量化 → 整机 FLOPs/KV cache 对账）。"
+    },
+    {
+      "id": "customop-mla-wiring",
+      "name": "接线：SparseAttnIndexer CustomOp 如何被 MLA 消费",
+      "kind": "protocol",
+      "source_anchors": [
+        "vllm/model_executor/layers/mla.py:L168-L169",
+        "vllm/model_executor/layers/sparse_attn_indexer.py:L404-L493",
+        "vllm/model_executor/models/deepseek_v2.py:L986-L1005"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": false,
+      "difficulty": "supporting",
+      "paper_origin": {
+        "paper": "arXiv:2512.02556",
+        "sections": [
+          "§2.1",
+          "Instantiate DSA Under MLA"
+        ]
+      },
+      "notes": "SparseAttnIndexer 是 CustomOp（封装 mqa_logits/top_k_per_row 重核，多后端分派）；MLA 前向 mla.py:L168-169 先调 indexer 写 buffer（副作用），稀疏 MLA 后端再从同 buffer 取 top-k 做数值计算。is_v32 检测（hasattr index_topk）驱动是否建 indexer。skip_topk 支持 IndexCache 跨层复用。"
+    }
+  ]
+}

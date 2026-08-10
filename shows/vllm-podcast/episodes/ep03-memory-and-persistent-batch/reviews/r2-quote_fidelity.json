@@ -1,0 +1,8 @@
+{
+  "episode_id": "ep03",
+  "run": 2,
+  "dimension": "quote_fidelity",
+  "pass": true,
+  "issues": [],
+  "notes": "第 2 轮只复审上轮 fail 项。r1 唯一阻断项（script.md:139 voice-024 把 researcher 推断的三个追问升格为『面试官是这么问的/原话大概这个意思』，与 writer_note『原文只列出 prefix caching 作为考点，specific 追问细节根据面经所列方向推断』层次失守）已按 r1 suggested_fix 修复：现稿 L139 实记部分降为『前缀缓存是当场考点』（与原文记录一致），三个具体问题降为『这类追问一般会细到……大致就这个方向』（典型追问方向，不再冒充现场原话），claim vs 来源真实状态层次归位。改后全稿 9 处引述复扫零漂移：voice-029(L11)/voice-009(L59)/voice-024(L139)/voice-008(L281)/voice-006(L289)/voice-022(L301)/voice-007(L309)/voice-030(L319)/voice-026(L329) 数字与 voices.json 逐条对齐；community-only 两条（voice-009/024）均带社区记录归属与对冲，未说成事实；过期对冲在位（L297 voice-006『去年三月……不敢替人打包票』、L325 voice-030『不是同行评审的论文』）；匿名化守住（voice-029/009/024/008 个体不具名，voice-022 仅具名 Mistral AI 组织）；9 处均有口头引述边界标注。附带确认：factual_accuracy 维 L337 修复（删『80%』）后，170 倍挂回 voice-007 自身实验条件（150 客户/6000 token 共享系统提示词），跨来源拼接误挂消除。run-ledger.json 由 factual_accuracy 维独占写入，本维不触碰。"
+}

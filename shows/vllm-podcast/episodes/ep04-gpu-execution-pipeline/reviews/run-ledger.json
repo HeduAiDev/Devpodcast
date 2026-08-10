@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep04",
+  "run": 1,
+  "dimensions": {
+    "factual_accuracy": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 3},
+    "critical_depth": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 0},
+    "spoken_clarity": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 1},
+    "voice_balance": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 0},
+    "job_seeker_resonance": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 1},
+    "quote_fidelity": {"pass": true, "blocking_issues": 0, "non_blocking_issues": 1}
+  },
+  "verdict": "OK",
+  "voices_coverage": "full",
+  "notes": "ep04 第 1 轮 6 维并行评审（2026-08-09，评审对象为当前定稿 script.md）。6 维全 pass，无阻断项；非阻断意见共 6 条：事实准确 3（script.md:61 父进程失败监控无 episode-card 支撑；script.md:177「decode 一拍几十个算子」量级无出处；script.md:155/165「一刀两段」与 card 的逐段遍历多段切分不符）、口播可懂 1（Triton 首现 L11 无口头解释）、求职者共鸣 1（配额口径边界告知）、原声保真 1（L265/L287「原话」标签超出档位 (a) 重合成支撑）。本轮维度键为 critical_depth/spoken_clarity/quote_fidelity；目录中 Aug 7 的 r1-critical_strength.json、r1-listenability.json、r1-voice_fidelity.json 系旧稿评审遗留（旧键），不计入本轮。旧稿事实准确维曾提「prefill 侧缺口」，当前稿 L213-215 已补上并挂账 ep05（arc-map ep05 payoff_due 明列），该问题不再成立。音频 audio-qa.json issues 为空，无引用项。本 ledger 由 factual_accuracy 维单写，其余维数值镜像自各 r1-<dim>.json 落盘文件（镜像时点 2026-08-09 06:32 后，6 份产物均已落盘）。回环计数：run=1，无需回环；如有后续轮次 run 从 2 计数。"
+}

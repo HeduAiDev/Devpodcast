@@ -1,0 +1,199 @@
+=== commits ===
+aa5ae8f fix: lint_script CLI 参数守卫 + budget 转换路径测试覆盖
+dac6a7d feat: lint_script 门禁（voices 引用/声线平衡/我不知道/预算）
+
+=== stat ===
+ scripts/lint_script.py    | 84 ++++++++++++++++++++++++++++++++++++++++++
+ tests/test_lint_script.py | 93 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 177 insertions(+)
+
+=== full diff ===
+diff --git a/scripts/lint_script.py b/scripts/lint_script.py
+new file mode 100644
+index 0000000..d3ba2cf
+--- /dev/null
++++ b/scripts/lint_script.py
+@@ -0,0 +1,84 @@
++"""脚本门禁：voices 引用存在性 / 双声线平衡 / 「我不知道」warn / 时长预算。"""
++import json
++import sys
++from pathlib import Path
++
++# 以 `python3 scripts/lint_script.py ...` 直接运行时 sys.path[0] 是 scripts/，
++# 需把仓库根目录加回 path 才能 import scripts.* 包
++sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
++
++from scripts.script_parser import parse
++from scripts.voice_budget import budget_check
++
++UNKNOWN_WORDS = ("我不知道", "没搞清", "没想明白", "说不准")
++MIN_SPEAKER_RATIO = 0.30
++
++USAGE = "usage: python3 scripts/lint_script.py <path> [--voices <json>] [--target-minutes N]"
++
++
++def lint_script(path: Path, voices: dict, target_minutes: float) -> list[dict]:
++    issues: list[dict] = []
++    script = parse(path)
++
++    # 1. voices 引用存在性
++    known = set(voices.keys())
++    for i, t in enumerate(script.turns):
++        for ref in t.voice_refs:
++            if ref not in known:
++                issues.append({"level": "BLOCKING", "msg": f"turn {i} 引用未知 voice id: {ref}"})
++
++    # 2. 双声线平衡
++    if script.turns:
++        n = len(script.turns)
++        s1 = sum(1 for t in script.turns if t.speaker == "S1")
++        s2 = n - s1
++        for sp, cnt in (("S1", s1), ("S2", s2)):
++            if cnt / n < MIN_SPEAKER_RATIO:
++                issues.append({"level": "WARN", "msg": f"{sp} 仅 {cnt}/{n} turn（{cnt/n:.0%}），低于 {MIN_SPEAKER_RATIO:.0%}——防捧哏"})
++
++    # 3. 「我不知道」出现（warn，防语境误报）
++    all_text = "".join(t.text for t in script.turns)
++    if not any(w in all_text for w in UNKNOWN_WORDS):
++        issues.append({"level": "WARN", "msg": "全脚本无「我不知道/没搞清」类表述——voice-guide 纪律 1 要求每期至少一次"})
++
++    # 4. 时长/换气预算（budget_check 返回带前缀的字符串，转成统一 dict 结构）
++    for s in budget_check(script, target_minutes):
++        if s.startswith("BLOCKING"):
++            issues.append({"level": "BLOCKING", "msg": s[len("BLOCKING: "):]})
++        else:
++            issues.append({"level": "WARN", "msg": s[len("WARN: "):] if s.startswith("WARN") else s})
++    return issues
++
++
++def main(argv=None) -> int:
++    argv = argv if argv is not None else sys.argv[1:]
++    if not argv:
++        print(USAGE, file=sys.stderr)
++        return 2
++    path = Path(argv[0])
++    voices: dict = {}
++    target = 35.0
++    if "--voices" in argv:
++        i = argv.index("--voices")
++        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
++            print(USAGE, file=sys.stderr)
++            return 2
++        voices = json.loads(Path(argv[i + 1]).read_text(encoding="utf-8"))
++    if "--target-minutes" in argv:
++        i = argv.index("--target-minutes")
++        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
++            print(USAGE, file=sys.stderr)
++            return 2
++        try:
++            target = float(argv[i + 1])
++        except ValueError:
++            print(f"error: --target-minutes 需要合法数值，得到 '{argv[i + 1]}'", file=sys.stderr)
++            return 2
++    issues = lint_script(path, voices, target)
++    for i in issues:
++        print(f"[{i['level']}] {i['msg']}")
++    return 1 if any(i["level"] == "BLOCKING" for i in issues) else 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/tests/test_lint_script.py b/tests/test_lint_script.py
+new file mode 100644
+index 0000000..25d60fd
+--- /dev/null
++++ b/tests/test_lint_script.py
+@@ -0,0 +1,93 @@
++import json
++from pathlib import Path
++import pytest
++from scripts.lint_script import lint_script, main
++
++VOICES = {"voice-001": {"claim": "面试要口算"}, "voice-002": {"claim": "社区吐槽"}}
++
++def test_voice_refs_must_exist(tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 这里 {{voice:voice-999}} 不存在 [/S1]\n", encoding="utf-8")
++    issues = lint_script(p, VOICES, target_minutes=5)
++    assert any("voice-999" in i["msg"] and i["level"] == "BLOCKING" for i in issues)
++
++def test_voice_refs_valid_ok(tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 这里 {{voice:voice-001}} 存在 [/S1]\n", encoding="utf-8")
++    issues = lint_script(p, VOICES, target_minutes=5)
++    assert all("voice-999" not in i["msg"] for i in issues)
++
++def test_unknown_word_warn(tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 开场 [/S1]\n[S2] 主体内容 [/S2]\n", encoding="utf-8")
++    issues = lint_script(p, VOICES, target_minutes=5)
++    assert any("我不知道" in i["msg"] and i["level"] == "WARN" for i in issues)
++
++def test_unknown_word_present_no_warn(tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 这个我们也没搞清楚，评论区有懂的说说 [/S1]\n[S2] 回应 [/S2]\n", encoding="utf-8")
++    issues = lint_script(p, VOICES, target_minutes=5)
++    assert not any("我不知道" in i["msg"] for i in issues)
++
++def test_bald_broadcast_warn(tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] a [/S1]\n[S1] b [/S1]\n[S1] c [/S1]\n[S2] d [/S2]\n", encoding="utf-8")
++    issues = lint_script(p, VOICES, target_minutes=5)
++    assert any("30%" in i["msg"] and i["level"] == "WARN" for i in issues)
++
++def test_budget_overrun_blocking_strips_prefix(tmp_path):
++    # 60 字 ≈ 15s 口播 > 0.1min×60×1.15=6.9s 余量 → BLOCKING；60 < 200 不触发换气 WARN
++    p = tmp_path / "s.md"
++    p.write_text(f"[S1] {'字' * 60} [/S1]\n", encoding="utf-8")
++    issues = lint_script(p, VOICES, target_minutes=0.1)
++    blocking = [i for i in issues if i["level"] == "BLOCKING"]
++    assert blocking, f"应产出 BLOCKING 预算超限，实际 issues: {issues}"
++    assert "预计" in blocking[0]["msg"]
++    assert not blocking[0]["msg"].startswith("BLOCKING: "), "前缀应被剥离"
++
++def test_long_turn_warn_strips_prefix(tmp_path):
++    # 250 字 > 200 字换气上限 → WARN；总时长 62.5s 远低于 35min 目标余量 → 无 BLOCKING
++    p = tmp_path / "s.md"
++    p.write_text(f"[S1] {'字' * 250} [/S1]\n", encoding="utf-8")
++    issues = lint_script(p, VOICES, target_minutes=35)
++    warn = [i for i in issues if i["level"] == "WARN" and "换气" in i["msg"]]
++    assert warn, f"应产出换气 WARN，实际 issues: {issues}"
++    assert "长 250 字" in warn[0]["msg"]
++    assert not warn[0]["msg"].startswith("WARN: "), "前缀应被剥离"
++    assert not any(i["level"] == "BLOCKING" for i in issues)
++
++def test_cli_no_args_usage_returns_2(capsys):
++    assert main([]) == 2
++    err = capsys.readouterr().err
++    assert "usage: python3 scripts/lint_script.py <path>" in err
++
++def test_cli_missing_voices_value_returns_2(capsys, tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 你好 [/S1]\n", encoding="utf-8")
++    assert main([str(p), "--voices"]) == 2
++
++def test_cli_missing_target_value_returns_2(capsys, tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 你好 [/S1]\n", encoding="utf-8")
++    assert main([str(p), "--target-minutes"]) == 2
++
++def test_cli_invalid_target_returns_2(capsys, tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 你好 [/S1]\n", encoding="utf-8")
++    assert main([str(p), "--target-minutes", "abc"]) == 2
++    assert "abc" in capsys.readouterr().err
++
++def test_cli_valid_clean_script_returns_0(tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 这个我也不知道，评论区聊聊 {{voice:voice-001}} [/S1]\n"
++                 "[S2] 确实是，有懂的来说说 {{voice:voice-002}} [/S2]\n", encoding="utf-8")
++    v = tmp_path / "voices.json"
++    v.write_text(json.dumps(VOICES), encoding="utf-8")
++    assert main([str(p), "--voices", str(v), "--target-minutes", "5"]) == 0
++
++def test_cli_unknown_voice_returns_1(tmp_path):
++    p = tmp_path / "s.md"
++    p.write_text("[S1] 这里 {{voice:voice-999}} 不存在 [/S1]\n", encoding="utf-8")
++    v = tmp_path / "voices.json"
++    v.write_text(json.dumps(VOICES), encoding="utf-8")
++    assert main([str(p), "--voices", str(v)]) == 1

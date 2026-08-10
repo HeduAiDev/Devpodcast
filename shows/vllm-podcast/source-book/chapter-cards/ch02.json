@@ -1,0 +1,75 @@
+{
+  "chapter_id": "ch02",
+  "title": "请求的一生（鸟瞰追踪）：从入口到出口走一遍完整主线",
+  "slug": "ch02-entrypoints",
+  "sections": [
+    "2.1 一张总图：三段式异步把整条链串起来",
+    "2.2 入口：两扇门，同一套核心",
+    "2.3 渲染 → Stage 1：prompt 变成跨进程的 `EngineCoreRequest`",
+    "2.4 建信箱：每个请求一个 `RequestOutputCollector`",
+    "2.5 分叉点：同一个请求，同时挂到本进程和引擎进程",
+    "2.6 引擎段：一个独立进程，不停地算「一拍」",
+    "2.7 输出段：后台搬运工把结果拉回来",
+    "2.8 Stage 3：去 token 化、判停止、组装 `RequestOutput`",
+    "2.9 出口：`generate()` 只消费队列",
+    "2.10 对照：一套核心，两种驱动"
+  ],
+  "key_classes": [
+    {
+      "name": "LLM",
+      "file": "vllm/entrypoints/llm.py",
+      "responsibility": "离线同步入口。generate()/chat() 渲染输入→_render_and_add_requests 把请求加入 LLMEngine→_run_engine 裸 step 循环驱动到全部 finished。无后台 task、无 IPC 消费者。"
+    },
+    {
+      "name": "AsyncLLM",
+      "file": "vllm/v1/engine/async_llm.py",
+      "responsibility": "异步入口 / 三段式总装。generate() 是 API 服务器调用的主函数；add_request 做 Stage1+分叉，_run_output_handler 起后台搬运 task，是本章主角。"
+    },
+    {
+      "name": "OpenAIServingChat",
+      "file": "vllm/entrypoints/openai/chat_completion/serving.py",
+      "responsibility": "HTTP /v1/chat/completions 处理器：渲染（chat template+tokenize）→构造 sampling_params→调 engine_client.generate()→流式/批量成 SSE/JSON。本章只点它是 HTTP→AsyncLLM 的桥。"
+    },
+    {
+      "name": "InputProcessor",
+      "file": "vllm/v1/engine/input_processor.py",
+      "responsibility": "Stage1：process_inputs() 校验+分词+多模态+任务路由→EngineCoreRequest；assign_request_id 加随机后缀保证唯一。"
+    },
+    {
+      "name": "EngineCoreRequest",
+      "file": "vllm/v1/engine/__init__.py",
+      "responsibility": "Stage1 产物 / 跨进程载荷：携带 prompt_token_ids、sampling_params、mm_features 等，经 ZMQ 送进引擎进程。"
+    },
+    {
+      "name": "EngineCore",
+      "file": "vllm/v1/engine/core.py",
+      "responsibility": "引擎核心。step() 一拍 = schedule→execute_model→sample_tokens→update_from_output，产出 EngineCoreOutputs。本章当黑盒，四步各有专章放大。"
+    },
+    {
+      "name": "EngineCoreProc",
+      "file": "vllm/v1/engine/core.py",
+      "responsibility": "引擎进程封装。run_busy_loop 取输入队列→step→出输出队列，是三段式中段独立进程的主循环。"
+    },
+    {
+      "name": "AsyncMPClient",
+      "file": "vllm/v1/engine/core_client.py",
+      "responsibility": "IPC 客户端。add_request_async 经 ZMQ 送请求进引擎进程，get_output_async 从输出队列 await 一批 EngineCoreOutputs。是 API 进程与引擎进程之间的隧道。"
+    },
+    {
+      "name": "OutputProcessor",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "Stage3。process_outputs() 是唯一遍历整批的函数：去 token 化+停止判定+logprobs→RequestOutput；有 queue 则 put（异步），无则返回 list（离线）。"
+    },
+    {
+      "name": "RequestOutputCollector",
+      "file": "vllm/v1/engine/output_processor.py",
+      "responsibility": "每请求 asyncio 信箱。output_handler 用 put 生产、generate() 用 get_nowait/get 消费；DELTA 合并；异常经此通道传播。三段式两端的对接点。"
+    },
+    {
+      "name": "RequestOutput",
+      "file": "vllm/outputs.py",
+      "responsibility": "面向用户的最终/增量产物：text、token_ids、logprobs、finished、finish_reason。generate() yield 的就是它。"
+    }
+  ],
+  "mechanisms": []
+}

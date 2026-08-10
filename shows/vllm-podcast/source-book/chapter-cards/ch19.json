@@ -1,0 +1,47 @@
+{
+  "chapter_id": "ch19",
+  "title": "前向与采样解耦：execute_model() 两阶段、写回持久批次、CUDA graph 分派",
+  "slug": "ch19-model-runner",
+  "sections": [
+    "19.1 一个反直觉的方法：发起前向，却不等结果",
+    "19.2 两阶段的桥：ExecuteModelState 与单槽断言",
+    "19.3 阶段一全景：从工单到一份缓存的 state",
+    "19.4 阶段二全景：解包、采样、写回",
+    "19.5 f13 闭环：新 token 怎么活到下一拍",
+    "19.6 CUDA graph 分派：FULL/PIECEWISE/NONE 的分级取舍",
+    "19.7 小结：一拍推理的两半"
+  ],
+  "key_classes": [
+    {
+      "name": "GPUModelRunner",
+      "file": "vllm/v1/worker/gpu_model_runner.py",
+      "responsibility": "持久 GPU 模型运行器。一拍循环：_update_states 按 SchedulerOutput 归一持久批次 → _prepare_inputs 建 GPU 张量 → execute_model 发起前向并把结果缓存进 ExecuteModelState（return None）→ sample_tokens 解包采样 → _bookkeeping_sync 把新 token 写回持久批次。持有 self.execute_model_state（两阶段桥）、self.input_batch（持久批次）、self.requests（req_id→CachedRequestState）。"
+    },
+    {
+      "name": "ExecuteModelState",
+      "file": "vllm/v1/worker/gpu_model_runner.py",
+      "responsibility": "10 字段 NamedTuple，execute_model() 与 sample_tokens() 之间的临时载荷。携带 logits、hidden_states、sample_hidden_states、spec 元数据、cudagraph_stats、slot_mappings 等。缓存在 self.execute_model_state，sample_tokens 解包后置 None。execute_model 入口断言它必须为 None——强制两阶段严格配对调用。"
+    },
+    {
+      "name": "InputBatch",
+      "file": "vllm/v1/worker/gpu_input_batch.py",
+      "responsibility": "持久批次容器，跨调度拍存活。持有 token_ids_cpu(max_reqs×max_model_len)、num_tokens_no_spec(每请求已落位 token 数)、num_computed_tokens_cpu、req_output_token_ids（与各 CachedRequestState.output_token_ids 同一 list 别名）、block_table、采样元数据。add_request 把请求装入某 slot 行；_bookkeeping_sync 把新 token 写进这些行使批次活到下一拍。"
+    },
+    {
+      "name": "CachedRequestState",
+      "file": "vllm/v1/worker/gpu_input_batch.py",
+      "responsibility": "每请求快照 dataclass：prompt_token_ids、output_token_ids(list，随采样 extend 增长)、block_ids、num_computed_tokens、sampling_params。num_tokens = num_prompt_tokens + len(output_token_ids)。其 output_token_ids 与 InputBatch.req_output_token_ids[slot] 是同一对象——这是 f13『output_token_ids 增长』的物理载体。"
+    },
+    {
+      "name": "CudagraphDispatcher",
+      "file": "vllm/v1/cudagraph_dispatcher.py",
+      "responsibility": "持有 PIECEWISE 与 FULL 两套 dispatch key 集合。dispatch() 据 num_tokens/uniform_decode/has_lora 构造 BatchDescriptor，先查 FULL（要求精确 num_reqs）、再查 relaxed PIECEWISE（num_reqs=None），命中返回对应 mode 与描述符；超过 max_cudagraph_capture_size 或未初始化则回退 NONE（eager）。"
+    },
+    {
+      "name": "BlockTable / MultiGroupBlockTable",
+      "file": "vllm/v1/worker/block_table.py",
+      "responsibility": "把逻辑块号映射成 paged attention 物理 slot id。commit_block_table 把 CPU block_table 拷到 GPU；compute_slot_mapping 启动 Triton kernel _compute_slot_mapping_kernel 据 positions 算每 token 的 slot id（含 CP/DCP 交错与 PAD_ID 填充）。本章只在 _prepare_inputs 内作为 slot_mapping 来源出现。"
+    }
+  ],
+  "mechanisms": []
+}

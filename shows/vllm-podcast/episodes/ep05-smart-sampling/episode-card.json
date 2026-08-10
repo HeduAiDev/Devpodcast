@@ -1,0 +1,152 @@
+{
+  "episode_id": "ep05",
+  "slug": "ep05-smart-sampling",
+  "topic": "从 logits 到 token 的最后一步：9 步采样管线、语法约束位掩码与投机解码",
+  "cross_chapter_threads": [
+    {
+      "chapter_id": "ch19",
+      "mechanism": "前向与采样的两阶段解耦入口：GPUModelRunner.execute_model 发起前向后 return None，把 logits/hidden_states 缓存进 ExecuteModelState 这个 10 字段 NamedTuple；sample_tokens 入口断言 state 非空后解包采样——engine core 先调 execute_model 不等结果，再调 sample_tokens 独立执行采样，两阶段严格配对。这是 9 步采样管线的真实调用入口。"
+    },
+    {
+      "chapter_id": "ch30",
+      "mechanism": "9 步 logits 处理器管线：Sampler.forward 做 step1-2（raw logprobs 抢救 + 应用 logitsprocs 的 argmax-invariant 组）和 step8-9（原始概率 top-k 收集）；apply_logits_processors 做 step3-6（logit_bias/bad_words/min_tokens/penalties）；sample 做 step7（greedy 快路 vs 随机路分叉 + top-k/top-p 多后端 dispatch + random_sample/flashinfer 两种避开同步的抽样）。全程由 SamplingMetadata 把逐请求参数批量张量化承载。"
+    },
+    {
+      "chapter_id": "ch31",
+      "mechanism": "语法约束位掩码的架构设计：六种约束形态（json/regex/choice/grammar/json_object/structural_tag）归一成 (StructuredOutputOptions, 规格字符串) 编译键，choice 在校验期被原地改写为 EBNF grammar；compile_grammar 异步提交线程池避免阻塞调度热路径，请求进入 RequestStatus.WAITING_FOR_STRUCTURED_OUTPUT_GRAMMAR 等候区；Grammar ABC 的六方法中 rollback 明确为投机解码预留（max_rollback_tokens = num_speculative_tokens），accept_tokens 推进状态机而 validate_tokens 只做不推进的试走。"
+    },
+    {
+      "chapter_id": "ch32",
+      "mechanism": "GPU 位掩码落地：调度侧 StructuredOutputManager.grammar_bitmask 按 structured_output_request_ids 顺序装配紧凑掩码（投机时展开为逐草稿位置一行），并行填充路径用 executor_for_fillmask 线程池（阈值 128、块 16、每行独写线程安全），串行填充路径逐草稿位置推进 grammar 再整体 rollback 复位；worker 侧 StructuredOutputsWorker 用独立 copy_stream 做两次异步 H2D（掩码缓冲 + logits 行映射），双向 wait_stream 让传输与前向重叠；V2 路径 Triton kernel _apply_grammar_bitmask_kernel 对打包 int32 做位解包，把 bit==0 的非法 token logit 精确写成 -inf（与温度/top-k/top-p 全部正交）；默认路径是 apply_grammar_bitmask 先摊平再调 xgr.apply_token_bitmask_inplace。"
+    },
+    {
+      "chapter_id": "ch34",
+      "mechanism": "投机解码的 rejection sampling：Proposer 统一契约产出变长草稿（NgramProposer 纯 CPU prompt-lookup 用 KMP/LPS 找最长匹配后缀复制后续 k token、EAGLE/DFlash/MTP 等模型类 proposer 吃 target hidden_states 跑草稿模型前向采草稿），SpecDecodeMetadata 用 index 间接把变长草稿摊平进一批（cu_num_draft/sampled_tokens 累积和 + target/bonus/logits 三组索引），一次 target 前向后 RejectionSampler 按 p_target/p_draft 概率比逐 token 接受/拒绝，拒绝时从残差分布 max(0, p_target-p_draft) 补采 bonus token 保证分布等价性。"
+    },
+    {
+      "chapter_id": "ch12",
+      "mechanism": "结构化输出 + 投机解码在异步调度下的耦合：SchedulerOutput 的两个布尔标志 has_structured_output_requests 和 pending_structured_output_tokens——当本批有结构化输出请求且 async_scheduling 开启时，pending_structured_output_tokens 被 AsyncScheduler._update_after_schedule 置位，迫使引擎核把采样推迟到拿到上一步草稿 token 之后——因为 grammar bitmask 的装配依赖 scheduled_spec_decode_tokens（上一步已验证的草稿 token），这正是 spec decode + structured output 必须 deferred sampling 的根因。"
+    }
+  ],
+  "key_mechanisms": [
+    "9 步 logits 处理器管线：raw logprobs 抢救 → logit_bias → bad_words → min_tokens → penalties(频率/存在/重复三种) → min_p → temperature → greedy/随机分叉 → top-k/top-p 截断 → random_sample/flashinfer 抽样 → 原始概率 top-k 收集",
+    "argmax-invariant vs non-argmax-invariant 的 logits 处理器分叉：决定 processor 在贪心快路前（step5）还是温度后随机路径上（step7c）生效",
+    "JSON Schema → FSM 异步编译 + WAITING_FOR_GRAMMAR 状态门：grammar_init 提交线程池，Future.result(timeout=0.0001) 就绪轮询后原地替换成品",
+    "Grammar ABC 六方法契约的投机解码耦合：rollback 预留（max_rollback_tokens=num_speculative_tokens），accept_tokens 推进/validate_tokens 试走不推进",
+    "GPU 位掩码 Triton kernel 落地：独立 copy_stream 异步 H2D + 双向 wait_stream 与前向重叠，位解包打包 int32 把非法 token logit 精确打为 -inf",
+    "投机解码 rejection sampling 分布等价性：逐 token 按 p_target/p_draft 概率比接受，拒绝时从残差分布 max(0, p_target-p_draft) 补采 bonus token",
+    "结构化输出 + 投机解码 deferred sampling 耦合链：草稿 D2H 回传 → validate_tokens 语法预过滤 → num_invalid_spec_tokens 扣减 → 掩码行数与草稿位置对齐 → 拒绝时 rollback 倒带语法状态"
+  ],
+  "voices_refs": [
+    "voice-016",
+    "voice-017",
+    "voice-018",
+    "voice-019",
+    "voice-020",
+    "voice-033",
+    "voice-034",
+    "voice-035"
+  ],
+  "narrative_anchors": [
+    {
+      "chapter_id": "ch19",
+      "section": "19.1 一个反直觉的方法：发起前向，却不等结果"
+    },
+    {
+      "chapter_id": "ch19",
+      "section": "19.4 阶段二全景：解包、采样、写回"
+    },
+    {
+      "chapter_id": "ch30",
+      "section": "30.1 9 步的全景图"
+    },
+    {
+      "chapter_id": "ch30",
+      "section": "30.3 第 3–6 步：四道能改 argmax 的工序"
+    },
+    {
+      "chapter_id": "ch30",
+      "section": "30.5 第 6 步：三种惩罚，照 OpenAI 的定义算"
+    },
+    {
+      "chapter_id": "ch30",
+      "section": "30.6 第 7 步：greedy 快路与随机路的分叉"
+    },
+    {
+      "chapter_id": "ch30",
+      "section": "30.7 第 7d 步：top-k/top-p 截断的多后端分发"
+    },
+    {
+      "chapter_id": "ch30",
+      "section": "30.9 第 7e 步：random_sample 与 flashinfer，两种避开同步的抽样"
+    },
+    {
+      "chapter_id": "ch30",
+      "section": "30.10 第 8 步：把原始概率的 top-k 收集回来"
+    },
+    {
+      "chapter_id": "ch31",
+      "section": "31.1 约束不改采样，只加一层掩码"
+    },
+    {
+      "chapter_id": "ch31",
+      "section": "31.4 命门：编译扔进线程池，请求进等候区"
+    },
+    {
+      "chapter_id": "ch31",
+      "section": "31.5 契约：请求级六方法，引擎级三方法"
+    },
+    {
+      "chapter_id": "ch31",
+      "section": "31.8 位掩码：便宜到能进热路径"
+    },
+    {
+      "chapter_id": "ch32",
+      "section": "32.1 门控：这一步谁需要一行掩码"
+    },
+    {
+      "chapter_id": "ch32",
+      "section": "32.4 并行填充：三道门，第一道就可能封死"
+    },
+    {
+      "chapter_id": "ch32",
+      "section": "32.5 串行填充：为投机位置逐行推进，再整体倒带"
+    },
+    {
+      "chapter_id": "ch32",
+      "section": "32.7 掩码上路：先搭前向的车，再面对两条岔路"
+    },
+    {
+      "chapter_id": "ch32",
+      "section": "32.8 默认路径：先摊平，再交给库函数"
+    },
+    {
+      "chapter_id": "ch32",
+      "section": "32.9 V2 路径之一：掩码怎么搬上卡"
+    },
+    {
+      "chapter_id": "ch32",
+      "section": "32.11 V2 路径之三：语法在这里变成一次位运算"
+    },
+    {
+      "chapter_id": "ch32",
+      "section": "32.12 为什么必须是负无穷"
+    },
+    {
+      "chapter_id": "ch34",
+      "section": "34.1 草稿从哪来：proposer 的统一契约"
+    },
+    {
+      "chapter_id": "ch34",
+      "section": "34.4 接受还是拒绝：rejection sampling 的两条 kernel"
+    },
+    {
+      "chapter_id": "ch34",
+      "section": "34.5 拒绝时采什么：残差分布与分布等价性"
+    },
+    {
+      "chapter_id": "ch12",
+      "section": "12.5 deferred sampling：当采样必须等上一步"
+    }
+  ]
+}

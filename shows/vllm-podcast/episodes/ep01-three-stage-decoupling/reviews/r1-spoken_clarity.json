@@ -1,0 +1,52 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimension": "spoken_clarity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:151 「检测停止串」——season bible glossary.json 定名「停止词（stop_strings）」（glossary.json:56），同一概念两种说法，追剧听众会困惑",
+      "suggested_fix": "改为「检测停止词」，与 bible 译名统一",
+      "rationale": "口播可懂维：术语跨期一致——bible glossary 口播译名是定名真相源（voice-guide 纪律：writer 强制复用 bible）",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:45 ZMQ 首现（「走 AsyncMPClient，经 ZMQ 异步驱动」）无任何口头解释，听众听到一个悬空缩写；解释（「桥是 ZMQ，一个跨进程通信的库」）迟至 script.md:109 才给",
+      "suggested_fix": "L45 首现处补一个短定语，如「经 ZMQ——一个跨进程传话的库——异步驱动」，或让阿哲一句带过「ZMQ 是啥？」「先记着，跨进程的桥，后面细拆」；L109 的展开保留",
+      "rationale": "voice-guide 节奏纪律/三人搭法：新名词先给直觉、再给准确定义；首现与解释相隔 60 余行，纯听觉听众悬空",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:53 SGLang 首现于面经引述内（「SGLang 代码没怎么看」），L55 老张又引用一次，两处均未交代 SGLang 是什么；正式解释迟至 script.md:201",
+      "suggested_fix": "L55 老张的话里补半句直觉，如「SGLang——另一个推理框架——没怎么看照样过」；或 L53 引述后由阿凯一句带过",
+      "rationale": "voice-guide 节奏纪律：术语首现要有口头解释；首现与解释相隔约 150 行",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:129 「张量」全期首次出现（「张量那么大，每次复制一遍？」）且全期无任何口头解释；L131/135 的「小张量/大张量/一拍几百兆」都靠这个词承重，非 AI 背景听众（阿哲人设即传统后端）没有直觉入口",
+      "suggested_fix": "首现处给一句直觉即可，如阿凯接话「张量就是模型里传来传去的那块数据，一大块数字」；同理 L89「多模态输入展平排序」的「多模态」建议补半句（「图片、语音这类非文字输入」）",
+      "rationale": "voice-guide：阿哲是不懂 AI 的传统程序员；新名词先给直觉再给定义。「张量/多模态」是 AI 领域词而非通用程序员词汇，闭眼听缺入口",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:201 使用英文「prompt」（「唯一 prompt 场景」），而 L229 用中文「提示词」——同一概念两种说法，英文说法首现无口头对齐",
+      "suggested_fix": "L201 统一为「提示词」（「只有一条提示词的场景」），或首次用 prompt 时顺口对齐「prompt，就是提示词」",
+      "rationale": "口播可懂维：同一概念中英文混用且未对齐，纯听觉听众可能当成两个东西",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:201 该 S2 turn 共 215 字，超书写纪律「单段 ≤200 字」（口播换气）；且数字密集（2%-4%、80%、50 并发、195/310 毫秒、37%）",
+      "suggested_fix": "在「几乎打平。」后断句重起一段，把 Spheron 实测数字拆成独立一段；数字部分已有 L203 阿哲追问做缓冲，拆开不影响结构",
+      "rationale": "CLAUDE.md 书写纪律：单段 ≤200 字（口播换气）；数字密集段超限更易让听众掉队（voice-guide 节奏纪律：快不得）",
+      "blocking": false
+    }
+  ],
+  "notes": [
+    "音频载体核查：audio/episode.wav 存在，audio-qa.json issues=[]（duration 1458.4s、无削波、silence_ratio 14.7%、max_silence_run 0.84s）——无音频问题需引用（audio-qa 已有独立回环）。",
+    "视觉依赖扫描：全文无「如图/看这段代码/左边右边」类表述；「名字就写在脸上」（L49）、「账本翻开」（L189）为通用口语比喻，不依赖画面，闭眼可跟。",
+    "代码名钉出抽查合格：add_request（L59）、output_handler（L79）、run_busy_loop（L167）、execute_model（L171）均按 voice-guide 节奏纪律 #3 逐字母拼写；RequestOutputCollector（L71）、process_outputs（L147）给了中文意译，属纪律允许的「必要时拼写」裁量范围。",
+    "术语首现解释抽查合格：token（L11）、v0（L19）、信箱（L69-75 追问式）、零拷贝（L131-135 追问式）、KV cache（L183）、logits（L187）、p50/首 token 延迟（L203-205 追问式）、连续批处理（L227-229）、prefill（L229）、状态机三档（L179）、解多路复用（L79）。",
+    "「我不知道」纪律：L139-141 阿凯真不知道阈值 + 老张承认 + 邀请评论区，为真不知道而非回避（数值确属书未写死，与 episode-card 一致）。",
+    "上轮（旧稿）r1 文件中的 p50 裸用、连续批处理裸用两条已在当前定稿消解（L203-205、L229 均有口头解释），本文件基于当前 script.md（260 行）全量重评。"
+  ]
+}

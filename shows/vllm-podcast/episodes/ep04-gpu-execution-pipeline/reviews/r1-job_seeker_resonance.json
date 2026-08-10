@@ -1,0 +1,14 @@
+{
+  "episode_id": "ep04",
+  "run": 1,
+  "dimension": "job_seeker_resonance",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "配额口径提示（非违规）：求职视角共 2 处场景（L183-189 CSDN 面试题集 voice-015；L281-291 面试行情 voice-014 + voice-032），但合计挂 3 条 voice 引述；voice-032 在 voices.json 中 category=critical（techinterview.org 备考平台），实际内容是面试市场信号",
+      "suggested_fix": "维持现状即可——voice-guide 的「每期至多两处」按求职话题场景计为 2 处，守住；若后续轮次从严按引述条数计，可把 L287 的 voice-032 明确收编为 L283 voice-014 场景的延伸佐证（当前行文已是此结构），或删其一",
+      "rationale": "voice-guide.md 求职者视角纪律：至多两处、必须挂真实 voices、不许凭空说「面试会考」；当前两处场景均挂真实条目（voice-015/014/032 均在 voices.json），且都从老张提问自然引出、落在具体考题（CUDA graph 地址一致）与具体手撕清单（归一化前向/规约求和/在线 Softmax/小型注意力内核）上，非空泛「这个技术很重要」，不构成违规，仅作口径边界告知",
+      "blocking": false
+    }
+  ]
+}

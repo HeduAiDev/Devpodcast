@@ -1,0 +1,96 @@
+{
+  "episode_id": "ep02",
+  "slug": "ep02-engine-heartbeat",
+  "topic": "引擎的一次心跳：从 schedule 到 update_from_output 的完整一拍",
+  "cross_chapter_threads": [
+    {
+      "chapter_id": "ch11",
+      "mechanism": "EngineCore.step() 四步心跳循环：schedule → execute_model → sample_tokens → update_from_output。同步路径走 step() 或 step_with_batch_queue()（PP/async_scheduling 时），异步服务路径走 EngineCoreProc.run_busy_loop() 不停步进取输入→算一拍→出输出。采样从前向里拆出来的设计理由：让调度器在上一步 forward 还在跑的时候就提前规划下一拍——schedule 不依赖模型输出就能决定谁进这批。"
+    },
+    {
+      "chapter_id": "ch13",
+      "mechanism": "Token-centric 连续批处理调度：不区分 prefill 相和 decode 相，所有请求统一按 token 数调度。批大小的约束是 max_num_batched_tokens（默认 8192），不是 max_num_seqs。schedule() 分两阶段：阶段一先为所有 RUNNING 请求各追加 1 个 token 的配额（补齐在途请求），阶段二用剩余 token 预算从 WAITING 队列中接纳新请求——新请求的 prompt 越长，能挤进这批的新请求越少。SchedulerOutput 对首次调度的请求发全量数据（NewRequestData），对已缓存请求只发增量 diff（CachedRequestData）。"
+    },
+    {
+      "chapter_id": "ch14",
+      "mechanism": "KV cache 分配失败时的抢占循环与双队列隔离：schedule() 为请求分配 KV 块时调用 allocate_slots，若返回 None（显存不够），触发抢占循环——按 LIFO 顺序把 RUNNING 队尾请求的 KV 块释放、请求状态标记为 PREEMPTED、回流到 waiting 队头等下一拍重新调度。抢占后本拍不再放新请求。分配失败的请求不阻塞整队：它们被放入独立的 skipped_waiting 队列，下一拍 schedule 再尝试。FCFS 模式下抢占请求靠 prepend_request 回到队头（公平补偿），skipped 请求同样靠它重排。"
+    },
+    {
+      "chapter_id": "ch19",
+      "mechanism": "execute_model 与 sample_tokens 的两阶段解耦：execute_model 通过 collective_rpc 把 GPU 前向下发给 worker 进程，不等待结果直接返回 None——logits、hidden_states 等所有输出缓存在 ExecuteModelState（10 字段 NamedTuple）。execute_model 入口断言 ExecuteModelState 必须为 None，强制两阶段严格配对调用。sample_tokens 解包 ExecuteModelState，取出 logits 做采样得到新 token，然后 _bookkeeping_sync 把新 token 追加到 CachedRequestState.output_token_ids 并更新持久批次 InputBatch 的 CPU 镜像——这些新 token 在下一拍的 _prepare_inputs 中变成 input_ids，实现数据闭环。"
+    },
+    {
+      "chapter_id": "ch13",
+      "mechanism": "update_from_output 反馈环闭合心跳：调度器吸收 model_executor.sample_tokens() 的输出 → 对每个请求更新 num_computed_tokens（已算 token 数推进）→ check_stop() 检查是否命中 EOS/stop_token_ids/stop_strings/max_tokens → 已完成的请求标记 FINISHED_* 状态、调 kv_cache_manager.free 释放其所有 KV 块 → 未完成的请求从 running 队列移除、下一轮 schedule 的阶段一重新加入 running（run_budget 中按优先级/先到先得重新竞争）。EngineCoreOutputs 由此产出，经 IPC 回传前端。"
+    }
+  ],
+  "key_mechanisms": [
+    "Token 预算调度（max_num_batched_tokens，不认请求数）",
+    "两阶段调度流程（先补齐 RUNNING 再接纳 WAITING）",
+    "KV cache 分配失败的抢占循环（LIFO 释放队尾 + PREEMPTED 回流）",
+    "skipped_waiting 双队列防队头阻塞",
+    "execute_model/sample_tokens 两阶段解耦（ExecuteModelState 缓存桥）",
+    "update_from_output 反馈闭环与 check_stop 停止判定"
+  ],
+  "voices_refs": [
+    "voice-003",
+    "voice-004",
+    "voice-005",
+    "voice-027",
+    "voice-028"
+  ],
+  "narrative_anchors": [
+    {
+      "chapter_id": "ch11",
+      "section": "11.1 一句话钩子：引擎的一次「心跳」"
+    },
+    {
+      "chapter_id": "ch11",
+      "section": "11.4 run_busy_loop：引擎的心跳"
+    },
+    {
+      "chapter_id": "ch13",
+      "section": "13.2 批大小是 token 数，不是请求数"
+    },
+    {
+      "chapter_id": "ch13",
+      "section": "13.3 阶段一：先伺候在途请求（RUNNING）"
+    },
+    {
+      "chapter_id": "ch13",
+      "section": "13.4 阶段二：再接纳新请求（WAITING）"
+    },
+    {
+      "chapter_id": "ch13",
+      "section": "13.5 SchedulerOutput：全量发一次，之后只发 diff"
+    },
+    {
+      "chapter_id": "ch13",
+      "section": "13.6 update_from_output：反馈环的另一半"
+    },
+    {
+      "chapter_id": "ch14",
+      "section": "14.1 要不到块：抢占循环"
+    },
+    {
+      "chapter_id": "ch14",
+      "section": "14.4 双队列：别让一个阻塞请求饿死整队"
+    },
+    {
+      "chapter_id": "ch14",
+      "section": "14.5 回流闭环：update_from_output"
+    },
+    {
+      "chapter_id": "ch19",
+      "section": "19.1 一个反直觉的方法：发起前向，却不等结果"
+    },
+    {
+      "chapter_id": "ch19",
+      "section": "19.4 阶段二全景：解包、采样、写回"
+    },
+    {
+      "chapter_id": "ch19",
+      "section": "19.5 f13 闭环：新 token 怎么活到下一拍"
+    }
+  ]
+}

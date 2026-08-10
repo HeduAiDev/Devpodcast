@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": {"$ref": "#/definitions/episode-arc"},
+  "definitions": {
+    "episode-arc": {
+      "type": "object",
+      "required": ["opening", "closing", "controversy", "foreshadow_map"],
+      "properties": {
+        "opening": {"type": "string"},
+        "closing": {"type": "string"},
+        "controversy": {
+          "type": "object",
+          "required": ["claim", "counter", "resolution"],
+          "properties": {
+            "claim": {"type": "string"},
+            "counter": {"type": "string"},
+            "resolution": {"type": "string"}
+          }
+        },
+        "foreshadow_map": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    }
+  }
+}

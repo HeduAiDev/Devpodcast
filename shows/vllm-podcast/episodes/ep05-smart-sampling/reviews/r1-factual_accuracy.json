@@ -1,0 +1,8 @@
+{
+  "episode_id": "ep05",
+  "run": 1,
+  "dimension": "factual_accuracy",
+  "pass": true,
+  "issues": [],
+  "notes": "对当前 script.md 全量核对（episode-card / voices.json / 书 chapter-cards / arc-map）。上轮（2026-08-07 旧稿）唯一阻断项——argmax-invariant 分叉方向反转——在当前稿已修复：L75 min_p 正确归类为「argmax 不变的处理器」，L79/L87 正确陈述「能换冠军的四道（偏置/禁词/长度门槛/惩罚）必须在贪心快路之前跑完；min_p 留到温度之后、随机路上再生效，快路直接跳过」，L81 正确陈述「先判整批全贪心走快路（温度都不上），有一个随机才上温度走随机路」——与 episode-card key_mechanisms[1]、ch30 mechanism 及 vLLM V1 sampler.py docstring（step7a/7b/7c）一致。数字抽查零漂移：0.1ms=timeout 0.0001s（card ch31）；128 阈值/16 块（card ch32）；max_rollback=num_speculative_tokens（card ch31）；六约束形态/choice→EBNF（card ch31）；残差分布 max(0,p_target-p_draft)（card ch34）；两个调度标记 has_structured_output_requests/pending_structured_output_tokens（card ch12）；voice-033 的 1.73x/1.21x/1.96x/1.72x/42-95%、voice-034 的 232→24-157 tok/s 与 6.3s→40-60s、voice-035 的 0.91→0.78 与 0.94→0.83 均与 voices.json 原文一致；voice-034 根因保留「报告者自己追的，官方还没确认」的不确定性分层（writer_note 要求）；voice-019 加了「那是去年的剖析，现在 MTP 也进来了」的时效对冲。128000 vocab/4000 int32 为内部自洽的具体化示例（128000/32=4000，符合 card ch31 的 ceil(vocab/32) 布局），书卡片未给具体词表数，不构成漂移。「我不知道」两处（L235 投机调参无答案、L311 量化咬 JSON 原理未吃透）均为真实未知，非回避。L329「四十来章」≈书实收 39 章，近似表述在容忍区间。"
+}

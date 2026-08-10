@@ -1,0 +1,32 @@
+{
+  "episode_id": "ep02",
+  "run": 3,
+  "dimension": "quote_fidelity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:133 引述边界超界（r1/r2 已两次判定非阻断，本轮复核仍在）：「尾延迟回归正常」与「也就是 chunked prefill」仍在 {{voice:voice-028}} 引述段内（「里面是这么写的——…也就是 chunked prefill，吞吐提升 2.6 倍到 6.9 倍，尾延迟回归正常。这两组数字，都是论文里的实测」）。voices.json voice-028 claim 记录止于「28 倍推高」与「2.6x–6.9x 吞吐提升」两组数字，不含「尾延迟回归正常」；「也就是 chunked prefill」是引述段内的口头术语标注。本轮复核无新证据：事实层面有 arc.json ep02 counter（「同时 p99 回归正常」）支撑、无失真，属引述边界标注精度问题；按有界回环（spec §11.2「第 3 轮只看仍未清的阻断项」），维持 r2 非阻断判定，不升级。",
+      "suggested_fix": "writer 裁量（r1/r2 已给方案，可选执行）：把「尾延迟回归正常」移到引述标记之外作为 S2 自己的总结（如「……吞吐提升 2.6 倍到 6.9 倍。这两组数字，都是论文里的实测。顺便说，同一篇论文里尾延迟也回归了正常。」）；「也就是 chunked prefill」同样改为引述外的口播解释。不改也可成立。",
+      "rationale": "原声保真维契约（spec §12.3）：引述内容以 voices.json claim 记录为核对基准，引述段内不应出现 claim 记录之外的断言或解释；但 arc 层已有支撑、事实无误，且 r2 已判 writer 裁量，r3 范围外。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:161 引述档位标注高估（r1/r2 已两次判定非阻断，本轮复核仍在）：「这是他的原话」仍标注在 voice-004 之后。voice-004 是 community-only（未一手核实、confidence=medium、档位 (a) 重合成）的牛客面经转述；同稿 voice-005（L13「原话大概这个意思」）与 voice-003（L117「大意是这样」）均用转述标记，口径不一致。本轮新增核查：production-notes.md（第 2 轮）无 voice-004 逐字核实记录，r1/r2 给出的「若已核实逐字则在 production-notes 说明」可选路径未被采用——但该可选路径本就不是强制项，按有界回环维持 r2 非阻断判定。",
+      "suggested_fix": "writer 裁量：改为「他是这么说的」或「大意是这样」，与 voice-003/voice-005 转述标记口径对齐；或保留现文并在 production-notes 补一条 voice-004 逐字核实依据。不改也可成立（r2 判定）。",
+      "rationale": "原声保真维契约：引述边界标注须与该条目 verified/confidence 层次匹配——community-only 重合成条目不应标成逐字原话，避免把「有人这么说」抬高为「原话如此」；但属语气精度而非事实失真，r2 已判 writer 裁量，r3 范围外。",
+      "blocking": false
+    },
+    {
+      "problem": "script.md:121 claim vs verified 层次的反向打破（r1/r2 已两次判定非阻断，本轮复核仍在）：L117 刚声明 voice-003「具体场景我们没核实到」，L121 S2 即以「预算总数是对的」平直断言驳回该社区报告的账目前提；voices.json 中无已核实证据支撑该断言。本轮复核新增依据与 r2 相同：episode-card ch13 两阶段调度机制（阶段一先补齐 RUNNING、阶段二用剩余预算接纳 WAITING）支撑「预算执行正确、公平无保证」的机制解读，且 L121 是「同一个方向」定向认同后的机制陈述、非对 voice-003 的全面压灭；「是」vs「怀疑是」属语气精度，维持 r2 判定、不升级。",
+      "suggested_fix": "writer 裁量（r2 已给方案，可选执行）：改为「我们怀疑不是账算错，是默认配置里压根没写公平——但这条我们没核实，只能说到这儿。」保留原断言亦可（机制解读有 episode-card 支撑）。",
+      "rationale": "原声保真维契约（spec §12.3）：claim vs verified 层次须保持——降级标记（「没核实」）一旦给出，后续断言须与之同层；但该断言是书（episode-card ch13）可支撑的机制陈述，非凭空断言，r2 已判 writer 裁量，r3 范围外。",
+      "blocking": false
+    },
+    {
+      "problem": "本轮（第 3 轮）全量复核确认：本维无阻断项、无新发现问题。r2 quote_fidelity 判定为 pass（0 阻断 + 3 非阻断）；writer 在 r2 之后的唯一修订是 L93「几万颗」→「八千多颗」（factual_accuracy 维阻断项，非本维），引述相关行（L13/L109/L117/L121/L133/L161）自 r2 起零改动，无新引入的引述失真。全稿 5 处 voice 嵌入（L13 voice-005、L109 voice-027、L117 voice-003、L133 voice-028、L161 voice-004）逐一复核：id 均在 voices.json 存在且与 episode-card voices_refs 完全一致；引述内数字与 claim 记录逐字核对一致（340/190ms、1.2/9.8s、2.1/27s、60ms/23 流/81%、28 倍、2.6x Mistral-7B/6.9x Falcon-180B、「不到三分之一」）；匿名化保持（voice-003 在 L117 显式标注「匿名用户的反馈」，voice-004 无 handle 无平台名，voice-027 按 anonymized:false 实名「Marcus Chen」正确）；claim vs verified 层次对 voice-003/005/027 的降级标记（「大意是这样」「原话大概这个意思」「他给的就是这些数字」）均与各自档位匹配。音频（03:40 合成）滞后于文本（03:55）属 spoken_clarity 维阻断项（workflow 调度动作：定稿后重合成 + 重跑 audio-qa），本维不重复质检（audio-qa.json issues 为空）；引述段落自 r1 起未变，音频中引述内容与当前文本一致的概率高，不构成引述失真风险。",
+      "suggested_fix": "无（纯确认项）。本维可收口：若其余维度阻断项清除且音频重合成完成，ep02 可进归档。",
+      "rationale": "原声保真维契约（spec §12.3）+ 有界回环（spec §11.2）：第 3 轮仅核查仍未清的阻断项——本维 0 阻断，3 条非阻断均维持 r1/r2 判定（writer 裁量，非退稿依据）；引述保真四查（曲解/层次/匿名化/边界标注）全部通过或落入既有非阻断项。",
+      "blocking": false
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "chapter_id": "ch34",
+  "title": "ch34",
+  "slug": "ch34-spec-decode",
+  "sections": [
+    "34.1 草稿从哪来：proposer 的统一契约",
+    "34.2 把变长草稿摊平进一批：index 间接",
+    "34.3 一次前向之后：切 logits、采 bonus",
+    "34.4 接受还是拒绝：rejection sampling 的两条 kernel",
+    "34.5 拒绝时采什么：残差分布与分布等价性",
+    "34.6 收尾：把紧凑输出还原成变长",
+    "34.7 这章解决了什么"
+  ],
+  "key_classes": [
+    {
+      "name": "SpecDecodeMetadata",
+      "file": "vllm/v1/spec_decode/metadata.py",
+      "responsibility": "摊平后的草稿 token + 三组 index（target/bonus/logits）+ 两个累积和（cu_num_draft/sampled_tokens）的容器。是 model_runner 与 rejection_sampler 之间传递『把变长草稿摊平进批』结构的契约。__post_init__ 暴露 max_spec_len；make_dummy 供 cudagraph 预热。"
+    },
+    {
+      "name": "NgramProposer",
+      "file": "vllm/v1/spec_decode/ngram_proposer.py",
+      "responsibility": "纯 CPU prompt-lookup proposer：用 KMP/LPS 找匹配后缀的最长 n-gram，复制其后续 k token 当草稿。无 draft_probs。numba 加速、batch 化。最易讲的 proposer 范例。"
+    },
+    {
+      "name": "NgramGPUKernel",
+      "file": "vllm/v1/spec_decode/ngram_proposer_gpu.py",
+      "responsibility": "同 n-gram 算法的全张量（unfold+argmax）GPU 版本，避免 D2H。正文短讲、与 CPU 版对照即可。"
+    },
+    {
+      "name": "SpecDecodeBaseProposer",
+      "file": "vllm/v1/spec_decode/llm_base_proposer.py",
+      "responsibility": "EAGLE/EAGLE3/DFlash/MTP/draft_model 等模型类 proposer 的统一基类。propose() 摆输入→跑草稿模型前向→采 k 个草稿。支持单步早退、并行 drafting（DFlash 一次出 k）、自回归多步链式（EAGLE）、tree attention。本章只讲对外契约（吃 target hidden_states、吐草稿），内部模型见 ch28。"
+    },
+    {
+      "name": "RejectionSampler",
+      "file": "vllm/v1/sample/rejection_sampler.py",
+      "responsibility": "投机解码的接受/拒绝采样器。forward 切 bonus/target logits、采 bonus、应用约束、调 rejection_sample；parse_output 还原变长输出。定义 accepted/recovered/bonus/output 四类 token 术语。"
+    }
+  ],
+  "mechanisms": []
+}

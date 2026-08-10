@@ -1,0 +1,189 @@
+{
+  "chapter_id": "ch26",
+  "title": "ch26",
+  "slug": "ch26-primer-quantization",
+  "sections": [],
+  "key_classes": [
+    {
+      "name": "QuantizeMethodBase",
+      "file": "vllm/model_executor/layers/quantization/base_config.py",
+      "responsibility": "所有量化方法的抽象基类：create_weights（建权重占位）+ apply（前向）+ process_weights_after_loading（装载后重排）。统一调用面。"
+    },
+    {
+      "name": "QuantizationConfig",
+      "file": "vllm/model_executor/layers/quantization/base_config.py",
+      "responsibility": "量化配置抽象基类：from_config 解析检查点 quantization_config、get_quant_method 按 layer/prefix 分发方法、get_min_capability 声明硬件门槛。"
+    },
+    {
+      "name": "GPTQLinearMethod",
+      "file": "vllm/model_executor/layers/quantization/gptq.py",
+      "responsibility": "GPTQ 权重（打包 INT + per-group scales + qzeros + g_idx）的建权重与 apply→ops.gptq_gemm。"
+    },
+    {
+      "name": "AWQLinearMethod",
+      "file": "vllm/model_executor/layers/quantization/awq.py",
+      "responsibility": "AWQ 权重（打包 INT + scales + qzeros，激活感知缩放已离线折入）的 apply→awq_dequantize/awq_gemm。"
+    },
+    {
+      "name": "Fp8LinearMethod",
+      "file": "vllm/model_executor/layers/quantization/fp8.py",
+      "responsibility": "FP8（e4m3 权重）线性方法：支持 per-tensor / per-channel / 块量化，块量化 scale 可用 e8m0fnu 装载；apply 委派 fp8_linear.apply_weights。"
+    },
+    {
+      "name": "QuantFP8 (_quantize_group_native)",
+      "file": "vllm/model_executor/layers/quantization/input_quant_fp8.py",
+      "responsibility": "激活的在线 FP8 分组量化，use_ue8m0 时把 scale 向上取整到 2 的幂（e8m0 约束）。"
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "m1-uniform-affine-quant",
+      "name": "均匀（仿射）量化：scale / zero-point / 对称 vs 非对称",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/layers/quantization/utils/quant_utils.py:L586-L621"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2306.00978",
+        "sections": [
+          "§3.2",
+          "Eq.1"
+        ]
+      }
+    },
+    {
+      "id": "m2-quant-granularity",
+      "name": "量化粒度：per-tensor / per-token / per-channel / per-group",
+      "kind": "layout",
+      "source_anchors": [
+        "vllm/model_executor/layers/quantization/utils/quant_utils.py:L577-L584",
+        "vllm/model_executor/layers/quantization/utils/quant_utils.py:L39-L44"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": false,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2211.10438",
+        "sections": [
+          "§2",
+          "Figure 3",
+          "Table 1"
+        ]
+      }
+    },
+    {
+      "id": "m3-gptq-second-order",
+      "name": "GPTQ：二阶（Hessian）误差补偿 + lazy batch + Cholesky",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/layers/quantization/utils/quant_utils.py:L655-L686",
+        "vllm/model_executor/layers/quantization/gptq.py:L376-L399"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2210.17323",
+        "sections": [
+          "§3",
+          "§4",
+          "Eq.2",
+          "Eq.3",
+          "Eq.4",
+          "Eq.5",
+          "Algorithm 1"
+        ]
+      }
+    },
+    {
+      "id": "m4-awq-activation-aware-scaling",
+      "name": "AWQ：激活感知的逐通道缩放（保护显著权重）",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/layers/quantization/awq.py:L262-L286"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2306.00978",
+        "sections": [
+          "§3.1",
+          "§3.2",
+          "Eq.1",
+          "Eq.2",
+          "Eq.5"
+        ]
+      }
+    },
+    {
+      "id": "m5-smoothquant-migration",
+      "name": "SmoothQuant：把量化难度从激活迁移到权重（s 因子）",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/layers/quantization/utils/quant_utils.py:L286-L338"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2211.10438",
+        "sections": [
+          "§4",
+          "Eq.3",
+          "Eq.4"
+        ]
+      }
+    },
+    {
+      "id": "m6-dequant-error-worked-example",
+      "name": "量化-反量化误差数值推演：RTN vs AWQ vs SmoothQuant 三法对比",
+      "kind": "algorithm",
+      "source_anchors": [
+        "vllm/model_executor/layers/quantization/utils/quant_utils.py:L614-L621",
+        "vllm/model_executor/layers/quantization/utils/quant_utils.py:L342-L353"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": true,
+      "difficulty": "core",
+      "paper_origin": {
+        "paper": "arXiv:2306.00978",
+        "sections": [
+          "§3.2",
+          "Eq.1",
+          "Eq.2"
+        ],
+        "note": "Eq.2 之后的 RoundErr≈0.25 散文分析"
+      }
+    },
+    {
+      "id": "m7-quant-method-calling-surface",
+      "name": "落地调用面：quant_config → get_quant_method → quant_method.apply",
+      "kind": "protocol",
+      "source_anchors": [
+        "vllm/model_executor/layers/quantization/base_config.py:L36-L41",
+        "vllm/model_executor/layers/quantization/base_config.py:L150-L163"
+      ],
+      "needs_figure": false,
+      "needs_worked_example": false,
+      "difficulty": "supporting",
+      "paper_origin_note": "纯 vllm 落地面（框架调用契约），无论文出处；回指 [模型定义章] 的 Linear 装配与量化方法分发。"
+    },
+    {
+      "id": "m8-fp8-e8m0-scale",
+      "name": "FP8(e4m3) 权重 + e8m0fnu 块 scale（scale 为 2 的幂）装载面",
+      "kind": "layout",
+      "source_anchors": [
+        "vllm/model_executor/layers/quantization/fp8.py:L358-L370",
+        "vllm/model_executor/layers/quantization/input_quant_fp8.py:L240-L248"
+      ],
+      "needs_figure": true,
+      "needs_worked_example": false,
+      "difficulty": "core",
+      "paper_origin_note": "e8m0/MX(Microscaling) 为 OCP 硬件格式约定（非本论文包三篇之一），落地面锚点；回指 [DeepSeek-V4 章] 的 W8A8/FP8 块量化。"
+    }
+  ]
+}

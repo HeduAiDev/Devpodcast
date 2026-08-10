@@ -1,0 +1,15 @@
+{
+  "episode_id": "ep04-gpu-execution-pipeline",
+  "run": 1,
+  "dimension": "spoken_clarity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "本期核心术语「Triton」在 script.md:11 首现时无任何口头解释（『vLLM 官方拿 Triton 写了个注意力后端』），其后 L101/L163/L223/L265 四次复现亦无同位语，直到 L285 才由阿哲补出定义「拿 Python 语法写 GPU 内核的框架」。闭眼首听（非连续剧老听众）在前三分之二期里只能把 Triton 当无意义专名跟读，且本期是推理服务主题，存在被误当成 NVIDIA Triton Inference Server 的真实混淆风险。缓解项：ep03 script.md:255 已给过该定义（『Triton 就是那种拿 Python 语法写 GPU 代码的框架』），连续剧听众已知；L11 处句子承重点是 800 行对七万行的行数对比，不至掉队；L285 的补钉在收尾前完成。故不阻断，但属本维唯一未达「首现点明」纪律的关键术语。",
+      "evidence": "script.md:11（首现无解释）、101、163、223、265（复现无解释）、285（迟到的定义，且阿哲称「今天说的那个」在本期内并无落点——定义实为上期所说）；对照 ep03 script.md:255",
+      "suggested_fix": "在 L11 首现处加一个短同位语回扣上期，例如「拿 Triton——就是上期说的那个用 Python 语法写 GPU 内核的框架——写了个注意力后端」；这样 L285 阿哲的「今天说的那个」在本期内也有了真实落点。L101（『背后是分页注意力、FlashAttention，还是 Triton 写的后端』）可作为替代修补位。",
+      "rationale": "口播可懂维（spec §12.3）：术语首现要有口头解释；voice-guide 节奏纪律 3：重要的专有名词第一次出现时要点明。Triton 是本期争议（800 行对七万行）的主角术语，适用该纪律。",
+      "blocking": false
+    }
+  ]
+}

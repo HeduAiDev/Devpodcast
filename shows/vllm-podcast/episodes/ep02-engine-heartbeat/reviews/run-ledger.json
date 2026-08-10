@@ -1,0 +1,16 @@
+{
+  "episode_id": "ep02",
+  "run": 2,
+  "verdict": "pass",
+  "note": "新一轮 run 2（2026-08-09，针对 writer 修订稿：r1 后补 <break 300ms> 口播停顿，未触碰事实断言）。run-ledger 仅由 factual_accuracy 维写入（防 6 维并行写同一文件竞态）；其余 5 维 verdict 以各自 reviews/r2-<dim>.json 为准，全轮收口由 workflow 按 6 维返回聚合判定。factual_accuracy 本轮 pass：r1 核对的全部承重数字与机制在当前稿逐字原位（8192 预算、voice-027 六组数、voice-028 三组数、voice-004 的 1/3、ExecuteModelState 10 字段、check_stop 四条件等），修订零事实漂移、零回归；「我不知道」（L335-337）复核维持真不知道、非回避。r1 的 4 条非阻断参考项（L49 PP 译为「多机并行」、L109 diff 枚举误含「新 token」、L121「上百毫秒」无源量级、L165 规模归因外推）writer 未改，维持非阻断，不阻归档。注：本目录 2026-08-07 的 r2/r3 档为旧稿评审，本文件与同批 r2-*.json 以 2026-08-09 写入版为准。",
+  "dimensions": {
+    "factual_accuracy": "pass",
+    "critical_depth": "see r2-critical_depth.json",
+    "spoken_clarity": "see r2-spoken_clarity.json",
+    "voice_balance": "see r2-voice_balance.json",
+    "job_seeker_resonance": "see r2-job_seeker_resonance.json",
+    "quote_fidelity": "see r2-quote_fidelity.json"
+  },
+  "factual_accuracy_blockers": 0,
+  "factual_accuracy_nonblocking": 4
+}

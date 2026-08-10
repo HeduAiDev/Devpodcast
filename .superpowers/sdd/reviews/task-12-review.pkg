@@ -1,0 +1,318 @@
+=== commits ===
+9de8837 feat: 9 个产物契约 schema（voices/episode-card/script/season-plan 等）
+
+=== stat ===
+ schemas/arc.schema.json              | 31 ++++++++++++++++++++++++++++++
+ schemas/audio-qa.schema.json         | 15 +++++++++++++++
+ schemas/book.schema.json             | 21 ++++++++++++++++++++
+ schemas/episode-card.schema.json     | 19 ++++++++++++++++++
+ schemas/production-notes.schema.json | 14 ++++++++++++++
+ schemas/script.schema.json           | 16 ++++++++++++++++
+ schemas/season-bible.schema.json     | 32 +++++++++++++++++++++++++++++++
+ schemas/season-plan.schema.json      | 20 +++++++++++++++++++
+ schemas/voices.schema.json           | 36 +++++++++++++++++++++++++++++++++++
+ tests/test_schemas.py                | 37 ++++++++++++++++++++++++++++++++++++
+ 10 files changed, 241 insertions(+)
+
+=== full diff ===
+diff --git a/schemas/arc.schema.json b/schemas/arc.schema.json
+new file mode 100644
+index 0000000..7d7ed48
+--- /dev/null
++++ b/schemas/arc.schema.json
+@@ -0,0 +1,31 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "object",
++  "additionalProperties": {"$ref": "#/definitions/episode-arc"},
++  "definitions": {
++    "episode-arc": {
++      "type": "object",
++      "required": ["opening", "closing", "controversy", "foreshadow_map"],
++      "properties": {
++        "opening": {"type": "string"},
++        "closing": {"type": "string"},
++        "controversy": {
++          "type": "object",
++          "required": ["claim", "counter", "resolution"],
++          "properties": {
++            "claim": {"type": "string"},
++            "counter": {"type": "string"},
++            "resolution": {"type": "string"}
++          }
++        },
++        "foreshadow_map": {
++          "type": "object",
++          "additionalProperties": {
++            "type": "array",
++            "items": {"type": "string"}
++          }
++        }
++      }
++    }
++  }
++}
+diff --git a/schemas/audio-qa.schema.json b/schemas/audio-qa.schema.json
+new file mode 100644
+index 0000000..fe34fc6
+--- /dev/null
++++ b/schemas/audio-qa.schema.json
+@@ -0,0 +1,15 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "object",
++  "required": ["duration_s", "peak_db", "clipping", "silence_ratio", "rms_db",
++               "issues", "vram_gb"],
++  "properties": {
++    "duration_s": {"type": "number", "minimum": 0},
++    "peak_db": {"type": "number"},
++    "clipping": {"type": "boolean"},
++    "silence_ratio": {"type": "number", "minimum": 0, "maximum": 1},
++    "rms_db": {"type": "number"},
++    "issues": {"type": "array", "items": {"type": "string"}},
++    "vram_gb": {"type": "number", "minimum": 0}
++  }
++}
+diff --git a/schemas/book.schema.json b/schemas/book.schema.json
+new file mode 100644
+index 0000000..f7530dc
+--- /dev/null
++++ b/schemas/book.schema.json
+@@ -0,0 +1,21 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "object",
++  "required": ["title", "chapters"],
++  "properties": {
++    "title": {"type": "string"},
++    "chapters": {"type": "array", "items": {
++      "type": "object",
++      "required": ["chapter_id", "title", "slug", "sections", "key_classes",
++                   "mechanisms"],
++      "properties": {
++        "chapter_id": {"type": "string"},
++        "title": {"type": "string"},
++        "slug": {"type": "string"},
++        "sections": {"type": "array", "items": {"type": "string"}},
++        "key_classes": {"type": "array", "items": {"type": "object"}},
++        "mechanisms": {"type": "array", "items": {"type": "object"}}
++      }
++    }}
++  }
++}
+diff --git a/schemas/episode-card.schema.json b/schemas/episode-card.schema.json
+new file mode 100644
+index 0000000..8e65500
+--- /dev/null
++++ b/schemas/episode-card.schema.json
+@@ -0,0 +1,19 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "object",
++  "required": ["episode_id", "slug", "topic", "cross_chapter_threads",
++               "key_mechanisms", "voices_refs", "narrative_anchors"],
++  "properties": {
++    "episode_id": {"type": "string"},
++    "slug": {"type": "string"},
++    "topic": {"type": "string"},
++    "cross_chapter_threads": {"type": "array", "items": {
++      "type": "object", "required": ["chapter_id", "mechanism"],
++      "properties": {"chapter_id": {"type": "string"}, "mechanism": {"type": "string"}}}},
++    "key_mechanisms": {"type": "array", "items": {"type": "string"}},
++    "voices_refs": {"type": "array", "items": {"type": "string"}},
++    "narrative_anchors": {"type": "array", "items": {
++      "type": "object", "required": ["chapter_id", "section"],
++      "properties": {"chapter_id": {"type": "string"}, "section": {"type": "string"}}}}
++  }
++}
+diff --git a/schemas/production-notes.schema.json b/schemas/production-notes.schema.json
+new file mode 100644
+index 0000000..d6a157e
+--- /dev/null
++++ b/schemas/production-notes.schema.json
+@@ -0,0 +1,14 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "array",
++  "items": {
++    "type": "object",
++    "required": ["ep_dir", "script_line", "note", "severity"],
++    "properties": {
++      "ep_dir": {"type": "string"},
++      "script_line": {"type": "integer", "minimum": 1},
++      "note": {"type": "string"},
++      "severity": {"enum": ["info", "suggestion", "warning", "blocking"]}
++    }
++  }
++}
+diff --git a/schemas/script.schema.json b/schemas/script.schema.json
+new file mode 100644
+index 0000000..c789c83
+--- /dev/null
++++ b/schemas/script.schema.json
+@@ -0,0 +1,16 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "object",
++  "required": ["title", "turns"],
++  "properties": {
++    "title": {"type": "string"},
++    "turns": {"type": "array", "items": {
++      "type": "object", "required": ["speaker", "text"],
++      "properties": {
++        "speaker": {"enum": ["S1", "S2"]},
++        "text": {"type": "string"},
++        "voice_refs": {"type": "array", "items": {"type": "string"}},
++        "pause_ms": {"type": "integer", "minimum": 0}
++      }}}
++  }
++}
+diff --git a/schemas/season-bible.schema.json b/schemas/season-bible.schema.json
+new file mode 100644
+index 0000000..d8c0fcc
+--- /dev/null
++++ b/schemas/season-bible.schema.json
+@@ -0,0 +1,32 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "object",
++  "required": ["glossary", "voice-guide", "arc-map", "voices-index"],
++  "properties": {
++    "glossary": {
++      "type": "object",
++      "additionalProperties": {"type": "string"}
++    },
++    "voice-guide": {"type": "string"},
++    "arc-map": {
++      "type": "object",
++      "required": ["episodes"],
++      "properties": {
++        "episodes": {
++          "type": "object",
++          "additionalProperties": {
++            "type": "object",
++            "properties": {
++              "foreshadow_due": {"type": "array", "items": {"type": "string"}},
++              "payoff_due": {"type": "array", "items": {"type": "string"}}
++            }
++          }
++        }
++      }
++    },
++    "voices-index": {
++      "type": "object",
++      "additionalProperties": {"type": "string"}
++    }
++  }
++}
+diff --git a/schemas/season-plan.schema.json b/schemas/season-plan.schema.json
+new file mode 100644
+index 0000000..15c6909
+--- /dev/null
++++ b/schemas/season-plan.schema.json
+@@ -0,0 +1,20 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "object",
++  "required": ["show", "episodes"],
++  "properties": {
++    "show": {"type": "string"},
++    "episodes": {"type": "array", "items": {
++      "type": "object",
++      "required": ["episode_id", "slug", "topic", "hook", "depends_on", "foreshadow_due"],
++      "properties": {
++        "episode_id": {"type": "string"},
++        "slug": {"type": "string"},
++        "topic": {"type": "string"},
++        "hook": {"type": "string"},
++        "depends_on": {"type": "array", "items": {"type": "string"}},
++        "foreshadow_due": {"type": "array", "items": {"type": "string"}},
++        "payoff_due": {"type": "array", "items": {"type": "string"}}
++      }}}
++  }
++}
+diff --git a/schemas/voices.schema.json b/schemas/voices.schema.json
+new file mode 100644
+index 0000000..2de811c
+--- /dev/null
++++ b/schemas/voices.schema.json
+@@ -0,0 +1,36 @@
++{
++  "$schema": "http://json-schema.org/draft-07/schema#",
++  "type": "object",
++  "definitions": {
++    "voice-record": {
++      "type": "object",
++      "additionalProperties": false,
++      "required": ["id", "category", "term", "claim", "verified", "source_url",
++                   "source_date", "source_platform", "speaker_handle", "anonymized",
++                   "confidence", "writer_note"],
++      "properties": {
++        "id": {"type": "string"},
++        "category": {"enum": ["critical", "job-seeker"]},
++        "term": {"type": "string"},
++        "claim": {"type": "string"},
++        "verified": {"enum": ["official", "claim-self-checked", "community-only"]},
++        "source_url": {"type": "string", "minLength": 8},
++        "source_date": {"type": "string", "pattern": "^20\\d\\d-\\d\\d-\\d\\d$"},
++        "source_platform": {"enum": ["zhihu", "v2ex", "niuke", "maimai", "xhs", "bili",
++                                     "jike", "reddit", "hn", "x", "blind", "linkedin",
++                                     "official", "paper", "github-issue"]},
++        "speaker_handle": {"type": "string"},
++        "anonymized": {"type": "boolean"},
++        "confidence": {"enum": ["high", "medium", "low"]},
++        "writer_note": {"type": "string"}
++      }
++    }
++  },
++  "anyOf": [
++    {"$ref": "#/definitions/voice-record"},
++    {
++      "type": "object",
++      "additionalProperties": {"$ref": "#/definitions/voice-record"}
++    }
++  ]
++}
+diff --git a/tests/test_schemas.py b/tests/test_schemas.py
+new file mode 100644
+index 0000000..6788239
+--- /dev/null
++++ b/tests/test_schemas.py
+@@ -0,0 +1,37 @@
++# tests/test_schemas.py
++import json
++import pytest
++from pathlib import Path
++from jsonschema import validate, ValidationError
++
++SCHEMAS = Path(__file__).parent.parent / "schemas"
++
++def all_schemas_parse():
++    for p in SCHEMAS.glob("*.schema.json"):
++        json.loads(p.read_text(encoding="utf-8"))
++
++def test_all_schemas_are_valid_json():
++    all_schemas_parse()  # 不抛即通过
++
++def test_voices_schema_accepts_valid():
++    s = json.loads((SCHEMAS / "voices.schema.json").read_text(encoding="utf-8"))
++    v = {"id": "v1", "category": "critical", "term": "t", "claim": "c",
++         "verified": "community-only", "source_url": "https://x.example/1",
++         "source_date": "2026-07-15", "source_platform": "hn",
++         "speaker_handle": "@匿名", "anonymized": True,
++         "confidence": "high", "writer_note": ""}
++    validate(v, s)
++
++def test_voices_schema_rejects_missing_url():
++    s = json.loads((SCHEMAS / "voices.schema.json").read_text(encoding="utf-8"))
++    v = {"id": "v1", "category": "critical", "term": "t", "claim": "c"}
++    with pytest.raises(ValidationError):
++        validate(v, s)
++
++def test_episode_card_schema(tmp_path):
++    s = json.loads((SCHEMAS / "episode-card.schema.json").read_text(encoding="utf-8"))
++    card = {"episode_id": "ep01", "slug": "ep01-memory", "topic": "显存是主角",
++            "cross_chapter_threads": [{"chapter_id": "ch15", "mechanism": "KV cache"}],
++            "key_mechanisms": ["PagedAttention"], "voices_refs": ["v1"],
++            "narrative_anchors": [{"chapter_id": "ch15", "section": "15.2 分页 KV 缓存"}]}
++    validate(card, s)

@@ -1,0 +1,61 @@
+{
+  "chapter_id": "ch36",
+  "title": "ch36",
+  "slug": "ch36-pd-disaggregation",
+  "sections": [
+    "36.1 forward 被夹在哪里",
+    "36.2 生命周期：一个 context manager 夹住整条搬运线",
+    "36.3 重叠是怎么发生的：start_load_kv 与逐层 hook 的配合",
+    "36.4 wait_for_save：一道不能省的围栏",
+    "36.5 两个特例：无 token 的步、与投机解码的推迟",
+    "36.6 同一套 worker 契约",
+    "36.7 P2P NCCL：点对点直发",
+    "36.8 NIXL：RDMA 单边读，与不对称的完成信号",
+    "36.9 Offloading：不是跨节点，是分级缓存",
+    "36.10 亲手验证：生命周期真的这么转吗",
+    "36.11 小结"
+  ],
+  "key_classes": [
+    {
+      "name": "KVConnectorModelRunnerMixin",
+      "file": "vllm/v1/worker/kv_connector_model_runner_mixin.py",
+      "responsibility": "给 GPU/TPU ModelRunner 混入 KV connector 能力的纯静态 mixin。核心是 _get_kv_connector_output：一个把 WORKER-role connector 整条生命周期（bind_connector_metadata→start_load_kv→[yield forward]→wait_for_save→get_finished→build_connector_worker_meta→clear）封装进 context manager，使 load 与 model forward 在物理上交织（compute 期间后台搬 KV）。还含 kv_connector_no_forward（无 token 也要收发 KV）、finalize_kv_connector（spec-decode 推迟收尾）、use_uniform_kv_cache/allocate_uniform_kv_caches（跨层统一 layout，便于整块多层一次性传）。"
+    },
+    {
+      "name": "maybe_transfer_kv_layer",
+      "file": "vllm/model_executor/layers/attention/kv_transfer_utils.py",
+      "responsibility": "装饰 attention 层 forward 的装饰器：进入层前 connector.wait_for_layer_load(layer_name)（确保该层 KV 已 load 到 paged buffer），离开层后 connector.save_kv_layer(...)（把该层 KV 异步搬出）。这是 start_load_kv 之外、forward 内部的逐层 hook —— 让 load/save 能按层流水线，与计算重叠到层粒度。未启用 connector 时是 no-op。"
+    },
+    {
+      "name": "KVConnectorBase_V1 (worker 侧契约)",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/base.py",
+      "responsibility": "定义所有 connector 必须实现的 worker 侧抽象方法：start_load_kv（forward 前异步发起 load）、wait_for_layer_load（层内阻塞等该层 load 完）、save_kv_layer（层内异步发起 save）、wait_for_save（forward 收尾前阻塞等所有 save 完，防 paged buffer 被覆盖）；以及非抽象默认的 get_finished（上报异步收/发完成的 req_id）、get_block_ids_with_load_errors、bind/clear_connector_metadata、build_connector_worker_meta。本章三类后端都在填这同一套契约。"
+    },
+    {
+      "name": "P2pNcclConnector",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/p2p/p2p_nccl_connector.py",
+      "responsibility": "点对点 NCCL 后端，单类自包含（不拆 scheduler/worker 子对象）。靠 is_producer 区分 P/D：producer 在 save_kv_layer 里 extract_kv_from_layer + send_tensor 发，consumer 在 start_load_kv 里逐请求逐层 recv_tensor + inject_kv_into_layer 写回 paged buffer。对端地址直接编码在 request_id 里（parse_request_id 正则解析）。底层 P2pNcclEngine 用 pynccl 建点对点 comm + ZMQ 控制面。"
+    },
+    {
+      "name": "P2pNcclEngine",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/p2p/p2p_nccl_engine.py",
+      "responsibility": "P2P 后端的实际收发引擎。send_tensor 三模式：PUT（同步发）、PUT_ASYNC（入 send_queue 后台 _send_thread 发）、GET（暂存 send_store 等对端拉，带 LRU 驱逐）。wait_for_sent 在 PUT_ASYNC 下阻塞等 send_queue 排空 —— 这正是 connector.wait_for_save 落到的实处。用 TensorMemoryPool 管缓冲、ZMQ listener 做握手/控制。"
+    },
+    {
+      "name": "NixlConnector / NixlConnectorWorker",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/nixl/connector.py + nixl/worker.py",
+      "responsibility": "高性能 RDMA 后端，facade 模式：顶层 NixlConnector 按 role 只建 NixlConnectorScheduler 或 NixlConnectorWorker 半边，worker 侧方法全转发给 connector_worker。worker.start_load_kv 对每个待收请求发非阻塞 RDMA READ（make_prepped_xfer('READ')+transfer），D 端主动从 P 端显存单边读 KV，P 端 CPU 不参与拷贝；首遇远端先后台握手交换内存注册元数据。get_finished 轮询：本地 xfer handle 转 DONE 算收完成、收到对端通知算发完成。wait_for_layer_load/save_kv_layer 为 no-op（NIXL 不做逐层、不显式 save）。"
+    },
+    {
+      "name": "OffloadingConnector / OffloadingConnectorWorker",
+      "file": "vllm/distributed/kv_transfer/kv_connector/v1/offloading_connector.py + offloading/worker.py",
+      "responsibility": "CPU/磁盘卸载后端，同样 facade。但语义有别：它不是 P/D 跨节点搬，而是把 GPU KV 卸到 CPU/磁盘当二级缓存（prefer_cross_layer_blocks=True，整块多层一次性传）。wait_for_save→prepare_store_kv 只把 store job 入队（不真等完成），推迟到下一步 start_kv_transfers 开头才 transfer_async 提交，避免拖慢本步采样。get_finished 只为 load 报 finished_recving，store 完成走 build_connector_worker_meta 的 completed_jobs + 调度侧 jobs_to_flush 围栏，而非 finished_sending。"
+    },
+    {
+      "name": "KVConnectorOutput",
+      "file": "vllm/v1/outputs.py",
+      "responsibility": "worker→scheduler 的回传载体（挂在 ModelRunnerOutput 上）。字段 finished_sending / finished_recving / invalid_block_ids / kv_connector_worker_meta / kv_connector_stats / kv_cache_events。_get_kv_connector_output 在 forward 收尾时由 get_finished 等填充，回到 scheduler 后驱动 ch35 的 _update_from_kv_xfer_finished（finished_recving 触发提升、finished_sending 释放块）。"
+    }
+  ],
+  "mechanisms": []
+}

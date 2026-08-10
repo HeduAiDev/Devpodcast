@@ -9,8 +9,9 @@ venv/
 *.mp3
 shows/*/episodes/*/audio/
 
-# 音色克隆样本（可能含他人声音，不入库）
-shows/*/voice-samples/
+# 音色样本（vllm-podcast 的 laozhang/akai 为 MOSS 官方中文示例，用户决定上传）
+shows/*/voice-samples/*.wav
+!shows/*/voice-samples/README.md
 
 # 环境 / 编辑器
 .env
@@ -21,3 +22,12 @@ shows/*/voice-samples/
 
 # TTS 模型权重（本地下载，不入库）
 models/
+
+# 本地 venv（不入库）
+_venv_*/
+
+# TTS 运行时依赖（模型仓库克隆/venv/合成 staging，不入库）
+_diag/
+
+# 本地缓存（E盘重定向，不入库）
+cache/

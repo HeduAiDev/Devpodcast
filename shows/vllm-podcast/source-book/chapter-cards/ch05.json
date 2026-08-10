@@ -1,0 +1,71 @@
+{
+  "chapter_id": "ch05",
+  "title": "Stage 1 输入处理：从 prompt 到 EngineCoreRequest",
+  "slug": "ch05-input-processing",
+  "sections": [
+    "5.1 一句话钩子：tokenize 已经不在这里了",
+    "5.2 进门先验票：三道校验关卡",
+    "5.3 归一化：透传还是兜底 tokenize",
+    "5.4 模型输入校验：空、超长、越界，三种死法",
+    "5.5 取出 prompt 字段：三种载体的归一化访问",
+    "5.6 补料：`SamplingParams.clone()` 与三处补全",
+    "5.7 多模态展平：从 dict-of-list 到有序的 feature 列表",
+    "5.8 组装成品：`EngineCoreRequest`",
+    "5.9 请求 id 唯一化：那串随机后缀是干嘛的",
+    "5.10 fan-out：n>1 的并行采样在哪一层裂开",
+    "5.11 跑起来看数值：补全与 fan-out 的可观察行为",
+    "5.12 小结：这一关到底把好了什么"
+  ],
+  "key_classes": [
+    {
+      "name": "InputProcessor",
+      "file": "vllm/v1/engine/input_processor.py",
+      "responsibility": "把 PromptType/EngineInput + SamplingParams/PoolingParams 转成 EngineCoreRequest：参数校验、LoRA 校验、（兜底）tokenize/多模态、模型输入校验、SamplingParams 克隆补全、多模态 placeholder 排序展平、组装 EngineCoreRequest，并经 assign_request_id() 注入唯一 id。"
+    },
+    {
+      "name": "EngineCoreRequest",
+      "file": "vllm/v1/engine/__init__.py",
+      "responsibility": "进入 EngineCore 的请求载荷，msgspec.Struct（array_like/omit_defaults/gc=False，为跨进程 IPC 优化）。承载 request_id/external_req_id、prompt_token_ids/prompt_embeds/prompt_is_token_ids、mm_features、sampling_params 或 pooling_params、arrival_time、lora_request、cache_salt、priority、data_parallel_rank 等。.params 属性统一返回 sampling 或 pooling 参数。"
+    },
+    {
+      "name": "InputPreprocessor",
+      "file": "vllm/inputs/preprocess.py",
+      "responsibility": "raw-prompt（deprecated）兜底路径的预处理：enc-dec 与 decoder-only 分流，文本经 _tokenize_prompt 出 token ids，多模态委托 renderer._process_multimodal，embeds 委托 renderer._process_embeds，产出统一的 EngineInput TypedDict。真实主路径已由 Renderer 完成，这里仅兜底。"
+    },
+    {
+      "name": "EngineInput / SingletonInput",
+      "file": "vllm/inputs/engine.py",
+      "responsibility": "已渲染输入的 TypedDict 家族：TokensInput(type='token')、EmbedsInput(type='embeds')、MultiModalInput(type='multimodal')、以及 enc-dec 复合类型；split_enc_dec_input 把复合拆成 (encoder, decoder)。"
+    },
+    {
+      "name": "MultiModalFeatureSpec",
+      "file": "vllm/multimodal/inputs.py",
+      "responsibility": "单个多模态 item 的处理结果与元数据：data(MultiModalKwargsItem 或 None)、modality、identifier(含 LoRA 前缀的缓存键)、mm_position(PlaceholderRange)、mm_hash。InputProcessor 把按 dict 组织的多模态数据展平排序成 list[MultiModalFeatureSpec]。"
+    },
+    {
+      "name": "PlaceholderRange",
+      "file": "vllm/multimodal/inputs.py",
+      "responsibility": "多模态占位符在 prompt_token_ids 中的位置(offset/length/is_embed mask)。get_num_embeds() 给出该 item 实际嵌入 token 数，用于编码器缓存超限校验。"
+    },
+    {
+      "name": "ParentRequest",
+      "file": "vllm/v1/engine/parallel_sampling.py",
+      "responsibility": "n>1 并行采样的父请求状态机：记录 n 个子请求 id，按 index 生成子 SamplingParams（n=1；有 seed 时 seed+index，无 seed 时复用同一克隆），并聚合子 CompletionOutput（流式逐个转发 / FINAL_ONLY 攒齐 n 个再回）。"
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "parallel-sampling-fanout",
+      "name": "n>1 并行采样 fan-out 与子请求派生",
+      "kind": "algorithm",
+      "difficulty": "core",
+      "source_anchors": [
+        "vllm/v1/engine/async_llm.py:L381-L398",
+        "vllm/v1/engine/parallel_sampling.py:L36-L94"
+      ],
+      "needs_worked_example": true,
+      "needs_figure": true,
+      "retrofit_reason": "体检判定 figure=wrong：02-request-id-and-fanout 的四个子请求框内三行文字(request_id / sampling n=1 / copy)行距过密相撞，需重绘换图；机制文字讲解本身合格，不重写正文。"
+    }
+  ]
+}

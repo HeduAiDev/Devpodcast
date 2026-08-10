@@ -1,0 +1,150 @@
+### Task 13: new_show.py — 节目 scaffold
+
+**Files:**
+- Create: `scripts/new_show.py`
+- Test: `tests/test_new_show.py`
+
+**Interfaces:**
+- Produces: `scaffold_show(root: Path, name: str, title: str, book_root: str, instance: str) -> Path`（建 `shows/<name>/` 全套目录 + devpodcast.json + SHOW.md 模板 + season/bible 空档 + voice-samples/ + trace/ + episodes/，返回节目目录）
+- 顶层注册表自动登记新节目并设为 active
+
+- [ ] **Step 1: 写失败测试**
+
+```python
+# tests/test_new_show.py
+import json
+from pathlib import Path
+import pytest
+from scripts.new_show import scaffold_show
+from scripts.show_resolver import resolve_show
+
+def test_scaffold_creates_structure(tmp_path):
+    show_dir = scaffold_show(tmp_path, "demo", "演示节目", "/mnt/fake/repo", "vllm")
+    assert (show_dir / "devpodcast.json").is_file()
+    assert (show_dir / "SHOW.md").is_file()
+    assert (show_dir / "season" / "bible" / "voice-guide.md").is_file()
+    assert (show_dir / "trace").is_dir()
+    assert (show_dir / "episodes").is_dir()
+    assert (show_dir / "voice-samples").is_dir()
+
+def test_scaffold_registers_and_activates(tmp_path):
+    scaffold_show(tmp_path, "demo", "演示", "/mnt/fake/repo", "vllm")
+    reg = json.loads((tmp_path / "devpodcast.json").read_text(encoding="utf-8"))
+    assert reg["active_show"] == "demo"
+    assert "demo" in reg["shows"]
+    assert resolve_show(tmp_path).name == "demo"
+
+def test_config_embeds_book_source(tmp_path):
+    show_dir = scaffold_show(tmp_path, "demo", "演示", "/mnt/fake/repo", "vllm")
+    cfg = json.loads((show_dir / "devpodcast.json").read_text(encoding="utf-8"))
+    assert cfg["book_source"]["root"] == "/mnt/fake/repo"
+    assert cfg["book_source"]["instance"] == "vllm"
+```
+
+- [ ] **Step 2: 跑测试确认失败**
+
+Run: `python3 -m pytest tests/test_new_show.py -v`
+Expected: FAIL
+
+- [ ] **Step 3: 写实现**
+
+```python
+# scripts/new_show.py
+"""新建一档节目：scaffold 目录 + 配置文件 + 顶层注册。"""
+import json
+import sys
+from pathlib import Path
+
+VOICE_GUIDE_TEMPLATE = """# voice-guide.md — 声线人格定义（Lead 落笔）
+
+> 本文件是节目灵魂。writer 强制复用；修改需 Lead 批准。
+
+## 说话人
+- **S1（老张）——主持人**：读过书但不装懂；替听众问笨问题；爱用生活类比；
+  没听懂就明说；主动挑事；禁止假装惊叹、禁止捧哏。
+- **S2（阿凯）——嘉宾/技术侧**：真读过源码但知道边界；长句自我打断成短句；
+  数字先给量级；不护短；禁止背书、禁止说「这个很简单」。
+
+## 三条内容纪律
+1. 每期至少一次「我不知道」——答不上来就明说，反 AI 播客的最强信号。
+2. 批判必须有靶子——谁在什么场景踩了什么坑，或牺牲了什么换了什么。
+3. 生活场景必须承重——删掉类比听众就答不出「为什么」时，类比才保留。
+
+## 求职者视角
+融进 S1 的提问，每期至多两处，必须挂真实 voices 条目，不许凭空说「面试会考」。
+"""
+
+SHOW_MD_TEMPLATE = """# SHOW.md — {name} 当前状态
+
+## 书源
+- kind: {book_kind}
+- root: {book_root}
+- instance: {instance}
+- 状态: 未摄入（跑 `python3 scripts/ingest_book.py --show {name} --root {book_root} --instance {instance}`）
+
+## 硬规则
+- voices 有 3 个月保质期（面经半年就过时），到期刷新。
+- TTS 是必经站：环境没配好 = BLOCKED，无降级路径。
+- 修改 voice-guide.md 需 Lead 批准。
+"""
+
+
+def scaffold_show(root: Path, name: str, title: str, book_root: str, instance: str) -> Path:
+    root = Path(root)
+    show_dir = root / "shows" / name
+    for sub in ["season/bible", "trace", "voice-samples", "episodes"]:
+        (show_dir / sub).mkdir(parents=True, exist_ok=True)
+
+    cfg = {
+        "show": name,
+        "title": title,
+        "book_source": {"kind": "repo2book", "root": book_root, "instance": instance,
+                        "ingested_at": "", "snapshot_digest": ""},
+        "audience": {"profile": "对 LLM 推理有兴趣的工程师 + 正在准备相关面试的求职者",
+                     "assumed_knowledge": ["Python", "Transformer 基本概念"], "language": "zh-CN"},
+        "format": {"hosts": 2, "target_minutes": 35, "episodes_planned": None},
+        "tts": {"provider": "moss-ttsd", "fallback": "cosyvoice3",
+                "voice_map": {"S1": "voice-samples/laozhang.wav", "S2": "voice-samples/akai.wav"}},
+    }
+    (show_dir / "devpodcast.json").write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
+    (show_dir / "SHOW.md").write_text(
+        SHOW_MD_TEMPLATE.format(name=name, book_kind="repo2book", book_root=book_root, instance=instance),
+        encoding="utf-8")
+    (show_dir / "season" / "bible" / "voice-guide.md").write_text(VOICE_GUIDE_TEMPLATE, encoding="utf-8")
+
+    reg_path = root / "devpodcast.json"
+    reg = json.loads(reg_path.read_text(encoding="utf-8"))
+    reg["active_show"] = name
+    reg["shows"][name] = {"config": f"shows/{name}/devpodcast.json", "title": title}
+    reg_path.write_text(json.dumps(reg, ensure_ascii=False, indent=2), encoding="utf-8")
+    return show_dir
+
+
+def main(argv=None) -> int:
+    argv = argv if argv is not None else sys.argv[1:]
+    root = Path(argv[0])
+    name, title, book_root, instance = argv[1], argv[2], argv[3], argv[4]
+    scaffold_show(root, name, title, book_root, instance)
+    print(f"scaffolded shows/{name}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+```
+
+- [ ] **Step 4: 跑测试确认通过**
+
+Run: `python3 -m pytest tests/test_new_show.py -v`
+Expected: PASS
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add scripts/new_show.py tests/test_new_show.py
+git commit -m "feat: new_show 节目 scaffold（voice-guide 模板落笔）"
+```
+
+---
+
+### Task 14: 8 个 agent 提示词

@@ -1,0 +1,41 @@
+{
+  "chapter_id": "ch37",
+  "title": "ch37",
+  "slug": "ch37-entrypoints",
+  "sections": [
+    "37.1 一张总图：同步阻塞这条脊",
+    "37.2 构造期：参数 → EngineArgs → LLMEngine",
+    "37.3 LLMEngine 的两个客户端：硬分叉点",
+    "37.4 四个入口，一条脊",
+    "37.5 同步驱动的灵魂：_run_engine 与 step()",
+    "37.6 离线吞吐从哪来：一次提交一大批"
+  ],
+  "key_classes": [
+    {
+      "name": "LLM",
+      "file": "vllm/entrypoints/llm.py",
+      "responsibility": "离线推理门面。构造时拼 EngineArgs 起 LLMEngine；对外暴露 generate/chat/embed/encode/classify/score 等任务方法；内部把'渲染→批量提交→同步 _run_engine 驱动→按 request_id 排序'统一成一条流水。持有 request_counter（自增 id）、renderer、input_processor、pooling_io_processors。"
+    },
+    {
+      "name": "LLMEngine",
+      "file": "vllm/v1/engine/llm_engine.py",
+      "responsibility": "v1 同步引擎（注释为 'Legacy LLMEngine for backwards compatibility'，但仍是 LLM 离线默认引擎）。from_engine_args 建 VllmConfig 并据 VLLM_ENABLE_V1_MULTIPROCESSING 决定 multiprocess_mode（默认 True）；持有 renderer/InputProcessor/OutputProcessor/EngineCoreClient；核心方法 add_request() 和同步 step()（无 asyncio、无后台 output_handler 协程）。"
+    },
+    {
+      "name": "EngineCoreClient (make_client 工厂)",
+      "file": "vllm/v1/engine/core_client.py",
+      "responsibility": "抽象客户端，make_client 按 (multiprocess_mode, asyncio_mode) 三分支选实现。离线默认 (True, False)→SyncMPClient（ZMQ+后台进程 EngineCore，get_output 阻塞取队列）；VLLM_ENABLE_V1_MULTIPROCESSING=0 回退 (False,False)→InprocClient（真进程内、无 ZMQ、直接 step_fn()）；(True,True)→AsyncMP（ch04）。"
+    },
+    {
+      "name": "SyncMPClient",
+      "file": "vllm/v1/engine/core_client.py",
+      "responsibility": "【离线默认】EngineCore 客户端。__init__ 起后台 daemon 线程从 ZMQ output_socket 收 EngineCoreOutputs 入 outputs_queue；get_output() 同步阻塞 outputs_queue.get()；add_request 经 ZMQ 字节标签协议 _send_input(ADD,...) 送往后台 EngineCore 进程。是 ch04 AsyncMPClient 的同步对照面。"
+    },
+    {
+      "name": "InprocClient",
+      "file": "vllm/v1/engine/core_client.py",
+      "responsibility": "进程内 EngineCore 回退实现（V0 风格）。无 ZMQ/无后台进程：get_output 直接 engine_core.step_fn()+post_step()，add_request 直接 preprocess+add。仅在 VLLM_ENABLE_V1_MULTIPROCESSING=0（测试/调试）时使用，【非默认】——本章必须澄清的反直觉点。"
+    }
+  ],
+  "mechanisms": []
+}

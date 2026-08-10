@@ -1,0 +1,30 @@
+{
+  "show": "vllm-podcast",
+  "title": "把 vLLM 拆开讲",
+  "book_source": {
+    "kind": "repo2book",
+    "root": "E:/Laboratory/Repo2Book",
+    "instance": "vllm",
+    "ingested_at": "2026-08-02",
+    "snapshot_digest": "588dedb12793c828"
+  },
+  "audience": {
+    "profile": "对 LLM 推理有兴趣的工程师 + 正在准备相关面试的求职者",
+    "assumed_knowledge": [
+      "Python",
+      "Transformer 基本概念"
+    ],
+    "language": "zh-CN"
+  },
+  "format": {
+    "hosts": 2,
+    "target_minutes": 35,
+    "episodes_planned": null
+  },
+  "tts": {
+    "provider": "indextts2",
+    "synth_env": "itts310",
+    "note": "单句合成（逐turn独立），内置 laozhang/akai 16k 参考；解决 FireRed 尾部喃喃伪影",
+    "pronunciation": "season/pronunciation.json"
+  }
+}

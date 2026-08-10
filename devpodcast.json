@@ -1,0 +1,26 @@
+{
+  "version": "1.0",
+  "description": "devpodcast — 把一本技术书变成一季双人对谈播客（议题驱动、批判先行、引真实社区声音、本地 GPU 合成）。",
+  "active_show": "vllm-podcast",
+  "shows": {
+    "vllm-podcast": {
+      "config": "shows/vllm-podcast/devpodcast.json",
+      "title": "把 vLLM 拆开讲"
+    }
+  },
+  "shared": {
+    "operating_doc": "CLAUDE.md",
+    "runbook": "docs/superpowers/ARCHITECT-RUNBOOK.md",
+    "spec": "docs/superpowers/specs/2026-08-01-devpodcast-design.md",
+    "agents_dir": ".claude/agents",
+    "workflow_phase_a": ".claude/workflows/season-pipeline.js",
+    "workflow_phase_b": ".claude/workflows/episode-pipeline.js",
+    "linters": [
+      "scripts/lint_script.py",
+      "scripts/lint_voices.py",
+      "scripts/lint_punct.py",
+      "scripts/lint_anchors.py",
+      "scripts/lint_trace.py"
+    ]
+  }
+}

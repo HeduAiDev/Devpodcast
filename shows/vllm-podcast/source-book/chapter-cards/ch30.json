@@ -1,0 +1,57 @@
+{
+  "chapter_id": "ch30",
+  "title": "ch30",
+  "slug": "ch30-sampling",
+  "sections": [
+    "30.1 9 步的全景图",
+    "30.2 入口 forward：先把原始概率抢救出来",
+    "30.3 第 3–6 步：四道能改 argmax 的工序",
+    "30.4 bad words：只在\"快补全成禁词\"时才动手",
+    "30.5 第 6 步：三种惩罚，照 OpenAI 的定义算",
+    "30.6 第 7 步：greedy 快路与随机路的分叉",
+    "30.7 第 7d 步：top-k/top-p 截断的多后端分发",
+    "30.8 第 7d 步内核：sort 截断与\"为什么不排序整个 vocab\"",
+    "30.9 第 7e 步：random_sample 与 flashinfer，两种避开同步的抽样",
+    "30.10 第 8 步：把原始概率的 top-k 收集回来",
+    "30.11 贯穿全章的载体：SamplingMetadata",
+    "30.12 小结：一条流水线，三个贯穿始终的设计"
+  ],
+  "key_classes": [
+    {
+      "name": "Sampler",
+      "file": "vllm/v1/sample/sampler.py",
+      "responsibility": "nn.Module，9 步采样流水线的编排者：forward 做 step1-2/8-9，apply_logits_processors 做 step3-6，sample 做 step7。全程吃 SamplingMetadata，输出 SamplerOutput（sampled_token_ids + logprobs_tensors）。"
+    },
+    {
+      "name": "SamplingMetadata",
+      "file": "vllm/v1/sample/metadata.py",
+      "responsibility": "dataclass，把整批逐请求采样参数批量张量化：temperature/top_k/top_p/penalties 张量、all_greedy/all_random 快路标志、generators、output_token_ids、allowed/bad_words、已分类的 logitsprocs 容器。"
+    },
+    {
+      "name": "TopKTopPSampler",
+      "file": "vllm/v1/sample/ops/topk_topp_sampler.py",
+      "responsibility": "nn.Module，构造时按 device/platform/logprobs_mode 把 self.forward 绑定到具体后端（forward_cuda/native/cpu/hip）。call 时执行 top-k/top-p 截断 + 随机采样，返回 (sampled, optional_processed_logprobs)。"
+    },
+    {
+      "name": "LogitsProcessors",
+      "file": "vllm/v1/sample/logits_processor/state.py",
+      "responsibility": "容器，构造时按 is_argmax_invariant() 把 processor 分进 argmax_invariant / non_argmax_invariant 两个 list，决定它在流水线 step5（greedy 前）还是 step7c（温度后随机路径）生效。"
+    },
+    {
+      "name": "MinPLogitsProcessor",
+      "file": "vllm/v1/sample/logits_processor/builtin.py",
+      "responsibility": "argmax-invariant=True。砍掉概率 < min_p*max_prob 的尾部 token；仅 min_p_count>0 时才 softmax。"
+    },
+    {
+      "name": "MinTokensLogitsProcessor",
+      "file": "vllm/v1/sample/logits_processor/builtin.py",
+      "responsibility": "argmax-invariant=False。未达 min_tokens 的请求屏蔽其 stop/EOS token（置 -inf）。"
+    },
+    {
+      "name": "LogitBiasLogitsProcessor",
+      "file": "vllm/v1/sample/logits_processor/builtin.py",
+      "responsibility": "argmax-invariant=False。把逐请求 logit_bias 加到对应 (req,token) 位置。"
+    }
+  ],
+  "mechanisms": []
+}

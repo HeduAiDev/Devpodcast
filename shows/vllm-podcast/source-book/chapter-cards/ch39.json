@@ -1,0 +1,69 @@
+{
+  "chapter_id": "ch39",
+  "title": "ch39",
+  "slug": "ch39-engine-core",
+  "sections": [
+    "39.1 你在这里",
+    "39.2 难题：busy loop 里塞不下一个阻塞的\"重建\"",
+    "39.3 状态机的骨架：四种角色，各一串状态",
+    "39.4 progress()：每轮只走一步的引擎",
+    "39.5 触发扩缩：reinitialize_distributed 与\"转非阻塞\"",
+    "39.6 scale_up 全程：存在引擎的 9 步与跨进程握手",
+    "39.7 两阶段 barrier：化解\"通知到得有先有后\"",
+    "39.8 新引擎的 4 步：把\"扩入\"提前到 KV cache 初始化之前",
+    "39.9 scale_down：余留与被裁，一减一退",
+    "39.10 换个战场：Responses API 的有状态多轮",
+    "39.11 非 harmony 拼接：把上一轮织进这一轮",
+    "39.12 harmony 路径与那个共享的 list",
+    "39.13 跑起来看一眼：状态推进与会话接续",
+    "39.14 收尾：两种\"原地变身\"，与全书代码之旅的终点"
+  ],
+  "key_classes": [
+    {
+      "name": "ElasticEPScalingState",
+      "file": "vllm/distributed/elastic_ep/elastic_state.py",
+      "responsibility": "弹性扩缩的确定性状态机。一个实例代表'本引擎在本次 reconfig 中的角色与进度'（worker_type×scale_type 决定状态枚举），每次 progress() 推进一步且非阻塞，靠 TCPStore eep_barrier_engine_count 计数 + 两阶段 barrier 跨 rank 同步。weakref 持有 executor/engine_core 避免循环引用。"
+    },
+    {
+      "name": "ScaleUpExistingEngineState / ScaleUpNewEngineState / ScaleDownRemainingEngineState / ScaleDownRemovingEngineState",
+      "file": "vllm/distributed/elastic_ep/elastic_state.py",
+      "responsibility": "四种角色各自的 IntEnum 状态序列。scale_up 把扩入拆成'存在引擎 9 态 / 新引擎 4 态'，scale_down 拆成'余留引擎 4 态 / 移除引擎 3 态'。"
+    },
+    {
+      "name": "DPEngineCoreProc",
+      "file": "vllm/v1/engine/core.py",
+      "responsibility": "数据并行的 EngineCore 进程（ch07/ch21）。本章新增视角：reinitialize_distributed 在 busy loop 里挂上 eep_scaling_state、置 process_input_queue_block=False 进入非阻塞推进；run_busy_loop 每轮调 progress()；_eep_scale_up_before_kv_init 用于'KV init 前扩'的新引擎；_eep_send_engine_core_notification/eep_handle_engine_core_notification 跨进程握手。"
+    },
+    {
+      "name": "ReconfigureDistributedRequest",
+      "file": "vllm/v1/engine/__init__.py",
+      "responsibility": "msgspec.Struct，携带新 DP 维度（new_data_parallel_size/rank/rank_local）与新 master ip/port/port_list/coord_store_port，是触发整套扩缩的指令载荷。"
+    },
+    {
+      "name": "EEPNotificationType",
+      "file": "vllm/v1/engine/__init__.py",
+      "responsibility": "扩缩跨进程通知枚举：NEW_CORE_ENGINES_INIT_READY / NEW_CORE_ENGINES_WEIGHTS_INIT_READY / RECONFIGURE_FINISHED / SHUTDOWN_COMPLETE。经 EngineCoreClient 转发，驱动 existing 引擎 handle_notification 推进 WAIT_* 状态。"
+    },
+    {
+      "name": "OpenAIServingResponses",
+      "file": "vllm/entrypoints/openai/responses/serving.py",
+      "responsibility": "Responses API handler。持有 response_store（id→ResponsesResponse）、msg_store（id→消息序列）、event_store、background_tasks。create_responses 据 previous_response_id 取回上轮、拼接历史、调度生成；多轮有状态会话的真相源。"
+    },
+    {
+      "name": "construct_input_messages",
+      "file": "vllm/entrypoints/openai/responses/utils.py",
+      "responsibility": "非 harmony 多轮拼接：滤掉上轮 system 消息后前置历史、上轮 output 转 assistant、再接本轮 input。"
+    },
+    {
+      "name": "HarmonyContext / StreamingHarmonyContext",
+      "file": "vllm/entrypoints/openai/responses/context.py",
+      "responsibility": "harmony 格式的会话上下文。_messages 与 msg_store 中的 list 共享同一对象；append_output 把 harmony parser 解出的输出消息 extend 进去，从而'本轮 output 自动留存供下一轮读取'。render_for_completion 把消息序列渲染回 token ids 喂引擎。"
+    },
+    {
+      "name": "_construct_input_messages_with_harmony",
+      "file": "vllm/entrypoints/openai/responses/serving.py",
+      "responsibility": "harmony 多轮拼接：新会话造 system(+developer) 消息，续轮直接取 msg_store[prev_id]（含上轮完整 harmony 序列）extend，再 append 本轮 input。"
+    }
+  ],
+  "mechanisms": []
+}

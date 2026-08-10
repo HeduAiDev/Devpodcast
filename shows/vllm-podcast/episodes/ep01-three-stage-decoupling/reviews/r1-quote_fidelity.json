@@ -1,0 +1,23 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimension": "quote_fidelity",
+  "pass": true,
+  "issues": [
+    {
+      "problem": "script.md:53 引用 voice-002（牛客面经，source_date 2026-03-03）无任何时间锚点。voices.json 该条 writer_note 明确要求「source_date 距今约 5 个月，已过 3 个月保质期，标注过期风险」；同稿 voice-001 处（L197「他那篇是快一年前的文章…以现在的代码为准」）已落实过期标注，voice-002 处遗漏，口径不一致。",
+      "evidence": "script.md:53",
+      "suggested_fix": "在 L53 引出句加时间锚，如「今年三月，牛客上一位面过这类实习岗的同学写过面经」；一词之加，不动引述内容。",
+      "rationale": "原声保真维：voices.json writer_note 的标注指令是引述契约的一部分（spec 6.3.5 时效性）；5 个月前的 community-only 面经若无时间锚，听感上会被当成当下事实，claim 与时效层次同时模糊。",
+      "blocking": false
+    }
+  ],
+  "notes": [
+    "六处引述（voice-001/002/021/025/027/036）逐一比对 voices.json 原文：数字全部零漂移——2-4%、195ms/310ms、37%、7GB/21GB、340→190ms、1.2s→9.8s、2.1s→27s、60ms、23 个、81%，均与 claim 原文一致。",
+    "claim vs verified 层次：voice-002（community-only）以「一位面过这类实习岗的同学写过面经」的个人经历口吻呈现，未升格为普遍事实；voice-036（confidence=medium）在 L211 由老张点出 Spheron 的厂商倾向性，置信层次保留；voice-021（未一手核实全文）在 L221 如实自曝「全文我们没抓到，具体数字给不出」——未拿低置信引述硬撑论点，是分层保持的正面案例。",
+    "引述边界（三档策略）：voice-001/021/025 为 (c) 转述档，脚本均以「他原话大意是」「发帖的用户」等转述口吻由阿凯/老张说出，未伪装成原声直引；voice-002/027/036 为 (a) 重合成档，{{voice:id}} 锚点齐备。六处均有明确引出标记，无 verbatim 冒充。",
+    "匿名化：voice-002（anonymized=true）未露 handle 与学校，仅「牛客上一位…同学」✓；voice-025 虽 anonymized=false 仍作匿名处理（不违规，只降识别度）；voice-001/027/036 按 anonymized=false 指名 Aleksa Gordic / Marcus Chen / Spheron，符合「大V/作者可指名」纪律。",
+    "归属核对：voice-027 writer_note 写「用在 ep02」，本期使用有 arc.json ep01 controversy.counter 明文引用 Marcus Chen 生产 trace 作支撑，不构成分配违规；episode-card voices_refs 仅列 3 条但 voices.json 才是外部声音真相源，所引 id 全部真实存在。",
+    "旧稿遗留问题复核：r1-voice_fidelity.json（旧稿）所提「p50 丢 TTFT 限定」已在当前稿修复（L201/205「p50 首 token 延迟」）；「23 个在飞的请求 vs decode 流」（L229）属语义无损口语压缩，不再列为问题。"
+  ]
+}

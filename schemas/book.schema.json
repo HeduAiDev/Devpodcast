@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["title", "chapters"],
+  "properties": {
+    "title": {"type": "string"},
+    "chapters": {"type": "array", "items": {
+      "type": "object",
+      "required": ["chapter_id", "title", "slug", "sections", "key_classes",
+                   "mechanisms"],
+      "properties": {
+        "chapter_id": {"type": "string"},
+        "title": {"type": "string"},
+        "slug": {"type": "string"},
+        "sections": {"type": "array", "items": {"type": "string"}},
+        "key_classes": {"type": "array", "items": {"type": "object"}},
+        "mechanisms": {"type": "array", "items": {"type": "object"}}
+      }
+    }}
+  }
+}

@@ -1,0 +1,246 @@
+### Task 2: BookSource 抽象 + Repo2BookSource
+
+**Files:**
+- Create: `scripts/book_source.py`
+- Test: `tests/test_book_source.py`
+- Test fixture: `tests/fixtures/repo2book-mini/`（微型 repo2book 结构：outline-final.json + 2 章 dossier/narrative + glossary.json）
+
+**Interfaces:**
+- Consumes: —（纯新）
+- Produces:
+  - `Book` dataclass（title / chapters: list[ChapterCard] / digest: str）
+  - `ChapterCard` dataclass（chapter_id / title / slug / sections: list[str] / key_classes: list[dict] / mechanisms: list[dict] / narrative_path: Path）
+  - `class Repo2BookSource(BookSource)` with `__init__(root: Path, instance: str)`、`load() -> Book`、`chapter_cards() -> list[ChapterCard]`、`glossary() -> dict`、`outline() -> list`
+  - `class BookSource(Protocol)` 定义同签名的 duck-type 协议
+
+**要点抽取规则（本任务核心，来自真实核实）：**
+- `sections`：从 narrative `chapter.md` 正则 `^##\s+(\d+\.\d+)\s+(.*)$` 抓 `<章号>.<节号> <标题>` 成 `"13.1 没有 prefill 相，没有 decode 相"` 形式
+- `key_classes`：dossier.json `key_classes`（39/39 章有）
+- `mechanisms`：dossier.json `mechanisms`（可能为空数组，容忍）
+- 标题：narrative 首行 `# 第N章　<标题>` 去章号前缀
+- outline-final.json 是 **list**（非 dict）；glossary.json 是 **dict**（key=中文术语）
+
+- [ ] **Step 1: 建测试 fixture**
+
+```bash
+mkdir -p tests/fixtures/repo2book-mini/artifacts/ch01-foo/dossier tests/fixtures/repo2book-mini/artifacts/ch01-foo/narrative tests/fixtures/repo2book-mini/artifacts/ch02-bar/dossier tests/fixtures/repo2book-mini/artifacts/ch02-bar/narrative tests/fixtures/repo2book-mini/book/cartography tests/fixtures/repo2book-mini/book/bible
+```
+
+```python
+# tests/fixtures/repo2book-mini/book/cartography/outline-final.json
+[{"chapter_id": "ch01", "slug": "ch01-foo", "title": "Foo 章"}, {"chapter_id": "ch02", "slug": "ch02-bar", "title": "Bar 章"}]
+
+# tests/fixtures/repo2book-mini/book/bible/glossary.json
+{"连续批处理": "continuous batching", "分页 KV 缓存": "PagedAttention"}
+```
+
+```python
+# tests/fixtures/repo2book-mini/artifacts/ch01-foo/dossier/dossier.json
+{"chapter_id": "ch01", "title": "Foo 章", "key_classes": [{"name": "FooEngine", "file": "demo/foo.py", "responsibility": "干 Foo"}], "mechanisms": [{"id": "m1", "name": "机制甲", "difficulty": "core"}], "code_spine": []}
+
+# tests/fixtures/repo2book-mini/artifacts/ch02-bar/dossier/dossier.json
+{"chapter_id": "ch02", "title": "Bar 章", "key_classes": [{"name": "BarEngine", "file": "demo/bar.py", "responsibility": "干 Bar"}], "mechanisms": [], "code_spine": []}
+```
+
+```markdown
+# tests/fixtures/repo2book-mini/artifacts/ch01-foo/narrative/chapter.md
+# 第1章　Foo 章
+
+## 你在这里
+
+这里讲 Foo。
+
+## 1.1 Foo 的第一步
+
+正文。
+
+## 1.2 Foo 的第二步
+
+正文。
+```
+
+```markdown
+# tests/fixtures/repo2book-mini/artifacts/ch02-bar/narrative/chapter.md
+# 第2章　Bar 章
+
+## 2.1 Bar 的唯一一步
+
+正文。
+```
+
+- [ ] **Step 2: 写失败测试**
+
+```python
+# tests/test_book_source.py
+import json
+from pathlib import Path
+import pytest
+from scripts.book_source import Repo2BookSource, BookSource
+
+FIX = Path(__file__).parent / "fixtures" / "repo2book-mini"
+
+def test_load_book():
+    src = Repo2BookSource(FIX, "mini")
+    book = src.load()
+    assert book.title == "mini"
+    assert len(book.chapters) == 2
+
+def test_chapter_cards_sections():
+    src = Repo2BookSource(FIX, "mini")
+    cards = src.chapter_cards()
+    c1 = [c for c in cards if c.chapter_id == "ch01"][0]
+    assert c1.title == "Foo 章"
+    assert "1.1 Foo 的第一步" in c1.sections
+    assert "1.2 Foo 的第二步" in c1.sections
+    assert len(c1.key_classes) == 1 and c1.key_classes[0]["name"] == "FooEngine"
+    assert c1.mechanisms[0]["id"] == "m1"
+
+def test_empty_mechanisms_tolerated():
+    src = Repo2BookSource(FIX, "mini")
+    c2 = [c for c in src.chapter_cards() if c.chapter_id == "ch02"][0]
+    assert c2.mechanisms == []
+    assert len(c2.sections) == 1
+
+def test_glossary_dict_shape():
+    src = Repo2BookSource(FIX, "mini")
+    g = src.glossary()
+    assert g["连续批处理"] == "continuous batching"
+
+def test_outline_is_list():
+    src = Repo2BookSource(FIX, "mini")
+    o = src.outline()
+    assert isinstance(o, list) and o[0]["chapter_id"] == "ch01"
+
+def test_implements_protocol():
+    assert isinstance(Repo2BookSource(FIX, "mini"), BookSource)
+
+def test_missing_instance_raises():
+    with pytest.raises(FileNotFoundError):
+        Repo2BookSource(FIX, "nope")
+```
+
+- [ ] **Step 3: 跑测试确认失败**
+
+Run: `python3 -m pytest tests/test_book_source.py -v`
+Expected: FAIL（ModuleNotFoundError / assertion）
+
+- [ ] **Step 4: 写实现**
+
+```python
+# scripts/book_source.py
+"""BookSource 抽象 + Repo2BookSource 实现（读 repo2book 实例目录，归一化成本项目 Book）。
+
+要点抽取策略（2026-08-01 实测核实）：
+- sections 主来源 = narrative 的 "## N.M 标题" 小节行（39/39 章稳定存在）
+- key_classes = dossier.json（39/39 章存在）
+- mechanisms = dossier.json（仅 8/39 章有 v3 账本，可能为空数组，容忍）
+"""
+import json, re
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Protocol
+
+SECTION_RE = re.compile(r"^##\s+(\d+\.\d+)\s+(.+)$", re.M)
+TITLE_RE = re.compile(r"^#\s+第\d+章\s+(.+)$", re.M)
+
+
+@dataclass
+class ChapterCard:
+    chapter_id: str
+    title: str
+    slug: str
+    sections: list[str] = field(default_factory=list)       # "13.1 没有 prefill 相" 形式
+    key_classes: list[dict] = field(default_factory=list)
+    mechanisms: list[dict] = field(default_factory=list)
+    narrative_path: Path | None = None
+
+    def as_dict(self) -> dict:
+        return {"chapter_id": self.chapter_id, "title": self.title, "slug": self.slug,
+                "sections": self.sections, "key_classes": self.key_classes,
+                "mechanisms": self.mechanisms}
+
+
+@dataclass
+class Book:
+    title: str
+    chapters: list[ChapterCard] = field(default_factory=list)
+
+    def as_dict(self) -> dict:
+        return {"title": self.title, "chapters": [c.as_dict() for c in self.chapters]}
+
+
+class BookSource(Protocol):
+    def load(self) -> Book: ...
+    def chapter_cards(self) -> list[ChapterCard]: ...
+    def glossary(self) -> dict: ...
+    def outline(self) -> list: ...
+
+
+class Repo2BookSource:
+    """从 repo2book 实例目录抽取（当前唯一实现）。构造时校验路径与实例存在，否则拉闸。"""
+
+    def __init__(self, root: Path | str, instance: str):
+        self.root = Path(root)
+        self.instance = instance
+        self.inst_dir = self.root / "instances" / instance
+        if not self.inst_dir.is_dir():
+            raise FileNotFoundError(f"repo2book 实例不存在: {self.inst_dir}")
+
+    def _chapter_dirs(self) -> list[Path]:
+        arts = self.inst_dir / "artifacts"
+        return sorted([p for p in arts.iterdir() if p.is_dir() and p.name.startswith("ch")])
+
+    def chapter_cards(self) -> list[ChapterCard]:
+        cards = []
+        for d in self._chapter_dirs():
+            chid = d.name.split("-")[0]
+            narr = d / "narrative" / "chapter.md"
+            dossier_path = d / "dossier" / "dossier.json"
+            title = chid
+            sections: list[str] = []
+            key_classes: list[dict] = []
+            mechanisms: list[dict] = []
+            if narr.is_file():
+                text = narr.read_text(encoding="utf-8")
+                m = TITLE_RE.search(text)
+                if m:
+                    title = m.group(1).strip()
+                sections = [f"{num} {name.strip()}" for num, name in SECTION_RE.findall(text)]
+            if dossier_path.is_file():
+                dd = json.loads(dossier_path.read_text(encoding="utf-8"))
+                key_classes = dd.get("key_classes", []) or []
+                mechanisms = dd.get("mechanisms", []) or []
+            cards.append(ChapterCard(chid, title, d.name, sections, key_classes, mechanisms, narr if narr.is_file() else None))
+        return cards
+
+    def glossary(self) -> dict:
+        p = self.inst_dir / "book" / "bible" / "glossary.json"
+        if not p.is_file():
+            return {}
+        return json.loads(p.read_text(encoding="utf-8"))
+
+    def outline(self) -> list:
+        p = self.inst_dir / "book" / "cartography" / "outline-final.json"
+        if not p.is_file():
+            return []
+        return json.loads(p.read_text(encoding="utf-8"))
+
+    def load(self) -> Book:
+        return Book(self.instance, self.chapter_cards())
+```
+
+- [ ] **Step 5: 跑测试确认通过**
+
+Run: `python3 -m pytest tests/test_book_source.py -v`
+Expected: PASS
+
+- [ ] **Step 6: 提交**
+
+```bash
+git add scripts/book_source.py tests/test_book_source.py tests/fixtures/repo2book-mini
+git commit -m "feat: BookSource 抽象 + Repo2BookSource（narrative 小节为要点主源）"
+```
+
+---
+
+### Task 3: ingest_book.py — 快照摄入

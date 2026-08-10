@@ -1,0 +1,16 @@
+{
+  "episode_id": "ep01",
+  "run": 1,
+  "dimension": "job_seeker_resonance",
+  "pass": true,
+  "issues": [],
+  "notes": [
+    "配额：全期仅 1 处求职者视角（script.md:51-55，阿哲提问 → 阿凯挂 voice → 老张落地），满足 voice-guide.md「求职者视角」条（每期至多两处）。",
+    "必须挂真实 voices：L53 挂 {{voice:voice-002}}（牛客面经，category=job-seeker，community-only），id 在 voices.json 真实存在；稿中表述「牛客上一位面过这类实习岗的同学」未泄露 handle，匿名化（anonymized=true）守住。",
+    "具体场景而非空泛：S3 提问带明确场景（「我刷面经，AI infra 的实习岗好像都在问这个」，L51）；引述内容为具体考点清单（PagedAttention、连续批处理、v0/v1 架构、chunked prefill、prefix caching，L53），与 voice-002 原文 claim 逐项吻合；S1 落地为可执行认知（「考点是'你懂不懂为什么这么设计'，不是背名词」）并接回本期主线（「刚才那一串名词，今天不用全记，后面几期一个个拆」，L55）——求职视角与内容主线同构，不是贴片。",
+    "无凭空「面试会考」：L51 的面试相关性声称（阿哲个人刷面经口吻的设问）在下一turn即由 voice-002 实证承接（L53「是高频考点」），符合「融进提问 + 必须挂真实 voices」的契约模式。",
+    "不占配额核查：L17「写后端、做架构都用得上」与 L251「我不写推理引擎，写后端也用得上」为通用适用性钩子，未声称面试相关性，无需挂 voice，不占求职配额。",
+    "降级知情：season/voices-coverage.json coverage=full（checked_at 2026-08-03，求职者声音 10 条），本维按全权重评审，无需降级。",
+    "voice-002 的 writer_note 要求标注过期风险（source_date 2026-03-03 已超 3 个月保质期），稿中未标注——属原声保真维的引述边界职责（对照 L197 voice-001 的过期标注范式），本维不重复立案。"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "episode_id": "ep03",
+  "run": 1,
+  "dimension": "factual_accuracy",
+  "pass": false,
+  "issues": [
+    {
+      "problem": "script.md:337「多租户 Agent 场景，80% 共享系统提示词——170 倍的差距，不是块大小能换回来的」——『80%』这个数字在 episode-card 与本期引用的 voices 中均无出处。170 倍出自 voice-007（llm-d：16 块 H100 / Qwen-32B / 150 客户 / 每客户 6000 token 共享系统提示词，P90 TTFT 93s→0.542s），该来源从未给出『80% 共享率』；『80% 共享前缀』是 voice-036（Spheron，SGLang vs vLLM，50 并发 p50 TTFT 对比）的实验条件，且 voice-036 不在本期 voices_refs 清单里。把甲来源的实验条件粘在乙来源的测量结果上，听众会得出『170 倍是在 80% 共享率下测的』这一两个来源都没说过的结论。此句位于全期判据（payoff）段，是收尾结论的一部分。",
+      "suggested_fix": "二选一：(a) 删掉『80%』，把 170 倍挂回它自己的实验条件——如「多租户 Agent 场景，150 个客户共用 6000 token 的系统提示词——170 倍的差距，不是块大小能换回来的」；(b) 若想保留共享率说法，改成不含具体数字的定性表述（如「大段共享系统提示词的多租户场景」）。不可保留『80%』现状。",
+      "rationale": "事实准确维：数字不漂移（与 voices 原文一致）——『80%』既不在 voice-007 也不在本期 episode-card，属跨来源拼接的无出处数字，且出现在判据结论句；批判有靶子的前提是数字站得住，此数字站不住。",
+      "blocking": true
+    }
+  ],
+  "checks_summary": {
+    "voice_numbers": "全稿 9 处引述数字与 voices.json 原 claim 逐条复核，除上述 L337 外无漂移：L11（淘汰 90% token 显存没降、块大小 16、块内剩一颗整块释放不了）与 voice-029 一致；L59（手写 PagedAttention 实现 + 与 KV cache 区别/优化点 + 群里同学被问懵）与 voice-009 一致，且保留『快一年前、转述、没法核实』的不确定标注；L139（哈希粒度 / 不满块能否缓存 / 命中率估算三问）与 voice-024 一致；L281（块大小 1 块表暴涨、太大短序列浪费、默认 16 只用 15 颗剩一个空位）与 voice-008 一致；L289（GQA 下 8 个线程块重复加载同一份 KV 头、L1/L2 流量 800 多 MB vs 实际 64 MB、新内核提升约三成）与 voice-006 一致；L301（UCX 钩子 + 前缀缓存请求引用循环、GPU worker OOM 被杀）与 voice-022 一致；L309（16 块 H100 / Qwen-32B / 150 客户 / 6000 token / P90 93s→0.542s / 170 倍 / 唯一最重要指标）与 voice-007 一致（93/0.542≈171.6≈170 自洽）；L319（命中率低于 0.55 / Groundedness 0.88→0.69 / 工具调用参数丢失 / 引用错误文档）与 voice-030 一致；L329（单实例 4.3s→0.6s / 负载均衡器分散前缀 / 反复驱逐重算 / 分布式前缀缓存非开箱即用）与 voice-026 一致。时间表述核对：L297「去年三月的」= voice-006 source_date 2025-03-23 ✓；L301「今年六月」= voice-022 source_date 2026-06-20 ✓；L59「快一年前」= voice-009 source_date 2025-08-20 ✓。",
+    "card_mechanisms": "机制断言与 episode-card（cross_chapter_threads + narrative_anchors）及 source-book chapter-cards 逐条对齐，全部有支撑：L51（块=16 token、GPU 一段连续显存，ch15）、L67-L71（块池三件套 + KVCacheBlock 元数据：编号/引用计数/哈希/前后指针，ch15）、L75（双向链表 + 哨兵、队头 LRU 先赶、队尾最近释放，ch15）、L83（直写块自身指针不建 Python 对象、O(1) 中间删除、命中块从驱逐候选摘除，ch15）、L87（惰性驱逐，ch15）、L91-L95（驱逐=划出账本变可分配不销毁、钥匙同步删，ch15 机制直推）、L99（刚还的块排队尾，ch15）、L111（满块内容哈希 + 模型分组编号成钥匙，ch15）、L113-L115（最长前缀命中、命中部分挂上、未命中新算，ch15）、L119（只认满块，ch15）、L123（不去重、块表只增不改，ch15 原文机制）、L131（ref_cnt 归零才还，ch15）、L147-L175（allocate_slots 三段式：还窗外旧块 + 预算打回 → 挂命中含外部 PD connector → 新建 + lookahead；失败返回空当正常返回值，ch16）、L185（抢占循环：还块、状态打回、appendleft 回 waiting 队头，ch14）、L193（抢占后本拍不放新请求，source-book ch14.3 节标题原文支撑）、L197-L203（skipped_waiting 双队列队头阻塞避免，ch14.4）、L209-L213（InputBatch 跨拍二维容器、全长整数缓冲是 CPU 侧记账板、KV 仍分页，ch18）、L221-L225（变更单差量：新块/算到第几颗/输出几颗 + worker 快照就地改，ch18 CachedRequestData）、L231（_update_states 先对账，ch18）、L235（removed/added/moved 记账、先填洞、洞多了一次压实，ch18 BatchUpdateBuilder/condense）、L247-L251（block_table CPU/GPU 双镜像、commit 批量拷，ch18）、L255-L259（slot_id = 逻辑块号×16 + 块内偏移、尾部 PAD_SLOT_ID 适配 CUDA graph 固定网格，ch18 公式逐字对应）。L277「16 是 PagedAttention 论文缺省值」与 card「block_size=16」一致。",
+    "idk_moment": "「我不知道」两处，复核均为真不知道、非回避：L297（GQA 内核帖是去年三月的、内核迭代过几轮、现状「不敢替人打包票」——voices 素材内无当前状态答案，writer_note 亦要求核对当前版本）；L347（16 为何是 16：书里只给「默认 16」实现事实、论文是实验选的、换硬件负载是否成立「我们说不准」——episode-card / voices / source-book 均无推导，且给出已知边界并抛给评论区，满足每期至少一次真不知道的契约）。",
+    "audio": "audio-qa.json 由 audio-qa 独立回环负责，本维不重复质检（契约：audio-qa 的 issues 直接引用）。",
+    "coverage": "season/voices-coverage.json coverage=full（36 条、求职者 10 条），无降级知情事项。"
+  }
+}

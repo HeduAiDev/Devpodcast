@@ -1,0 +1,18 @@
+ch03 :: 启动时 :: IntEnum O0-O3，表达启动时间 vs 运行性能权衡；经 OPTIMIZATION_LEVEL_TO_CONFIG 映射到一组 compilation/kernel 默认值字典。
+ch15 :: num_blocks :: 本：req_to_blocks（请求→已分配块）、num_cached_block（请求→已缓存满块数）。负责 get_num_blocks_to_allocate、allocate_new_(computed_)blocks、cache_blocks、free，以及类方法 fi
+ch16 :: num_blocks :: lockPool + 每组一个 single_type_manager + eagle_group_ids。把 get_num_blocks_to_allocate / allocate_new_computed_blocks / allocate_new_blocks / ca
+ch16 :: num_blocks :: 单一注意力类型的块管理：get_num_blocks_to_allocate（需块数推算）、allocate_new_computed_blocks（挂命中+null 填 skipped+ex
+ch18 :: num_blocks :: 。BlockTable 维护 block_table(CpuGpuBuffer, max_num_reqs × max_num_blocks_per_req)：append_row/add_row 改 CPU 镜像，commit_block_table 批量拷到 GPU，comp
+ch21 :: 预分配 :: PP 组的张量字典异步收发。irecv 先收元数据（shape/dtype）预分配缓冲，再对每个张量发 torch.distributed.irecv，返回 (tensor_dict, handles, postprocess) 而不阻
+ch25 :: num_blocks :: FlashAttention 后端四件套样板：Backend 声明 KV cache shape=(2,num_blocks,block_size,num_kv_heads,head_size) 与能力探针；Metadata 是专属 dataclass（block
+ch27 :: num_blocks :: 索引器 KV cache 后端：get_kv_cache_shape=(num_blocks, block_size, head_size)、num_kv_heads==1 断言、支持头维 {32,64,128}；V4 子类改 ke
+ch32 :: 预分配 :: worker 侧落地：预分配 [max_num_logits, ceil(V/32)] 卡上缓冲与独立 copy_stream，把掩码搬上卡、建行映射、启动 Triton kerne
+ch03 :: 启动时 :: IntEnum O0-O3，表达启动时间 vs 运行性能权衡；经 OPTIMIZATION_LEVEL_TO_CONFIG 映射到一组 compilation/kernel 默认值字典。
+ch15 :: num_blocks :: 本：req_to_blocks（请求→已分配块）、num_cached_block（请求→已缓存满块数）。负责 get_num_blocks_to_allocate、allocate_new_(computed_)blocks、cache_blocks、free，以及类方法 fi
+ch16 :: num_blocks :: lockPool + 每组一个 single_type_manager + eagle_group_ids。把 get_num_blocks_to_allocate / allocate_new_computed_blocks / allocate_new_blocks / ca
+ch16 :: num_blocks :: 单一注意力类型的块管理：get_num_blocks_to_allocate（需块数推算）、allocate_new_computed_blocks（挂命中+null 填 skipped+ex
+ch18 :: num_blocks :: 。BlockTable 维护 block_table(CpuGpuBuffer, max_num_reqs × max_num_blocks_per_req)：append_row/add_row 改 CPU 镜像，commit_block_table 批量拷到 GPU，comp
+ch21 :: 预分配 :: PP 组的张量字典异步收发。irecv 先收元数据（shape/dtype）预分配缓冲，再对每个张量发 torch.distributed.irecv，返回 (tensor_dict, handles, postprocess) 而不阻
+ch25 :: num_blocks :: FlashAttention 后端四件套样板：Backend 声明 KV cache shape=(2,num_blocks,block_size,num_kv_heads,head_size) 与能力探针；Metadata 是专属 dataclass（block
+ch27 :: num_blocks :: 索引器 KV cache 后端：get_kv_cache_shape=(num_blocks, block_size, head_size)、num_kv_heads==1 断言、支持头维 {32,64,128}；V4 子类改 ke
+ch32 :: 预分配 :: worker 侧落地：预分配 [max_num_logits, ceil(V/32)] 卡上缓冲与独立 copy_stream，把掩码搬上卡、建行映射、启动 Triton kerne
