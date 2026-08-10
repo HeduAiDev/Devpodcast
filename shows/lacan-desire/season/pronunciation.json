@@ -1,0 +1,458 @@
+{
+  "comment": "拉康欲望图博客栏目发音表（发音真相源）。TTS 合成前把朗读文本里的法语词/专名/图符号替换为中文读法。原则：法语词→中文或注音（中文 TTS 读法语重音词易崩）；专名→通行中译；图符号→口读；英文完整句/书名保留原文（IndexTTS-2 双语可读）。term 按长度降序替换（长短语优先）。",
+  "terms": {
+    "Ce procès imaginaire qui de l'image spéculaire va à la constitution du moi": {
+      "replace": "这个想象的过程：从镜中的形象到自我的构成"
+    },
+    "est signifié dans notre graphe par le vecteur": {
+      "replace": "在图上记作矢量"
+    },
+    "l'inconscient est structuré comme un langage": {
+      "replace": "无意识像语言一样被结构"
+    },
+    "c'est après coup que le message prend forme": {
+      "replace": "事后才成形"
+    },
+    "unconscious is structured like a language": {
+      "replace": "无意识像语言一样被结构"
+    },
+    "signifiant du manque dans l'Autre": {
+      "replace": "大他者的能指匮乏"
+    },
+    "(Un)quilting the Quilting Point": {
+      "replace": "拆解缝合点"
+    },
+    "there is no Other of the Other": {
+      "replace": "没有大他者的大他者"
+    },
+    "The Sublime Object of Ideology": {
+      "replace": "意识形态的崇高客体"
+    },
+    "structured like a language": {
+      "replace": "像语言一样被结构"
+    },
+    "Logic of Experimentation": {
+      "replace": "实验的逻辑"
+    },
+    "par le vecteur i(a) → m": {
+      "replace": "矢量 小 i 括号小 a 到 m"
+    },
+    "The Title of the Letter": {
+      "replace": "《字母的标题》"
+    },
+    "jouissance de l'Autre": {
+      "replace": "大他者的享乐"
+    },
+    "lieu du code redoublé": {
+      "replace": "双重代码之位置"
+    },
+    "traversée du fantasme": {
+      "replace": "穿越幻象"
+    },
+    "signifiant de l'Autre": {
+      "replace": "大他者的能指效果"
+    },
+    "The Graph of Desire": {
+      "replace": "欲望图"
+    },
+    "despotic signifier": {
+      "replace": "专制能指"
+    },
+    "chaîne signifiante": {
+      "replace": "能指链"
+    },
+    "double inscription": {
+      "replace": "双重铭刻"
+    },
+    "The Sublime Object": {
+      "replace": "崇高客体"
+    },
+    "pulsion invocante": {
+      "replace": "语音召唤"
+    },
+    "machine désirante": {
+      "replace": "欲望机器"
+    },
+    "How to Read Lacan": {
+      "replace": "《如何读拉康》"
+    },
+    "invocatory drive": {
+      "replace": "语音召唤"
+    },
+    "image de l'autre": {
+      "replace": "他者的形象"
+    },
+    "point de capiton": {
+      "replace": "缝合点"
+    },
+    "signifying chain": {
+      "replace": "能指链"
+    },
+    "stade du miroir": {
+      "replace": "镜像阶段"
+    },
+    "graphe du désir": {
+      "replace": "欲望图"
+    },
+    "graph of desire": {
+      "replace": "欲望图"
+    },
+    "nœud borroméen": {
+      "replace": "博罗米结"
+    },
+    "barred subject": {
+      "replace": "划杠主体"
+    },
+    "Graphe complet": {
+      "replace": "完整图"
+    },
+    "afterwardsness": {
+      "replace": "事后性"
+    },
+    "Gilles Deleuze": {
+      "replace": "吉勒 德勒兹"
+    },
+    "Félix Guattari": {
+      "replace": "菲利克斯 瓜塔里"
+    },
+    "Roman Jakobson": {
+      "replace": "罗曼 雅各布森"
+    },
+    "méconnaissance": {
+      "replace": "误认"
+    },
+    "Seminar XXIII": {
+      "replace": "研讨班二十三"
+    },
+    "signification": {
+      "replace": "表意"
+    },
+    "l'inconscient": {
+      "replace": "无意识"
+    },
+    "objet petit a": {
+      "replace": "客体小 a"
+    },
+    "mirror stage": {
+      "replace": "镜像阶段"
+    },
+    "L'Anti-Œdipe": {
+      "replace": "反俄狄浦斯"
+    },
+    "trait unaire": {
+      "replace": "一划"
+    },
+    "Seminar XXII": {
+      "replace": "研讨班二十二"
+    },
+    "Not Saussure": {
+      "replace": "《不是索绪尔》"
+    },
+    "sujet barré": {
+      "replace": "划杠主体"
+    },
+    "Eidelsztein": {
+      "replace": "埃德尔斯泰因"
+    },
+    "énonciation": {
+      "replace": "陈述活动"
+    },
+    "duplication": {
+      "replace": "双重复制"
+    },
+    "Le sinthome": {
+      "replace": "圣状"
+    },
+    "après-coup": {
+      "replace": "事后"
+    },
+    "après coup": {
+      "replace": "事后"
+    },
+    "Sokolofsky": {
+      "replace": "索科洛夫斯基"
+    },
+    "Bruce Fink": {
+      "replace": "布鲁斯 芬克"
+    },
+    "Seminar XX": {
+      "replace": "研讨班二十"
+    },
+    "Seminar XI": {
+      "replace": "研讨班十一"
+    },
+    "Seminar VI": {
+      "replace": "研讨班六"
+    },
+    "jouissance": {
+      "replace": "享乐"
+    },
+    "signifiant": {
+      "replace": "能指"
+    },
+    "L'Angoisse": {
+      "replace": "朗瓜斯"
+    },
+    "invocation": {
+      "replace": "语音召唤"
+    },
+    "invocatory": {
+      "replace": "语音召唤的"
+    },
+    "anti-Œdipe": {
+      "replace": "反俄狄浦斯"
+    },
+    "Wikipedia": {
+      "replace": "维基百科"
+    },
+    "Che vuoi?": {
+      "replace": "凯沃伊"
+    },
+    "Royaumont": {
+      "replace": "罗亚蒙"
+    },
+    "Seminar X": {
+      "replace": "研讨班十"
+    },
+    "Seminar V": {
+      "replace": "研讨班五"
+    },
+    "terada.ca": {
+      "replace": "特拉达"
+    },
+    "ça pense": {
+      "replace": "它思"
+    },
+    "De Assis": {
+      "replace": "德阿西斯"
+    },
+    "sinthome": {
+      "replace": "圣状"
+    },
+    "signifié": {
+      "replace": "所指"
+    },
+    "fantasme": {
+      "replace": "幻象"
+    },
+    "pas-tout": {
+      "replace": "非全"
+    },
+    "Che vuoi": {
+      "replace": "你想要什么"
+    },
+    "Kozicki": {
+      "replace": "科齐茨基"
+    },
+    "fort-da": {
+      "replace": "fort 达"
+    },
+    "Seminar": {
+      "replace": "研讨班"
+    },
+    "phallus": {
+      "replace": "菲勒斯"
+    },
+    "poinçon": {
+      "replace": "锥凿"
+    },
+    "demande": {
+      "replace": "要求"
+    },
+    "refoulé": {
+      "replace": "被压抑者"
+    },
+    "l'Autre": {
+      "replace": "大他者"
+    },
+    "l'autre": {
+      "replace": "大他者"
+    },
+    "capiton": {
+      "replace": "缝合点"
+    },
+    "pulsion": {
+      "replace": "驱力"
+    },
+    "eclipse": {
+      "replace": "消隐"
+    },
+    "Écrits": {
+      "replace": "艾克利"
+    },
+    "shofar": {
+      "replace": "肖法尔"
+    },
+    "manque": {
+      "replace": "匮乏"
+    },
+    "besoin": {
+      "replace": "需要"
+    },
+    "énoncé": {
+      "replace": "陈述"
+    },
+    "Encore": {
+      "replace": "《再来一点》"
+    },
+    "graphe": {
+      "replace": "图"
+    },
+    "Graphe": {
+      "replace": "图"
+    },
+    "schéma": {
+      "replace": "图式"
+    },
+    "Demand": {
+      "replace": "要求"
+    },
+    "Desire": {
+      "replace": "欲望"
+    },
+    "Seuil": {
+      "replace": "瑟伊"
+    },
+    "Trieb": {
+      "replace": "特里布"
+    },
+    "fort！": {
+      "replace": "福特"
+    },
+    "Žižek": {
+      "replace": "齐泽克"
+    },
+    "Soler": {
+      "replace": "索莱尔"
+    },
+    "XXIII": {
+      "replace": "第二十三期"
+    },
+    "penis": {
+      "replace": "阴茎"
+    },
+    "désir": {
+      "replace": "欲望"
+    },
+    "Autre": {
+      "replace": "大他者"
+    },
+    "objet": {
+      "replace": "客体"
+    },
+    "S(Ⱥ)": {
+      "replace": "S 括号 A 划杠"
+    },
+    "s(A)": {
+      "replace": "小 s 括号 A"
+    },
+    "I(A)": {
+      "replace": "大写 I 括号 A"
+    },
+    "i(a)": {
+      "replace": "小 i 括号小 a"
+    },
+    "J(A)": {
+      "replace": "J 括号 A"
+    },
+    "S·S'": {
+      "replace": "S 到 S 一撇"
+    },
+    "Jake": {
+      "replace": "杰克"
+    },
+    "Fink": {
+      "replace": "芬克"
+    },
+    "XXII": {
+      "replace": "第二十二期"
+    },
+    "nous": {
+      "replace": "我们"
+    },
+    "Need": {
+      "replace": "需要"
+    },
+    "$◇D": {
+      "replace": "划杠 S 菱形 D"
+    },
+    "$◇a": {
+      "replace": "划杠 S 菱形 a"
+    },
+    "RSI": {
+      "replace": "R S I"
+    },
+    "da！": {
+      "replace": "达"
+    },
+    "pp.": {
+      "replace": "页"
+    },
+    "S′": {
+      "replace": "S 一撇"
+    },
+    "D′": {
+      "replace": "D 一撇"
+    },
+    "$◇": {
+      "replace": "划杠 S 菱形"
+    },
+    "ΔS": {
+      "replace": "德尔塔 S"
+    },
+    "XX": {
+      "replace": "第二十期"
+    },
+    "vs": {
+      "replace": "对"
+    },
+    "p.": {
+      "replace": "页"
+    },
+    "$": {
+      "replace": "划杠 S"
+    },
+    "◇": {
+      "replace": "菱形"
+    },
+    "×": {
+      "replace": "交叉点"
+    },
+    "△": {
+      "replace": "三角"
+    },
+    "Ⱥ": {
+      "replace": "A 划杠"
+    },
+    "↔": {
+      "replace": "和"
+    },
+    "→": {
+      "replace": "到"
+    },
+    "–": {
+      "replace": "到"
+    },
+    "①": {
+      "replace": "第一站"
+    },
+    "②": {
+      "replace": "第二站"
+    },
+    "③": {
+      "replace": "第三站"
+    },
+    "④": {
+      "replace": "第四站"
+    },
+    "⑤": {
+      "replace": "第五站"
+    },
+    "⑥": {
+      "replace": "第六站"
+    },
+    "⑦": {
+      "replace": "第七站"
+    }
+  }
+}
