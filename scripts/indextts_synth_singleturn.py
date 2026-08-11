@@ -187,7 +187,7 @@ def main():
 
     print("[concat] 拼接（响度归一化 + 按角色变速）...", flush=True)
     parts = []
-    gap = np.zeros(int(0.1 * OUT_SR), dtype="float32")
+    gap = np.zeros(int(0.3 * OUT_SR), dtype="float32")  # turn 间停顿 300ms（2026-08-11 提升：换人气口/前调感）
     for i, t in enumerate(turns):
         x, sr = sf.read(seg / f"turn{i:03d}.wav", dtype="float32")
         if x.ndim > 1:

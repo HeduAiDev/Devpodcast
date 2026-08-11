@@ -235,7 +235,7 @@ def main():
         import librosa
         print(f"[concat] {len(turn_wavs)} turns, 响度 → {TARGET_RMS_DB}dB, 变速 {SPEED_RATE}x", flush=True)
         parts = []
-        gap = np.zeros(int(0.1 * OUT_SR), dtype="float32")
+        gap = np.zeros(int(0.3 * OUT_SR), dtype="float32")  # turn 间停顿 300ms
         for f, sr in turn_wavs:
             x, srx = sf.read(str(f), dtype="float32")
             if x.ndim > 1:
