@@ -47,6 +47,18 @@ def lint_script(path: Path, voices: dict, target_minutes: float) -> list[dict]:
             issues.append({"level": "BLOCKING", "msg": s[len("BLOCKING: "):]})
         else:
             issues.append({"level": "WARN", "msg": s[len("WARN: "):] if s.startswith("WARN") else s})
+
+    # 5. {{em}} 重读标记纪律（成对闭合已由 parser 兜底抛错）
+    for i, t in enumerate(script.turns):
+        if not t.em_terms:
+            continue
+        if len(t.em_terms) > 1:
+            issues.append({"level": "WARN", "msg": f"turn {i} 用了 {len(t.em_terms)} 处 {{em}}——纪律：每 turn ≤1 处，重读只给最重要的词"})
+        for term in t.em_terms:
+            if len(term) > 15:
+                issues.append({"level": "WARN", "msg": f"turn {i} {{em}} 包了 {len(term)} 字（{term[:10]}…）——纪律：包核心术语，不包整句"})
+            if "<break" in term:
+                issues.append({"level": "BLOCKING", "msg": f"turn {i} {{em}} 内含 <break>——标记不能跨停顿"})
     return issues
 
 

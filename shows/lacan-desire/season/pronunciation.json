@@ -8,31 +8,31 @@
       "replace": "在图上记作矢量"
     },
     "l'inconscient est structuré comme un langage": {
-      "replace": "无意识像语言一样被结构"
+      "replace": "the unconscious is structured like a language"
     },
     "c'est après coup que le message prend forme": {
-      "replace": "事后才成形"
+      "replace": "the message takes shape afterwards"
     },
     "unconscious is structured like a language": {
-      "replace": "无意识像语言一样被结构"
+      "replace": "unconscious is structured like a language"
     },
     "signifiant du manque dans l'Autre": {
-      "replace": "大他者的能指匮乏"
+      "replace": "the signifier of lack in the Other"
     },
     "(Un)quilting the Quilting Point": {
-      "replace": "拆解缝合点"
+      "replace": "(Un)quilting the Quilting Point"
     },
     "there is no Other of the Other": {
-      "replace": "没有大他者的大他者"
+      "replace": "there is no Other of the Other"
     },
     "The Sublime Object of Ideology": {
-      "replace": "意识形态的崇高客体"
+      "replace": "The Sublime Object of Ideology"
     },
     "structured like a language": {
-      "replace": "像语言一样被结构"
+      "replace": "structured like a language"
     },
     "Logic of Experimentation": {
-      "replace": "实验的逻辑"
+      "replace": "Logic of Experimentation"
     },
     "par le vecteur i(a) → m": {
       "replace": "矢量 小 i 括号小 a 到 m"
@@ -41,106 +41,106 @@
       "replace": "《字母的标题》"
     },
     "jouissance de l'Autre": {
-      "replace": "大他者的享乐"
+      "replace": "the Other's enjoyment"
     },
     "lieu du code redoublé": {
-      "replace": "双重代码之位置"
+      "replace": "the place of the doubled code"
     },
     "traversée du fantasme": {
-      "replace": "穿越幻象"
+      "replace": "crossing the fantasy"
     },
     "signifiant de l'Autre": {
-      "replace": "大他者的能指效果"
+      "replace": "the signifier of the Other"
     },
     "The Graph of Desire": {
-      "replace": "欲望图"
+      "replace": "The Graph of Desire"
     },
     "despotic signifier": {
-      "replace": "专制能指"
+      "replace": "despotic signifier"
     },
     "chaîne signifiante": {
-      "replace": "能指链"
+      "replace": "signifying chain"
     },
     "double inscription": {
-      "replace": "双重铭刻"
+      "replace": "double inscription"
     },
     "The Sublime Object": {
-      "replace": "崇高客体"
+      "replace": "The Sublime Object"
     },
     "pulsion invocante": {
-      "replace": "语音召唤"
+      "replace": "invocatory drive"
     },
     "machine désirante": {
-      "replace": "欲望机器"
+      "replace": "desiring machine"
     },
     "How to Read Lacan": {
       "replace": "《如何读拉康》"
     },
     "invocatory drive": {
-      "replace": "语音召唤"
+      "replace": "invocatory drive"
     },
     "image de l'autre": {
-      "replace": "他者的形象"
+      "replace": "the image of the other"
     },
     "point de capiton": {
-      "replace": "缝合点"
+      "replace": "quilting point"
     },
     "signifying chain": {
-      "replace": "能指链"
+      "replace": "signifying chain"
     },
     "stade du miroir": {
-      "replace": "镜像阶段"
+      "replace": "mirror stage"
     },
     "graphe du désir": {
-      "replace": "欲望图"
+      "replace": "graph of desire"
     },
     "graph of desire": {
       "replace": "欲望图"
     },
     "nœud borroméen": {
-      "replace": "博罗米结"
+      "replace": "Borromean knot"
     },
     "barred subject": {
-      "replace": "划杠主体"
+      "replace": "barred subject"
     },
     "Graphe complet": {
-      "replace": "完整图"
+      "replace": "complete graph"
     },
     "afterwardsness": {
-      "replace": "事后性"
+      "replace": "afterwardsness"
     },
     "Gilles Deleuze": {
-      "replace": "吉勒 德勒兹"
+      "replace": "Gilles Deleuze"
     },
     "Félix Guattari": {
-      "replace": "菲利克斯 瓜塔里"
+      "replace": "Félix Guattari"
     },
     "Roman Jakobson": {
-      "replace": "罗曼 雅各布森"
+      "replace": "Roman Jakobson"
     },
     "méconnaissance": {
-      "replace": "误认"
+      "replace": "misrecognition"
     },
     "Seminar XXIII": {
       "replace": "研讨班二十三"
     },
     "signification": {
-      "replace": "表意"
+      "replace": "signification"
     },
     "l'inconscient": {
-      "replace": "无意识"
+      "replace": "the unconscious"
     },
     "objet petit a": {
       "replace": "客体小 a"
     },
     "mirror stage": {
-      "replace": "镜像阶段"
+      "replace": "mirror stage"
     },
     "L'Anti-Œdipe": {
       "replace": "反俄狄浦斯"
     },
     "trait unaire": {
-      "replace": "一划"
+      "replace": "unary trait"
     },
     "Seminar XXII": {
       "replace": "研讨班二十二"
@@ -148,32 +148,41 @@
     "Not Saussure": {
       "replace": "《不是索绪尔》"
     },
+    "idéal du moi": {
+      "replace": "the ego-ideal"
+    },
+    "rétroversion": {
+      "replace": "retroversion"
+    },
     "sujet barré": {
-      "replace": "划杠主体"
+      "replace": "barred subject"
     },
     "Eidelsztein": {
       "replace": "埃德尔斯泰因"
     },
     "énonciation": {
-      "replace": "陈述活动"
+      "replace": "enunciation"
     },
     "duplication": {
-      "replace": "双重复制"
+      "replace": "duplication"
     },
     "Le sinthome": {
-      "replace": "圣状"
+      "replace": "Le sinthome"
+    },
+    "Nom-du-Père": {
+      "replace": "the name of the father"
     },
     "après-coup": {
-      "replace": "事后"
+      "replace": "afterwardsness"
     },
     "après coup": {
-      "replace": "事后"
+      "replace": "afterwardsness"
     },
     "Sokolofsky": {
       "replace": "索科洛夫斯基"
     },
     "Bruce Fink": {
-      "replace": "布鲁斯 芬克"
+      "replace": "Bruce Fink"
     },
     "Seminar XX": {
       "replace": "研讨班二十"
@@ -185,19 +194,19 @@
       "replace": "研讨班六"
     },
     "jouissance": {
-      "replace": "享乐"
+      "replace": "enjoyment"
     },
     "signifiant": {
-      "replace": "能指"
+      "replace": "signifier"
     },
     "L'Angoisse": {
       "replace": "朗瓜斯"
     },
     "invocation": {
-      "replace": "语音召唤"
+      "replace": "invocation"
     },
     "invocatory": {
-      "replace": "语音召唤的"
+      "replace": "invocatory"
     },
     "anti-Œdipe": {
       "replace": "反俄狄浦斯"
@@ -221,22 +230,22 @@
       "replace": "特拉达"
     },
     "ça pense": {
-      "replace": "它思"
+      "replace": "it thinks"
     },
     "De Assis": {
       "replace": "德阿西斯"
     },
     "sinthome": {
-      "replace": "圣状"
+      "replace": "sinthome"
     },
     "signifié": {
-      "replace": "所指"
+      "replace": "signified"
     },
     "fantasme": {
-      "replace": "幻象"
+      "replace": "fantasy"
     },
     "pas-tout": {
-      "replace": "非全"
+      "replace": "not-all"
     },
     "Che vuoi": {
       "replace": "你想要什么"
@@ -251,31 +260,31 @@
       "replace": "研讨班"
     },
     "phallus": {
-      "replace": "菲勒斯"
+      "replace": "phallus"
     },
     "poinçon": {
       "replace": "锥凿"
     },
     "demande": {
-      "replace": "要求"
+      "replace": "demand"
     },
     "refoulé": {
-      "replace": "被压抑者"
+      "replace": "the repressed"
     },
     "l'Autre": {
-      "replace": "大他者"
+      "replace": "the Other"
     },
     "l'autre": {
-      "replace": "大他者"
+      "replace": "the Other"
     },
     "capiton": {
-      "replace": "缝合点"
+      "replace": "quilting point"
     },
     "pulsion": {
-      "replace": "驱力"
+      "replace": "drive"
     },
     "eclipse": {
-      "replace": "消隐"
+      "replace": "eclipse"
     },
     "Écrits": {
       "replace": "艾克利"
@@ -284,31 +293,31 @@
       "replace": "肖法尔"
     },
     "manque": {
-      "replace": "匮乏"
+      "replace": "lack"
     },
     "besoin": {
-      "replace": "需要"
+      "replace": "need"
     },
     "énoncé": {
-      "replace": "陈述"
+      "replace": "statement"
     },
     "Encore": {
       "replace": "《再来一点》"
     },
     "graphe": {
-      "replace": "图"
+      "replace": "graph"
     },
     "Graphe": {
-      "replace": "图"
+      "replace": "graph"
     },
     "schéma": {
-      "replace": "图式"
+      "replace": "schema"
     },
     "Demand": {
-      "replace": "要求"
+      "replace": "Demand"
     },
     "Desire": {
-      "replace": "欲望"
+      "replace": "Desire"
     },
     "Seuil": {
       "replace": "瑟伊"
@@ -329,16 +338,16 @@
       "replace": "第二十三期"
     },
     "penis": {
-      "replace": "阴茎"
+      "replace": "penis"
     },
     "désir": {
-      "replace": "欲望"
+      "replace": "desire"
     },
     "Autre": {
-      "replace": "大他者"
+      "replace": "the Other"
     },
     "objet": {
-      "replace": "客体"
+      "replace": "object"
     },
     "S(Ⱥ)": {
       "replace": "S 括号 A 划杠"
@@ -371,7 +380,7 @@
       "replace": "我们"
     },
     "Need": {
-      "replace": "需要"
+      "replace": "Need"
     },
     "$◇D": {
       "replace": "划杠 S 菱形 D"
@@ -387,6 +396,13 @@
     },
     "pp.": {
       "replace": "页"
+    },
+    "moi": {
+      "replace": "the ego"
+    },
+    "它思": {
+      "replace": "它思",
+      "g2p": "<它思|TA1 SI1>"
     },
     "S′": {
       "replace": "S 一撇"

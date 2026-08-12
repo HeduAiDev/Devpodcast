@@ -7,6 +7,7 @@ from pathlib import Path
 
 TURN_RE = re.compile(r"\[(S[123])\](.*?)\[/\1\]", re.S)
 VOICE_RE = re.compile(r"\{\{voice:([a-zA-Z0-9_-]+)\}\}")
+EM_RE = re.compile(r"\{\{em\}\}(.*?)\{\{/em\}\}", re.S)  # 重读标记：{{em}}它思{{/em}}
 BREAK_RE = re.compile(r"<break\s+(\d+)ms\s*>")
 
 # 标点 → 停顿时长（ms）。IndexTTS 自己的标点停顿不受控（同一句号实测 0ms/60ms/270ms
@@ -68,6 +69,9 @@ class Turn:
     # 带停顿的片段序列：[(文本片段, 片段后停顿ms)]，由 <break Nms> 切分。
     # 无 break 时为 [(text, None)]。合成器据此在 turn 内插静音。
     segments: list[tuple] = field(default_factory=list)
+    # 重读词（{{em}}…{{/em}} 包裹的术语）。合成器对含这些词的片段：
+    # 独立成段 + g2p 注音 + 放慢 + 响度对齐前段。零脚手架泄漏：标记词是正文的一部分。
+    em_terms: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -94,6 +98,12 @@ def parse(path: Path) -> Script:
         body = m.group(2).strip()
         refs = VOICE_RE.findall(body)
         body_novoice = VOICE_RE.sub("", body)
+        # {{em}}…{{/em}} 重读标记：剥离标签保留词本身（词是正文的一部分）
+        em_terms: list[str] = []
+        body_novoice = EM_RE.sub(lambda mm: em_terms.append(mm.group(1).strip()) or mm.group(1), body_novoice)
+        stray_em = re.findall(r"\{\{(?:em|/em)\}\}", body_novoice)
+        if stray_em:
+            raise ScriptParseError(f"未成对闭合的 {{em}} 标记: {stray_em}")
         # 先按 <break Nms> 切（手写停顿优先），再对每片按标点细分（自动兜底）
         seg_parts = []
         last = 0
@@ -110,7 +120,7 @@ def parse(path: Path) -> Script:
         bm_first = BREAK_RE.search(body_novoice)
         pause = int(bm_first.group(1)) if bm_first else None
         clean = BREAK_RE.sub("", body_novoice).strip()
-        turns.append(Turn(speaker, clean, refs, pause, seg_parts))
+        turns.append(Turn(speaker, clean, refs, pause, seg_parts, em_terms))
 
     # 校验：找到 [S1] 开头但无配对闭合的片段（re.S 以匹配多行 turn）
     open_stray = re.findall(r"\[(S[123])\](?!.*?\[/\1\])", text, re.S)
