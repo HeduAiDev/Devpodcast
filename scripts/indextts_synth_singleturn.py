@@ -56,6 +56,28 @@ def apply_pron(text, pron_map):
     return text
 
 
+# 图记号孤立单字母：IndexTTS 把大写 S 和小写 s 都读成 /es/，无法区分能指(S)与所指(s)。
+# 合成前文本处理：孤立 S→「大写 S」、孤立 s→「小写 s」；已带「大写/小写/大/小」前缀的跳过。
+# 只处理 S/s（B 站、说话人 A/B 等不受影响）。
+_S_PREFIX_RE = re.compile(r"(大写|小写|大|小)(的)?\s*[Ss]")
+_S_ISOLATED_RE = re.compile(r"(?<![A-Za-z0-9])S(?![A-Za-z0-9])")
+_s_ISOLATED_RE = re.compile(r"(?<![A-Za-z0-9])s(?![A-Za-z0-9])")
+
+
+def mark_letter_marks(text: str) -> str:
+    """把孤立的图记号 S/s 展开为「大写 S/小写 s」（发音表替换产物里的 S 也会展开，
+    如「S 到 S 一撇」→「大写 S 到大写 S 一撇」，听感更明确）。"""
+    ph: list[str] = []
+    def _keep(m):
+        ph.append(m.group(0))
+        return f"\x01{len(ph) - 1}\x01"
+    text = _S_PREFIX_RE.sub(_keep, text)          # 保护已有大小写描述的
+    text = _S_ISOLATED_RE.sub("大写 S", text)
+    text = _s_ISOLATED_RE.sub("小写 s", text)
+    text = re.sub(r"\x01(\d+)\x01", lambda m: ph[int(m.group(1))], text)
+    return text
+
+
 def load_g2p(ep_dir: Path | None = None):
     """发音表的 g2p 注音字段（IndexTTS-2.5 专用）：{term: "<它思|TA1 SI1>"}。
     只在 {{em}} 重读段生效——writer 标 {{em}}，注音由发音表维护。"""
@@ -191,6 +213,7 @@ def main():
             st = apply_pron(clean_for_speech(txt.strip()), pron_map)
             if not st:
                 continue
+            st = mark_letter_marks(st)  # 图记号 S/s 大小写区分（2026-08-13）
             emph = _is_emph(txt)
             if g2p_ok:
                 for term in sorted(g2p_map, key=lambda x: -len(x)):
