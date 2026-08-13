@@ -229,6 +229,12 @@
     "terada.ca": {
       "replace": "特拉达"
     },
+    "transfert": {
+      "replace": "transference"
+    },
+    "anticiper": {
+      "replace": "anticipate"
+    },
     "ça pense": {
       "replace": "it thinks"
     },
@@ -249,6 +255,9 @@
     },
     "Che vuoi": {
       "replace": "你想要什么"
+    },
+    "KV cache": {
+      "replace": "KV 缓存"
     },
     "Kozicki": {
       "replace": "科齐茨基"
@@ -286,6 +295,9 @@
     "eclipse": {
       "replace": "eclipse"
     },
+    "petit a": {
+      "replace": "佩蒂 a"
+    },
     "Écrits": {
       "replace": "艾克利"
     },
@@ -319,6 +331,9 @@
     "Desire": {
       "replace": "Desire"
     },
+    "Python": {
+      "replace": "派森"
+    },
     "Seuil": {
       "replace": "瑟伊"
     },
@@ -348,6 +363,9 @@
     },
     "objet": {
       "replace": "object"
+    },
+    "先于「我」": {
+      "replace": "先于<我|WO3>"
     },
     "S(Ⱥ)": {
       "replace": "S 括号 A 划杠"
@@ -382,6 +400,12 @@
     "Need": {
       "replace": "Need"
     },
+    "UP 主": {
+      "replace": "阿普主"
+    },
+    "up 主": {
+      "replace": "阿普主"
+    },
     "$◇D": {
       "replace": "划杠 S 菱形 D"
     },
@@ -400,18 +424,13 @@
     "moi": {
       "replace": "the ego"
     },
+    "缝合点": {
+      "replace": "缝合点",
+      "g2p": "<缝合点|FENG2 HE2 DIAN3>"
+    },
     "它思": {
       "replace": "它思",
       "g2p": "<它思|TA1 SI1>"
-    },
-    "Python": {
-      "replace": "派森"
-    },
-    "UP 主": {
-      "replace": "U P 主"
-    },
-    "KV cache": {
-      "replace": "KV 缓存"
     },
     "S′": {
       "replace": "S 一撇"
@@ -433,6 +452,9 @@
     },
     "p.": {
       "replace": "页"
+    },
+    "je": {
+      "replace": "J E"
     },
     "$": {
       "replace": "划杠 S"

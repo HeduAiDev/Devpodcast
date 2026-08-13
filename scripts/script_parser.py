@@ -11,7 +11,10 @@ EM_RE = re.compile(r"\{\{em\}\}(.*?)\{\{/em\}\}", re.S)  # 重读标记：{{em}}
 BREAK_RE = re.compile(r"<break\s+(\d+)ms\s*>")
 
 # 标点 → 停顿时长（ms）。IndexTTS 自己的标点停顿不受控（同一句号实测 0ms/60ms/270ms
-# 三种结果），所以抢在模型之前切开、由合成器插精确静音。冒号不切（紧跟其后的内容）。
+# 三种结果），所以抢在模型之前切开、由合成器插精确静音。
+# 冒号：短引导（≤COLON_MAX_PRE_CHARS）时切段——"先拆第一块：能指"若不切会听成
+# "先拆第一块能指"（2026-08-13 全季断句审查 70 处同类粘连，机制化修复）；
+# 长引导（完整分句后）不切，让模型按自身节奏处理。
 PUNCT_PAUSE_MS = {
     "……": 400, "…": 400,   # 省略号：停顿感最强
     "——": 250, "—": 250,    # 破折号：转折
@@ -19,10 +22,12 @@ PUNCT_PAUSE_MS = {
     "；": 250,
     "，": 200,
     "、": 150,
+    "：": 260,                # 短引导冒号（auto_segment 内按 COLON_MAX_PRE_CHARS 判断）
 }
 # 逗号只在长片段内切——短句本就一口气说完，切开反而破坏语流
 COMMA_MIN_CHARS = 20
-_PUNCT_SPLIT_RE = re.compile(r"(……|…|——|—|[。！？；，、])")
+COLON_MAX_PRE_CHARS = 12    # 冒号前引导 ≤12 字 → 切段（防"先拆第一块：能指"粘连）
+_PUNCT_SPLIT_RE = re.compile(r"(……|…|——|—|[。！？；，、：])")
 
 
 def auto_segment(text: str, default_pause: int | None = None) -> list[tuple]:
@@ -43,6 +48,9 @@ def auto_segment(text: str, default_pause: int | None = None) -> list[tuple]:
         pause = PUNCT_PAUSE_MS.get(punct)
         # 逗号/顿号在短片段内不切，让语流连贯
         if punct in ("，", "、") and len(buf.strip()) < COMMA_MIN_CHARS:
+            continue
+        # 冒号：短引导（≤12 字）才切——长引导（完整分句后）不切，保持语流
+        if punct == "：" and len(buf.strip()) > COLON_MAX_PRE_CHARS:
             continue
         if buf.strip():
             segs.append((buf.strip(), pause))
