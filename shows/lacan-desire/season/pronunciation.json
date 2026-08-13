@@ -404,6 +404,15 @@
       "replace": "它思",
       "g2p": "<它思|TA1 SI1>"
     },
+    "Python": {
+      "replace": "派森"
+    },
+    "UP 主": {
+      "replace": "U P 主"
+    },
+    "KV cache": {
+      "replace": "KV 缓存"
+    },
     "S′": {
       "replace": "S 一撇"
     },
