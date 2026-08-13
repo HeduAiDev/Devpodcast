@@ -52,8 +52,9 @@ def lint_script(path: Path, voices: dict, target_minutes: float) -> list[dict]:
     for i, t in enumerate(script.turns):
         if not t.em_terms:
             continue
-        if len(t.em_terms) > 1:
-            issues.append({"level": "WARN", "msg": f"turn {i} 用了 {len(t.em_terms)} 处 {{em}}——纪律：每 turn ≤1 处，重读只给最重要的词"})
+        # 术语成对出现（能指/所指、隐喻/换喻）允许 ≤2 处；每个词须被标点分开成独立片段
+        if len(t.em_terms) > 2:
+            issues.append({"level": "WARN", "msg": f"turn {i} 用了 {len(t.em_terms)} 处 {{em}}——纪律：每 turn ≤2 处（成对术语），重读只给最重要的词"})
         for term in t.em_terms:
             if len(term) > 15:
                 issues.append({"level": "WARN", "msg": f"turn {i} {{em}} 包了 {len(term)} 字（{term[:10]}…）——纪律：包核心术语，不包整句"})

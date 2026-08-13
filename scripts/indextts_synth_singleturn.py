@@ -233,8 +233,10 @@ def main():
     # 注意：变速用 ffmpeg atempo（WSOLA，保调无回音），绝不用 librosa time_stretch（相位声码器产生回音/发散）
     # 语速按角色分开：阿凯换 Aiden 参考后本身已慢（4.5 字/秒），不再降速；老张/阿哲维持原 0.88。
     import librosa
-    SPEED = {"S1": 0.88, "S2": 0.92, "S3": 0.88}
-    DEFAULT_SPEED = 0.88
+    # 2026-08-13 用户定档:全角色原速(1.0)——0.88/0.92 降速产生"人机感"。
+    # atempo 保留机制:以后如需微调,只改这里。
+    SPEED = {"S1": 1.0, "S2": 1.0, "S3": 1.0}
+    DEFAULT_SPEED = 1.0
     TARGET_RMS_DB = -17.0   # 目标响度（dB）
     MAX_GAIN_DB = 12.0      # 单 turn 最大增益（防过度放大底噪）
     print(f"[proc] 响度归一化到 {TARGET_RMS_DB}dB + 按角色变速 {SPEED}", flush=True)
