@@ -112,6 +112,7 @@ python3 -m pytest tests/ -v
 - **speaker 标记**：每段 `[S1]…[/S1]` 或 `[S2]…[/S2]` 成对闭合
 - **voices 引用**：`{{voice:<id>}}` 嵌入到发言中，id 必须在 voices.json 真实存在
 - **显式停顿**：`<break Nms>`（如 `<break 500ms>`）
+- **重读标记**：`{{em}}术语{{/em}}` 包住需要重读的词（术语首现/对比重点/金句；每 turn ≤1 处，≤15 字，不跨 `<break>`）——合成器做 g2p 注音 + 放慢 3% + 响度对齐，详见 `.claude/agents/writer.md`
 - **每期至少一次"我不知道"** — 这是反 AI 播客的最强信号
 - **批判必须有靶子** — 不许空泛"当然它也有局限"，必须引用真实社区声音
 - **生活场景必须承重** — 删掉类比后听众答不出"为什么这么设计"，类比才有资格留下
@@ -148,8 +149,10 @@ docs/superpowers/              设计规格 + 发车手册 + 经验台账
 ## TTS 环境
 
 - GPU: NVIDIA GeForce RTX 5080 16GB, CUDA 13.0（2026-08-10 换机，原 RTX PRO 6000 Blackwell 95.6GB 已不在）
-- **唯一主方案: IndexTTS-2 单句合成**（2026-08-08 定案；逐 turn 独立生成，无跨 turn 上下文累积，解决 FireRed 逐段/carryover 的尾部喃喃伪影）
-- 模型环境：conda env `itts310`（Python 3.10 + torch 2.8.0+cu128）+ 权重 `models/indextts2/`（gpt.pth 3.3G + s2mel.pth 1.2G + qwen 情感模型 1.2G）—— **2026-08-10 换机后已重建，smoke test RTF 1.73 通过**
+- **主方案: IndexTTS-2.5 单句合成**（2026-08-13 定案；0.8B 原生多语言+G2P 注音，{{em}} 重读词发音控制；2.0 自动回退）。逐 turn 独立生成，无跨 turn 上下文累积（2026-08-08 定案的架构不变）
+- 模型环境：conda env `itts310`（Python 3.10 + torch 2.8.0+cu128）+ 权重 `models/indextts2_5/`（2.5 主案，实测 RTF≈0.5）与 `models/indextts2/`（回退，smoke test RTF 1.73）—— 2026-08-10 换机后已重建
+- **停顿定档**（2026-08-11 主线定档 + 08-13 机制化）：句末 450ms、turn 间 300ms、省略号 400ms、短引导冒号切段（`scripts/script_parser.py` PUNCT_PAUSE_MS）；全角色原速 1.0（降速有人机感）
+- **已知坑**：「」+标点连排读成怪音（「随便」，→"随便塞"），合成器 `clean_for_speech` 已插空格修复（2026-08-14）；连续跑多期时前进程退出后立刻加载可能 segfault，间隔 20s+ 或重试即可
 - 调用：`D:/miniconda3/envs/itts310/python.exe scripts/indextts_synth_singleturn.py <episode_dir>`，或 `python scripts/tts.py synthesize <script.md> --provider indextts2 --output <dir>`
 - 换机重建要点（2026-08-10 实测，见 `docs/superpowers/ARCHITECT-RUNBOOK.md`「TTS 环境」）：
   - 代码与权重是**两个地址**：代码 `git clone https://github.com/index-tts/index-tts` → `_diag/index-tts-repo`；权重 ModelScope/HF `IndexTeam/IndexTTS-2`

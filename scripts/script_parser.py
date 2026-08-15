@@ -7,21 +7,27 @@ from pathlib import Path
 
 TURN_RE = re.compile(r"\[(S[123])\](.*?)\[/\1\]", re.S)
 VOICE_RE = re.compile(r"\{\{voice:([a-zA-Z0-9_-]+)\}\}")
+EM_RE = re.compile(r"\{\{em\}\}(.*?)\{\{/em\}\}", re.S)  # 重读标记：{{em}}它思{{/em}}
 BREAK_RE = re.compile(r"<break\s+(\d+)ms\s*>")
 
 # 标点 → 停顿时长（ms）。IndexTTS 自己的标点停顿不受控（同一句号实测 0ms/60ms/270ms
-# 三种结果），所以抢在模型之前切开、由合成器插精确静音。冒号不切（紧跟其后的内容）。
+# 三种结果），所以抢在模型之前切开、由合成器插精确静音。
+# 冒号：短引导（≤COLON_MAX_PRE_CHARS）时切段——"先拆第一块：能指"若不切会听成
+# "先拆第一块能指"（2026-08-13 全季断句审查 70 处同类粘连，机制化修复）；
+# 长引导（完整分句后）不切，让模型按自身节奏处理。
 PUNCT_PAUSE_MS = {
-    "……": 500, "…": 500,   # 省略号：停顿感最强
-    "——": 300, "—": 300,    # 破折号：转折（句中已纪律化，仅句首转折保留）
-    "。": 450, "！": 450, "？": 450,   # 句末停顿（2026-08-11 提升：留足说话气口）
-    "；": 320,
-    "，": 260,
-    "、": 200,
+    "……": 400, "…": 400,   # 省略号：停顿感最强
+    "——": 250, "—": 250,    # 破折号：转折
+    "。": 450, "！": 450, "？": 450,   # 句末（2026-08-11 主线定档：留足说话气口；08-15 从 feat/m0-m1 83bdd26 移植）
+    "；": 250,
+    "，": 200,
+    "、": 150,
+    "：": 260,                # 短引导冒号（auto_segment 内按 COLON_MAX_PRE_CHARS 判断）
 }
 # 逗号只在长片段内切——短句本就一口气说完，切开反而破坏语流
 COMMA_MIN_CHARS = 20
-_PUNCT_SPLIT_RE = re.compile(r"(……|…|——|—|[。！？；，、])")
+COLON_MAX_PRE_CHARS = 12    # 冒号前引导 ≤12 字 → 切段（防"先拆第一块：能指"粘连）
+_PUNCT_SPLIT_RE = re.compile(r"(……|…|——|—|[。！？；，、：])")
 
 
 def auto_segment(text: str, default_pause: int | None = None) -> list[tuple]:
@@ -42,6 +48,9 @@ def auto_segment(text: str, default_pause: int | None = None) -> list[tuple]:
         pause = PUNCT_PAUSE_MS.get(punct)
         # 逗号/顿号在短片段内不切，让语流连贯
         if punct in ("，", "、") and len(buf.strip()) < COMMA_MIN_CHARS:
+            continue
+        # 冒号：短引导（≤12 字）才切——长引导（完整分句后）不切，保持语流
+        if punct == "：" and len(buf.strip()) > COLON_MAX_PRE_CHARS:
             continue
         if buf.strip():
             segs.append((buf.strip(), pause))
@@ -68,6 +77,9 @@ class Turn:
     # 带停顿的片段序列：[(文本片段, 片段后停顿ms)]，由 <break Nms> 切分。
     # 无 break 时为 [(text, None)]。合成器据此在 turn 内插静音。
     segments: list[tuple] = field(default_factory=list)
+    # 重读词（{{em}}…{{/em}} 包裹的术语）。合成器对含这些词的片段：
+    # 独立成段 + g2p 注音 + 放慢 + 响度对齐前段。零脚手架泄漏：标记词是正文的一部分。
+    em_terms: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -94,6 +106,12 @@ def parse(path: Path) -> Script:
         body = m.group(2).strip()
         refs = VOICE_RE.findall(body)
         body_novoice = VOICE_RE.sub("", body)
+        # {{em}}…{{/em}} 重读标记：剥离标签保留词本身（词是正文的一部分）
+        em_terms: list[str] = []
+        body_novoice = EM_RE.sub(lambda mm: em_terms.append(mm.group(1).strip()) or mm.group(1), body_novoice)
+        stray_em = re.findall(r"\{\{(?:em|/em)\}\}", body_novoice)
+        if stray_em:
+            raise ScriptParseError(f"未成对闭合的 {{em}} 标记: {stray_em}")
         # 先按 <break Nms> 切（手写停顿优先），再对每片按标点细分（自动兜底）
         seg_parts = []
         last = 0
@@ -110,7 +128,7 @@ def parse(path: Path) -> Script:
         bm_first = BREAK_RE.search(body_novoice)
         pause = int(bm_first.group(1)) if bm_first else None
         clean = BREAK_RE.sub("", body_novoice).strip()
-        turns.append(Turn(speaker, clean, refs, pause, seg_parts))
+        turns.append(Turn(speaker, clean, refs, pause, seg_parts, em_terms))
 
     # 校验：找到 [S1] 开头但无配对闭合的片段（re.S 以匹配多行 turn）
     open_stray = re.findall(r"\[(S[123])\](?!.*?\[/\1\])", text, re.S)
