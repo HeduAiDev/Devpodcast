@@ -10,20 +10,20 @@
 - 议题：概念准备×2 → 路径五讲 → 完整图合读 → 批判延伸（映射博客 9 篇）
 - voice-guide.md：三人版（拉康语境），**修改需 Lead 批准**
 
-## 音频状态 — 全 9 期合成完成（2026-08-15 重合成，IndexTTS-2.5，本机 RTX 5080）
+## 音频状态 — 全 9 期合成完成（2026-08-15 三跑，IndexTTS-2.5，本机 RTX 5080）
 | 期次 | 时长 | RMS | QA |
 |---|---|---|---|
-| ep01-concepts-language | 22.9min | -17.1dB | ✓ 0 issue |
-| ep02-concepts-speaking | 27.3min | -17.1dB | ✓ 0 issue |
-| ep03-path-signifying-chain | 25.5min | -17.1dB | ✓ 0 issue |
+| ep01-concepts-language | 22.8min | -17.1dB | ✓ 0 issue |
+| ep02-concepts-speaking | 27.4min | -17.1dB | ✓ 0 issue |
+| ep03-path-signifying-chain | 25.4min | -17.1dB | ✓ 0 issue |
 | ep04-path-subject-vector | 22.4min | -17.1dB | ✓ 0 issue |
-| ep05-path-circle | 25.3min | -17.1dB | ✓ 0 issue |
-| ep06-path-mirror | 26.1min | -17.1dB | ✓ 0 issue |
-| ep07-path-upper-chain | 26.6min | -17.1dB | ✓ 0 issue |
+| ep05-path-circle | 25.2min | -17.1dB | ✓ 0 issue |
+| ep06-path-mirror | 25.8min | -17.1dB | ✓ 0 issue |
+| ep07-path-upper-chain | 26.5min | -17.1dB | ✓ 0 issue |
 | ep08-full-graph | 21.8min | -17.1dB | ✓ 0 issue |
 | ep09-critique | 28.2min | -17.1dB | ✓ 0 issue |
 
-共 226.1 分钟（2.5 全速 1.0 + 停顿定档 450/300，较 2.0 版 242.4min 略短），全季 RMS 一致性 ±0.1dB 无削波。「随便塞」引号连排怪音已修复并经人耳验收（ep03 开头）。
+共 225.5 分钟（2.5 全速 1.0 + 停顿定档 450/300）。本版含：直角引号合成侧剥除（「塞」怪音根治，经人耳验收）+ 共产主义/马克思表述间接化（播出安全，ep03/ep09 口播与文稿 7 处）。全季 RMS 一致性 ±0.1dB 无削波。
 音频产物不入库（.gitignore：shows/*/episodes/*/audio/），换机/重装后需重合成。
 
 ## 硬规则
