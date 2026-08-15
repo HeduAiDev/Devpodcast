@@ -10,20 +10,20 @@
 - 议题：概念准备×2 → 路径五讲 → 完整图合读 → 批判延伸（映射博客 9 篇）
 - voice-guide.md：三人版（拉康语境），**修改需 Lead 批准**
 
-## 音频状态 — 全 9 期合成完成（2026-08-11，本机 RTX 5080）
+## 音频状态 — 全 9 期合成完成（2026-08-15 重合成，IndexTTS-2.5，本机 RTX 5080）
 | 期次 | 时长 | RMS | QA |
 |---|---|---|---|
-| ep01-concepts-language | 24.5min | -16.9dB | ✓ 0 issue |
-| ep02-concepts-speaking | 29.2min | -16.9dB | ✓ 0 issue |
-| ep03-path-signifying-chain | 27.3min | -16.9dB | ✓ 0 issue |
-| ep04-path-subject-vector | 24.1min | -16.9dB | ✓ 0 issue |
-| ep05-path-circle | 26.7min | -16.9dB | ✓ 0 issue |
-| ep06-path-mirror | 28.3min | -16.9dB | ✓ 0 issue |
-| ep07-path-upper-chain | 28.9min | -16.9dB | ✓ 0 issue |
-| ep08-full-graph | 23.7min | -16.9dB | ✓ 0 issue |
-| ep09-critique | 29.8min | -16.9dB | ✓ 0 issue |
+| ep01-concepts-language | 22.9min | -17.1dB | ✓ 0 issue |
+| ep02-concepts-speaking | 27.3min | -17.1dB | ✓ 0 issue |
+| ep03-path-signifying-chain | 25.5min | -17.1dB | ✓ 0 issue |
+| ep04-path-subject-vector | 22.4min | -17.1dB | ✓ 0 issue |
+| ep05-path-circle | 25.3min | -17.1dB | ✓ 0 issue |
+| ep06-path-mirror | 26.1min | -17.1dB | ✓ 0 issue |
+| ep07-path-upper-chain | 26.6min | -17.1dB | ✓ 0 issue |
+| ep08-full-graph | 21.8min | -17.1dB | ✓ 0 issue |
+| ep09-critique | 28.2min | -17.1dB | ✓ 0 issue |
 
-共 242.4 分钟，全季 RMS 一致性 ±0.0dB，peak 0.93-0.95 无削波。
+共 226.1 分钟（2.5 全速 1.0 + 停顿定档 450/300，较 2.0 版 242.4min 略短），全季 RMS 一致性 ±0.1dB 无削波。「随便塞」引号连排怪音已修复并经人耳验收（ep03 开头）。
 音频产物不入库（.gitignore：shows/*/episodes/*/audio/），换机/重装后需重合成。
 
 ## 硬规则
