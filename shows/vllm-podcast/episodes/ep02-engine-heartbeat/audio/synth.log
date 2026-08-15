@@ -1,0 +1,2402 @@
+[prep] 175 turns, 2 ∑¢“ÙÃÊªªπÊ‘Ú
+[load] IndexTTS2 ...
+GPT2InferenceModel has generative capabilities, as `prepare_inputs_for_generation` is explicitly overwritten. However, it doesn't directly inherit from `GenerationMixin`. From \U0001f449v4.50\U0001f448 onwards, `PreTrainedModel` will NOT inherit from `GenerationMixin`, and this model will lose the ability to call `generate` and other related functions.
+  - If you're using `trust_remote_code=True`, you can get rid of this warning by loading the model with an auto class. See https://huggingface.co/docs/transformers/en/model_doc/auto#auto-classes
+  - If you are the owner of the model architecture code, please modify your model class such that it inherits from `GenerationMixin` (after `PreTrainedModel`, otherwise you'll get an exception).
+  - If you are not the owner of the model architecture class, please contact the model code owner to update it.
+>> All auxiliary models ready.
+>> GPT weights restored from: E:\Laboratory\Devpodcast\models\indextts2\gpt.pth
+>> semantic_codec weights restored from: E:\Laboratory\Devpodcast\models\indextts2\hf_cache\semantic_codec_model.safetensors
+cfm loaded
+length_regulator loaded
+gpt_layer loaded
+>> s2mel weights restored from: E:\Laboratory\Devpodcast\models\indextts2\s2mel.pth
+>> campplus_model weights restored from: E:\Laboratory\Devpodcast\models\indextts2\hf_cache\campplus_cn_common.bin
+Loading config.json from local directory
+Loading weights from local directory
+Removing weight norm...
+>> bigvgan weights restored from: E:\Laboratory\Devpodcast\models\indextts2\hf_cache\bigvgan
+>> TextNormalizer loaded
+>> bpe model loaded from: E:\Laboratory\Devpodcast\models\indextts2\bpe.model
+[load] ƒ£–Õº”‘ÿ 22.2s
+Passing a tuple of `past_key_values` is deprecated and will be removed in Transformers v4.53.0. You should pass an instance of `Cache` instead, e.g. `past_key_values=DynamicCache.from_legacy_cache(past_key_values)`.
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s]  4%|®Ö         | 1/25 [00:00<00:03,  7.13it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 32.94it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 38.31it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 40.74it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 42.94it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 39.63it/s]
+torch.Size([1, 235008])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 16%|®Ä®Ñ        | 4/25 [00:00<00:00, 37.96it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 44.28it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 44.19it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 46.22it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 47.45it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 45.42it/s]
+torch.Size([1, 235520])
+>> gpt_gen_time: 17.49 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 1.21 seconds
+>> bigvgan_time: 0.33 seconds
+>> Total inference time: 20.53 seconds
+>> Generated audio length: 21.54 seconds
+>> RTF: 0.9531
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk000_0.wav
+turn000 [S1] done: 20.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s]  4%|®Ö         | 1/25 [00:00<00:05,  4.15it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 23.69it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 38.07it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 47.13it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 37.88it/s]
+torch.Size([1, 182272])
+>> gpt_gen_time: 6.65 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.67 seconds
+>> bigvgan_time: 0.07 seconds
+>> Total inference time: 7.62 seconds
+>> Generated audio length: 8.27 seconds
+>> RTF: 0.9220
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk001_0.wav
+turn001 [S2] done: 7.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 20%|®Ä®Ä        | 5/25 [00:00<00:00, 48.68it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 47.15it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 47.90it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 45.68it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 47.14it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 47.05it/s]
+torch.Size([1, 121088])
+>> gpt_gen_time: 4.63 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.54 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 5.52 seconds
+>> Generated audio length: 5.49 seconds
+>> RTF: 1.0056
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk002_0.wav
+turn002 [S3] done: 5.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 54.68it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 51.21it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 49.42it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 47.00it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 49.19it/s]
+torch.Size([1, 226304])
+>> gpt_gen_time: 8.35 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.52 seconds
+>> bigvgan_time: 0.10 seconds
+>> Total inference time: 9.24 seconds
+>> Generated audio length: 10.26 seconds
+>> RTF: 0.9005
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk003_0.wav
+turn003 [S1] done: 9.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 64.89it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 58.81it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 57.75it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 58.20it/s]
+torch.Size([1, 94976])
+>> gpt_gen_time: 3.59 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.43 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 4.29 seconds
+>> Generated audio length: 4.31 seconds
+>> RTF: 0.9963
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk004_0.wav
+turn004 [S2] done: 4.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 20%|®Ä®Ä        | 5/25 [00:00<00:00, 48.84it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 46.82it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 46.52it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 45.95it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 43.99it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 45.15it/s]
+torch.Size([1, 173824])
+>> gpt_gen_time: 6.22 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.56 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 7.12 seconds
+>> Generated audio length: 7.88 seconds
+>> RTF: 0.9037
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk005_0.wav
+turn005 [S3] done: 7.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 59.33it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 58.37it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 58.87it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 59.58it/s]
+torch.Size([1, 55296])
+>> gpt_gen_time: 2.03 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.43 seconds
+>> bigvgan_time: 0.06 seconds
+>> Total inference time: 2.71 seconds
+>> Generated audio length: 2.51 seconds
+>> RTF: 1.0792
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk006_0.wav
+turn006 [S1] done: 2.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 64.83it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 58.58it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 58.52it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 59.36it/s]
+torch.Size([1, 177408])
+>> gpt_gen_time: 6.69 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.43 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 7.44 seconds
+>> Generated audio length: 8.05 seconds
+>> RTF: 0.9248
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk007_0.wav
+turn007 [S2] done: 7.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 55.60it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 50.27it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 50.50it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 48.60it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 49.99it/s]
+torch.Size([1, 85760])
+>> gpt_gen_time: 3.13 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.51 seconds
+>> bigvgan_time: 0.07 seconds
+>> Total inference time: 3.95 seconds
+>> Generated audio length: 3.89 seconds
+>> RTF: 1.0157
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk008_0.wav
+turn008 [S3] done: 4.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 56.63it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 53.24it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 48.66it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 50.14it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 49.76it/s]
+torch.Size([1, 216832])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 57.23it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 50.73it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 51.66it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 52.30it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 52.64it/s]
+torch.Size([1, 189184])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 60.10it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 61.04it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 57.99it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 59.09it/s]
+torch.Size([1, 104704])
+>> gpt_gen_time: 18.85 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 1.42 seconds
+>> bigvgan_time: 0.24 seconds
+>> Total inference time: 20.85 seconds
+>> Generated audio length: 23.56 seconds
+>> RTF: 0.8851
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk009_0.wav
+turn009 [S2] done: 20.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 57.32it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 51.05it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 50.13it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 49.15it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 50.58it/s]
+torch.Size([1, 198144])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 56.41it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 59.49it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 59.67it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 57.55it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 58.06it/s]
+torch.Size([1, 125696])
+>> gpt_gen_time: 12.23 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.94 seconds
+>> bigvgan_time: 0.17 seconds
+>> Total inference time: 13.55 seconds
+>> Generated audio length: 14.89 seconds
+>> RTF: 0.9102
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk010_0.wav
+turn010 [S1] done: 13.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.30it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 26.78it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 27.52it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 28.72it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 28.81it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.21it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.14it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.70it/s]
+torch.Size([1, 85248])
+>> gpt_gen_time: 3.32 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 4.59 seconds
+>> Generated audio length: 3.87 seconds
+>> RTF: 1.1879
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk011_0.wav
+turn011 [S3] done: 4.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.27it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.97it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.29it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.41it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.34it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.55it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.39it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.34it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.28it/s]
+torch.Size([1, 85248])
+>> gpt_gen_time: 6.36 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 7.70 seconds
+>> Generated audio length: 3.87 seconds
+>> RTF: 1.9905
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk012_0.wav
+turn012 [S2] done: 7.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 24.05it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 25.69it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 25.91it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 26.24it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 26.58it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 26.91it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 26.27it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 26.65it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 26.40it/s]
+torch.Size([1, 80128])
+>> gpt_gen_time: 6.11 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.95 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 7.55 seconds
+>> Generated audio length: 3.63 seconds
+>> RTF: 2.0782
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk013_0.wav
+turn013 [S1] done: 7.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.84it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.63it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.60it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.70it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.06it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.52it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.82it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.16it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.49it/s]
+torch.Size([1, 212480])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.54it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.61it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.33it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.53it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.72it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.53it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.48it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.60it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.35it/s]
+torch.Size([1, 129280])
+>> gpt_gen_time: 25.95 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.77 seconds
+>> bigvgan_time: 0.26 seconds
+>> Total inference time: 28.41 seconds
+>> Generated audio length: 15.70 seconds
+>> RTF: 1.8096
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk014_0.wav
+turn014 [S2] done: 28.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.72it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.95it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.26it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.43it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.54it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.55it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.46it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.50it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.29it/s]
+torch.Size([1, 86528])
+>> gpt_gen_time: 6.54 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.14 seconds
+>> Total inference time: 7.97 seconds
+>> Generated audio length: 3.92 seconds
+>> RTF: 2.0302
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk015_0.wav
+turn015 [S3] done: 8.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.39it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.08it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.15it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.23it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.38it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 26.88it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 26.62it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 26.71it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 27.42it/s]
+torch.Size([1, 187392])
+>> gpt_gen_time: 14.09 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.92 seconds
+>> bigvgan_time: 0.15 seconds
+>> Total inference time: 15.53 seconds
+>> Generated audio length: 8.50 seconds
+>> RTF: 1.8271
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk016_0.wav
+turn016 [S2] done: 15.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.22it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.54it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.46it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.65it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.33it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.51it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.81it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.05it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.76it/s]
+torch.Size([1, 143872])
+>> gpt_gen_time: 10.87 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 12.32 seconds
+>> Generated audio length: 6.52 seconds
+>> RTF: 1.8878
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk017_0.wav
+turn017 [S3] done: 12.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.97it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.99it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.50it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.39it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.38it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.14it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.14it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.16it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.18it/s]
+torch.Size([1, 228352])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.46it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.08it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.65it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.85it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.69it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.65it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.77it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.57it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.68it/s]
+torch.Size([1, 56320])
+>> gpt_gen_time: 21.55 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.74 seconds
+>> bigvgan_time: 0.25 seconds
+>> Total inference time: 23.91 seconds
+>> Generated audio length: 13.11 seconds
+>> RTF: 1.8239
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk018_0.wav
+turn018 [S2] done: 23.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 26.46it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.56it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.27it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.52it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.59it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.47it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.64it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.48it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.39it/s]
+torch.Size([1, 42496])
+>> gpt_gen_time: 3.32 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 4.70 seconds
+>> Generated audio length: 1.93 seconds
+>> RTF: 2.4389
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk019_0.wav
+turn019 [S1] done: 4.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.45it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.19it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.46it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.71it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.61it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.76it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.81it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.80it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.62it/s]
+torch.Size([1, 123136])
+>> gpt_gen_time: 9.28 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 10.64 seconds
+>> Generated audio length: 5.58 seconds
+>> RTF: 1.9050
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk020_0.wav
+turn020 [S2] done: 10.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.05it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.39it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.11it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.46it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.43it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.64it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.66it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.66it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.32it/s]
+torch.Size([1, 124928])
+>> gpt_gen_time: 9.39 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.11 seconds
+>> Total inference time: 10.74 seconds
+>> Generated audio length: 5.67 seconds
+>> RTF: 1.8965
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk021_0.wav
+turn021 [S1] done: 10.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.65it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.02it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.29it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.08it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.15it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.27it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.28it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.47it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.30it/s]
+torch.Size([1, 117760])
+>> gpt_gen_time: 8.85 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 10.24 seconds
+>> Generated audio length: 5.34 seconds
+>> RTF: 1.9181
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk022_0.wav
+turn022 [S3] done: 10.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.87it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.38it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.62it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.76it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.72it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.63it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.45it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.72it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.23it/s]
+torch.Size([1, 229632])
+>> gpt_gen_time: 17.17 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 18.51 seconds
+>> Generated audio length: 10.41 seconds
+>> RTF: 1.7771
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk023_0.wav
+turn023 [S2] done: 18.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.38it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.47it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.54it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.42it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.47it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.75it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.78it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.74it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.64it/s]
+torch.Size([1, 136448])
+>> gpt_gen_time: 10.24 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.11 seconds
+>> Total inference time: 11.59 seconds
+>> Generated audio length: 6.19 seconds
+>> RTF: 1.8732
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk024_0.wav
+turn024 [S1] done: 11.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.46it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.70it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.70it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.00it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.89it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.99it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.13it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.19it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.95it/s]
+torch.Size([1, 205568])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.67it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.89it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.41it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.40it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.62it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.38it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.41it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.73it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.48it/s]
+torch.Size([1, 45568])
+>> gpt_gen_time: 18.74 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.75 seconds
+>> bigvgan_time: 0.25 seconds
+>> Total inference time: 21.11 seconds
+>> Generated audio length: 11.59 seconds
+>> RTF: 1.8213
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk025_0.wav
+turn025 [S2] done: 21.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.03it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.36it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.55it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.60it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.84it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.81it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.86it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.75it/s]
+torch.Size([1, 177408])
+>> gpt_gen_time: 13.26 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.84 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 14.61 seconds
+>> Generated audio length: 8.05 seconds
+>> RTF: 1.8154
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk026_0.wav
+turn026 [S3] done: 14.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.38it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.57it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.73it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.15it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.08it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.19it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.20it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.26it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.12it/s]
+torch.Size([1, 141312])
+>> gpt_gen_time: 10.53 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.86 seconds
+>> Generated audio length: 6.41 seconds
+>> RTF: 1.8508
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk027_0.wav
+turn027 [S2] done: 11.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.65it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.56it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 30.03it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.84it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 30.18it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.98it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.96it/s]
+torch.Size([1, 185600])
+>> gpt_gen_time: 13.80 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.84 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.16 seconds
+>> Generated audio length: 8.42 seconds
+>> RTF: 1.8015
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk028_0.wav
+turn028 [S3] done: 15.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.04it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.95it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 27.92it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.41it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.35it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.54it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.36it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.52it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.35it/s]
+torch.Size([1, 51712])
+>> gpt_gen_time: 3.95 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 5.30 seconds
+>> Generated audio length: 2.35 seconds
+>> RTF: 2.2592
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk029_0.wav
+turn029 [S2] done: 5.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s]  8%|®Ç         | 2/25 [00:00<00:01, 19.58it/s] 20%|®Ä®Ä        | 5/25 [00:00<00:00, 25.13it/s] 32%|®Ä®Ä®Ä®á      | 8/25 [00:00<00:00, 26.85it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 27.85it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 28.30it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 28.29it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 28.56it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 28.47it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 27.87it/s]
+torch.Size([1, 98048])
+>> gpt_gen_time: 7.40 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.90 seconds
+>> bigvgan_time: 0.14 seconds
+>> Total inference time: 8.80 seconds
+>> Generated audio length: 4.45 seconds
+>> RTF: 1.9789
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk030_0.wav
+turn030 [S1] done: 8.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.22it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.27it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.75it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.07it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.11it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.20it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.99it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.97it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.95it/s]
+torch.Size([1, 239360])
+>> gpt_gen_time: 17.88 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.14 seconds
+>> Total inference time: 19.31 seconds
+>> Generated audio length: 10.86 seconds
+>> RTF: 1.7791
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk031_0.wav
+turn031 [S2] done: 19.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.05it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.23it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.85it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.02it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.95it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.18it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.25it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.07it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.96it/s]
+torch.Size([1, 69888])
+>> gpt_gen_time: 5.32 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 6.72 seconds
+>> Generated audio length: 3.17 seconds
+>> RTF: 2.1207
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk032_0.wav
+turn032 [S3] done: 6.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.00it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.93it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.77it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.01it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.03it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.10it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.17it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.99it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.01it/s]
+torch.Size([1, 204288])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.03it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.56it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.63it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.74it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.73it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.92it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.90it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.98it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.78it/s]
+torch.Size([1, 116480])
+>> gpt_gen_time: 23.92 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.74 seconds
+>> bigvgan_time: 0.25 seconds
+>> Total inference time: 26.39 seconds
+>> Generated audio length: 14.75 seconds
+>> RTF: 1.7893
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk033_0.wav
+turn033 [S2] done: 26.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.74it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.05it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.03it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.12it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.18it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.17it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.27it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.41it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.22it/s]
+torch.Size([1, 155648])
+>> gpt_gen_time: 11.57 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 12.94 seconds
+>> Generated audio length: 7.06 seconds
+>> RTF: 1.8337
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk034_0.wav
+turn034 [S3] done: 13.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.60it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.95it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.04it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.03it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.17it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.07it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.19it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.13it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.12it/s]
+torch.Size([1, 194816])
+>> gpt_gen_time: 14.51 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.84 seconds
+>> Generated audio length: 8.84 seconds
+>> RTF: 1.7929
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk035_0.wav
+turn035 [S2] done: 15.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.37it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.24it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.21it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.90it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.57it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.81it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.72it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.60it/s]
+torch.Size([1, 192256])
+>> gpt_gen_time: 14.27 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.64 seconds
+>> Generated audio length: 8.72 seconds
+>> RTF: 1.7941
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk036_0.wav
+turn036 [S3] done: 15.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.81it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.32it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.53it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 28.95it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.14it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.22it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.20it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.39it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.27it/s]
+torch.Size([1, 244736])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.72it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.72it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.31it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.40it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.62it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.73it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.78it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.61it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.59it/s]
+torch.Size([1, 85248])
+>> gpt_gen_time: 24.81 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.74 seconds
+>> bigvgan_time: 0.20 seconds
+>> Total inference time: 27.13 seconds
+>> Generated audio length: 15.17 seconds
+>> RTF: 1.7893
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk037_0.wav
+turn037 [S2] done: 27.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 26.63it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.55it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 25.30it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 27.20it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 26.78it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 27.55it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 28.18it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.52it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 27.63it/s]
+torch.Size([1, 151296])
+>> gpt_gen_time: 12.35 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.91 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 13.75 seconds
+>> Generated audio length: 6.86 seconds
+>> RTF: 2.0045
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk038_0.wav
+turn038 [S1] done: 13.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.79it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.01it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.63it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.75it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.01it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.97it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.82it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.78it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.86it/s]
+torch.Size([1, 236800])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.92it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.10it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.18it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.34it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.46it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.66it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.58it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.47it/s]
+torch.Size([1, 54016])
+>> gpt_gen_time: 22.31 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.73 seconds
+>> bigvgan_time: 0.24 seconds
+>> Total inference time: 24.70 seconds
+>> Generated audio length: 13.39 seconds
+>> RTF: 1.8447
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk039_0.wav
+turn039 [S2] done: 24.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.18it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.99it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.95it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 30.25it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 30.23it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 30.05it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.63it/s]
+torch.Size([1, 117504])
+>> gpt_gen_time: 8.76 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 10.15 seconds
+>> Generated audio length: 5.33 seconds
+>> RTF: 1.9051
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk040_0.wav
+turn040 [S3] done: 10.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.04it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.12it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.95it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.17it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.70it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.08it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 28.79it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.48it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.87it/s]
+torch.Size([1, 222720])
+>> gpt_gen_time: 16.71 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.14 seconds
+>> Total inference time: 18.06 seconds
+>> Generated audio length: 10.10 seconds
+>> RTF: 1.7885
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk041_0.wav
+turn041 [S2] done: 18.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.27it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.99it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.18it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.36it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.78it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.92it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.15it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.26it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.11it/s]
+torch.Size([1, 85248])
+>> gpt_gen_time: 6.43 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 7.76 seconds
+>> Generated audio length: 3.87 seconds
+>> RTF: 2.0079
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk042_0.wav
+turn042 [S1] done: 7.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.21it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.97it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.13it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.37it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.49it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.23it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.47it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.46it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.28it/s]
+torch.Size([1, 169472])
+>> gpt_gen_time: 12.62 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 14.00 seconds
+>> Generated audio length: 7.69 seconds
+>> RTF: 1.8219
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk043_0.wav
+turn043 [S2] done: 14.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.52it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.05it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.05it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.12it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.21it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.47it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.27it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.20it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.15it/s]
+torch.Size([1, 77056])
+>> gpt_gen_time: 5.96 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 7.30 seconds
+>> Generated audio length: 3.49 seconds
+>> RTF: 2.0899
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk044_0.wav
+turn044 [S1] done: 7.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.59it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.14it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.77it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.64it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.72it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.73it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.76it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.58it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.59it/s]
+torch.Size([1, 250880])
+>> gpt_gen_time: 18.76 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 20.08 seconds
+>> Generated audio length: 11.38 seconds
+>> RTF: 1.7648
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk045_0.wav
+turn045 [S2] done: 20.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.83it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.43it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.80it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.36it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.55it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.80it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 30.00it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.62it/s]
+torch.Size([1, 89344])
+>> gpt_gen_time: 6.61 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 7.99 seconds
+>> Generated audio length: 4.05 seconds
+>> RTF: 1.9716
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk046_0.wav
+turn046 [S3] done: 8.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.63it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.98it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 30.24it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.83it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.59it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.52it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.54it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.62it/s]
+torch.Size([1, 200192])
+>> gpt_gen_time: 15.03 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 16.36 seconds
+>> Generated audio length: 9.08 seconds
+>> RTF: 1.8025
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk047_0.wav
+turn047 [S2] done: 16.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.74it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.53it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.41it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.26it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.72it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.49it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.56it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.53it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.24it/s]
+torch.Size([1, 195840])
+>> gpt_gen_time: 14.72 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 16.11 seconds
+>> Generated audio length: 8.88 seconds
+>> RTF: 1.8138
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk048_0.wav
+turn048 [S1] done: 16.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.38it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.87it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.79it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.41it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.53it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.50it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.70it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.47it/s]
+torch.Size([1, 229376])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.83it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.40it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.53it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.73it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.76it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.99it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.87it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.73it/s]
+torch.Size([1, 50432])
+>> gpt_gen_time: 20.85 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.70 seconds
+>> bigvgan_time: 0.25 seconds
+>> Total inference time: 23.19 seconds
+>> Generated audio length: 12.89 seconds
+>> RTF: 1.7992
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk049_0.wav
+turn049 [S2] done: 23.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.85it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.52it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 30.01it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.72it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.76it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.58it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 28.34it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 26.61it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.30it/s]
+torch.Size([1, 110848])
+>> gpt_gen_time: 8.26 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.14 seconds
+>> Total inference time: 9.76 seconds
+>> Generated audio length: 5.03 seconds
+>> RTF: 1.9414
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk050_0.wav
+turn050 [S3] done: 9.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.83it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.43it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.92it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.12it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.48it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.59it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.63it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.63it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.36it/s]
+torch.Size([1, 242176])
+>> gpt_gen_time: 18.05 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 19.45 seconds
+>> Generated audio length: 10.98 seconds
+>> RTF: 1.7711
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk051_0.wav
+turn051 [S2] done: 19.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.36it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.99it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.03it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.47it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.71it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.71it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.38it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.36it/s]
+torch.Size([1, 117504])
+>> gpt_gen_time: 8.80 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 10.12 seconds
+>> Generated audio length: 5.33 seconds
+>> RTF: 1.8989
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk052_0.wav
+turn052 [S1] done: 10.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.82it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.61it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.32it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.50it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.53it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.17it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.03it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.24it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.18it/s]
+torch.Size([1, 251392])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.05it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.91it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.21it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.04it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.46it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.44it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.44it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.57it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.33it/s]
+torch.Size([1, 57600])
+>> gpt_gen_time: 23.36 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.72 seconds
+>> bigvgan_time: 0.23 seconds
+>> Total inference time: 25.69 seconds
+>> Generated audio length: 14.21 seconds
+>> RTF: 1.8073
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk053_0.wav
+turn053 [S2] done: 25.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.52it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.85it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.09it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.35it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.30it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.43it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.42it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.21it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.25it/s]
+torch.Size([1, 92672])
+>> gpt_gen_time: 6.94 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 8.35 seconds
+>> Generated audio length: 4.20 seconds
+>> RTF: 1.9858
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk054_0.wav
+turn054 [S3] done: 8.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.77it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.22it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.33it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.15it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.25it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.34it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.22it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.26it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.22it/s]
+torch.Size([1, 117504])
+>> gpt_gen_time: 8.94 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 10.24 seconds
+>> Generated audio length: 5.33 seconds
+>> RTF: 1.9212
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk055_0.wav
+turn055 [S2] done: 10.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.06it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.32it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.07it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.13it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.28it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.47it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.53it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.80it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.51it/s]
+torch.Size([1, 81408])
+>> gpt_gen_time: 6.12 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 7.44 seconds
+>> Generated audio length: 3.69 seconds
+>> RTF: 2.0159
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk056_0.wav
+turn056 [S1] done: 7.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.79it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.32it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.68it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.10it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.80it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.92it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.61it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.55it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.65it/s]
+torch.Size([1, 165376])
+>> gpt_gen_time: 12.44 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 13.81 seconds
+>> Generated audio length: 7.50 seconds
+>> RTF: 1.8408
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk057_0.wav
+turn057 [S2] done: 13.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.24it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.59it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.65it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.37it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.45it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.46it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.49it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.41it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.46it/s]
+torch.Size([1, 152576])
+>> gpt_gen_time: 11.68 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 13.04 seconds
+>> Generated audio length: 6.92 seconds
+>> RTF: 1.8847
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk058_0.wav
+turn058 [S3] done: 13.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.63it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.24it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.63it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.58it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.70it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.72it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.74it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.59it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.54it/s]
+torch.Size([1, 231168])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.36it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.55it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.58it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.98it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.85it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.93it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.97it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.82it/s]
+torch.Size([1, 69376])
+>> gpt_gen_time: 22.50 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.70 seconds
+>> bigvgan_time: 0.24 seconds
+>> Total inference time: 24.82 seconds
+>> Generated audio length: 13.83 seconds
+>> RTF: 1.7950
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk059_0.wav
+turn059 [S2] done: 24.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.65it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.14it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.33it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.14it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.34it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.46it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.73it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.52it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.42it/s]
+torch.Size([1, 157184])
+>> gpt_gen_time: 11.85 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 13.23 seconds
+>> Generated audio length: 7.13 seconds
+>> RTF: 1.8552
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk060_0.wav
+turn060 [S3] done: 13.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.78it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.00it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.78it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.77it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.63it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.56it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.71it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.80it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.63it/s]
+torch.Size([1, 143872])
+>> gpt_gen_time: 10.79 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 12.09 seconds
+>> Generated audio length: 6.52 seconds
+>> RTF: 1.8523
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk061_0.wav
+turn061 [S2] done: 12.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.58it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.36it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.47it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.53it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.58it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.60it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.59it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.55it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.54it/s]
+torch.Size([1, 76032])
+>> gpt_gen_time: 5.94 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.11 seconds
+>> Total inference time: 7.27 seconds
+>> Generated audio length: 3.45 seconds
+>> RTF: 2.1074
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk062_0.wav
+turn062 [S1] done: 7.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.26it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.73it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 29.76it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.56it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.61it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.36it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.59it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.55it/s]
+torch.Size([1, 244224])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.69it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.66it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.52it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.34it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.55it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.70it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.07it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.23it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.39it/s]
+torch.Size([1, 156672])
+>> gpt_gen_time: 29.90 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.71 seconds
+>> bigvgan_time: 0.23 seconds
+>> Total inference time: 32.34 seconds
+>> Generated audio length: 18.38 seconds
+>> RTF: 1.7593
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk063_0.wav
+turn063 [S2] done: 32.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.18it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.70it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 29.84it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.05it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.22it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.67it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 30.01it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.70it/s]
+torch.Size([1, 91904])
+>> gpt_gen_time: 6.86 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 8.27 seconds
+>> Generated audio length: 4.17 seconds
+>> RTF: 1.9849
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk064_0.wav
+turn064 [S3] done: 8.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.18it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.41it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.63it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.71it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.74it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.64it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.03it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.16it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.88it/s]
+torch.Size([1, 182528])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.25it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.48it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.50it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.47it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.61it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.34it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.40it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.41it/s]
+torch.Size([1, 105472])
+>> gpt_gen_time: 21.63 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.73 seconds
+>> bigvgan_time: 0.26 seconds
+>> Total inference time: 24.07 seconds
+>> Generated audio length: 13.26 seconds
+>> RTF: 1.8150
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk065_0.wav
+turn065 [S2] done: 24.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 26.78it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.79it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.44it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.52it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.75it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.37it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.27it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.17it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.86it/s]
+torch.Size([1, 241152])
+>> gpt_gen_time: 18.13 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 19.57 seconds
+>> Generated audio length: 10.94 seconds
+>> RTF: 1.7896
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk066_0.wav
+turn066 [S1] done: 19.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.88it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.90it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.82it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.96it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.84it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.99it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.96it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.90it/s]
+torch.Size([1, 225792])
+>> gpt_gen_time: 16.79 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.84 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 18.19 seconds
+>> Generated audio length: 10.24 seconds
+>> RTF: 1.7766
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk067_0.wav
+turn067 [S2] done: 18.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.87it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.63it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.70it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.57it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.33it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.47it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.53it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.51it/s]
+torch.Size([1, 55296])
+>> gpt_gen_time: 4.22 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 5.55 seconds
+>> Generated audio length: 2.51 seconds
+>> RTF: 2.2131
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk068_0.wav
+turn068 [S3] done: 5.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.14it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.94it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.19it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.30it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.62it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.74it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.69it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.52it/s]
+torch.Size([1, 261888])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.95it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.69it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 30.21it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.91it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.85it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.66it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.73it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.77it/s]
+torch.Size([1, 124160])
+>> gpt_gen_time: 28.94 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.70 seconds
+>> bigvgan_time: 0.23 seconds
+>> Total inference time: 31.25 seconds
+>> Generated audio length: 17.71 seconds
+>> RTF: 1.7647
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk069_0.wav
+turn069 [S2] done: 31.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.61it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.83it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 29.88it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.64it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.57it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.24it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.33it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.43it/s]
+torch.Size([1, 126720])
+>> gpt_gen_time: 9.68 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.11 seconds
+>> Total inference time: 11.02 seconds
+>> Generated audio length: 5.75 seconds
+>> RTF: 1.9171
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk070_0.wav
+turn070 [S1] done: 11.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.63it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.59it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.39it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.39it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.29it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.48it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.26it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.31it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.38it/s]
+torch.Size([1, 234496])
+>> gpt_gen_time: 17.49 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 18.83 seconds
+>> Generated audio length: 10.63 seconds
+>> RTF: 1.7708
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk071_0.wav
+turn071 [S2] done: 18.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.17it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.92it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.28it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.39it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.35it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.48it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.42it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.25it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.24it/s]
+torch.Size([1, 125696])
+>> gpt_gen_time: 9.38 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 10.72 seconds
+>> Generated audio length: 5.70 seconds
+>> RTF: 1.8800
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk072_0.wav
+turn072 [S3] done: 10.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.07it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.75it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.92it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.05it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.25it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.63it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.33it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.42it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.25it/s]
+torch.Size([1, 212224])
+>> gpt_gen_time: 15.84 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 17.17 seconds
+>> Generated audio length: 9.62 seconds
+>> RTF: 1.7842
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk073_0.wav
+turn073 [S2] done: 17.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.71it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.30it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.01it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.18it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.43it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.85it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.44it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.56it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.42it/s]
+torch.Size([1, 28160])
+>> gpt_gen_time: 2.24 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 3.60 seconds
+>> Generated audio length: 1.28 seconds
+>> RTF: 2.8225
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk074_0.wav
+turn074 [S1] done: 3.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.78it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.37it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.60it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.88it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.07it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.77it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.05it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.55it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.62it/s]
+torch.Size([1, 181760])
+>> gpt_gen_time: 13.65 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.01 seconds
+>> Generated audio length: 8.24 seconds
+>> RTF: 1.8204
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk075_0.wav
+turn075 [S2] done: 15.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.34it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.86it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.90it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.28it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.32it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.04it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.12it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.91it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.04it/s]
+torch.Size([1, 73472])
+>> gpt_gen_time: 5.60 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 6.98 seconds
+>> Generated audio length: 3.33 seconds
+>> RTF: 2.0947
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk076_0.wav
+turn076 [S3] done: 7.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.20it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.28it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.62it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.00it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.55it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.68it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.00it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.11it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.83it/s]
+torch.Size([1, 246784])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.31it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.61it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.22it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.01it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.91it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.09it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.14it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.02it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.02it/s]
+torch.Size([1, 269312])
+>> gpt_gen_time: 38.52 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.74 seconds
+>> bigvgan_time: 0.24 seconds
+>> Total inference time: 41.06 seconds
+>> Generated audio length: 23.61 seconds
+>> RTF: 1.7395
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk077_0.wav
+turn077 [S2] done: 41.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.98it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.37it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.46it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.37it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.40it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.50it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.08it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.35it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.29it/s]
+torch.Size([1, 109056])
+>> gpt_gen_time: 8.18 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 9.60 seconds
+>> Generated audio length: 4.95 seconds
+>> RTF: 1.9410
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk078_0.wav
+turn078 [S3] done: 9.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.07it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.56it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.52it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.55it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.05it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.36it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.09it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.33it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.18it/s]
+torch.Size([1, 165120])
+>> gpt_gen_time: 12.34 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 13.76 seconds
+>> Generated audio length: 7.49 seconds
+>> RTF: 1.8375
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk079_0.wav
+turn079 [S2] done: 13.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.05it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.70it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.64it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.63it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.73it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.73it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.59it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.50it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.59it/s]
+torch.Size([1, 102912])
+>> gpt_gen_time: 7.75 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 9.13 seconds
+>> Generated audio length: 4.67 seconds
+>> RTF: 1.9570
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk080_0.wav
+turn080 [S1] done: 9.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.16it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.82it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.87it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.67it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.98it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.01it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.08it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.15it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.98it/s]
+torch.Size([1, 208640])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.15it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.07it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.23it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.39it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.77it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.71it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.73it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.67it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.52it/s]
+torch.Size([1, 74240])
+>> gpt_gen_time: 21.19 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.75 seconds
+>> bigvgan_time: 0.25 seconds
+>> Total inference time: 23.65 seconds
+>> Generated audio length: 13.03 seconds
+>> RTF: 1.8153
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk081_0.wav
+turn081 [S2] done: 23.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.33it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.74it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.87it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.00it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.31it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.39it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.36it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.21it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.23it/s]
+torch.Size([1, 116480])
+>> gpt_gen_time: 8.76 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 10.11 seconds
+>> Generated audio length: 5.28 seconds
+>> RTF: 1.9131
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk082_0.wav
+turn082 [S3] done: 10.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.22it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.39it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.31it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.31it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.31it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.12it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.02it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.99it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.17it/s]
+torch.Size([1, 187392])
+>> gpt_gen_time: 13.99 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 15.28 seconds
+>> Generated audio length: 8.50 seconds
+>> RTF: 1.7982
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk083_0.wav
+turn083 [S2] done: 15.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.53it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.47it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.02it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.97it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.89it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.83it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.88it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.66it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.77it/s]
+torch.Size([1, 61184])
+>> gpt_gen_time: 4.69 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 6.03 seconds
+>> Generated audio length: 2.77 seconds
+>> RTF: 2.1738
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk084_0.wav
+turn084 [S1] done: 6.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.26it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.99it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.88it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.95it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.86it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.87it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.62it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.47it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.69it/s]
+torch.Size([1, 139776])
+>> gpt_gen_time: 10.46 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.81 seconds
+>> Generated audio length: 6.34 seconds
+>> RTF: 1.8629
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk085_0.wav
+turn085 [S2] done: 11.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.88it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.45it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.75it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.62it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.71it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.90it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.86it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.10it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.86it/s]
+torch.Size([1, 71680])
+>> gpt_gen_time: 5.47 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 6.80 seconds
+>> Generated audio length: 3.25 seconds
+>> RTF: 2.0928
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk086_0.wav
+turn086 [S1] done: 6.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.01it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.21it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.46it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.55it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.66it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.47it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.43it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.25it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.39it/s]
+torch.Size([1, 243456])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.78it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.88it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.94it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.85it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.82it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.95it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.93it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.85it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.82it/s]
+torch.Size([1, 57600])
+>> gpt_gen_time: 22.47 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.73 seconds
+>> bigvgan_time: 0.20 seconds
+>> Total inference time: 24.87 seconds
+>> Generated audio length: 13.85 seconds
+>> RTF: 1.7950
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk087_0.wav
+turn087 [S2] done: 24.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.63it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.53it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.90it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.27it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.91it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.22it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.87it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.92it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.00it/s]
+torch.Size([1, 106752])
+>> gpt_gen_time: 7.99 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 9.39 seconds
+>> Generated audio length: 4.84 seconds
+>> RTF: 1.9399
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk088_0.wav
+turn088 [S3] done: 9.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.09it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.11it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.84it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.97it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.69it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.69it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.54it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.55it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.71it/s]
+torch.Size([1, 34304])
+>> gpt_gen_time: 2.70 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 4.04 seconds
+>> Generated audio length: 1.56 seconds
+>> RTF: 2.5997
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk089_0.wav
+turn089 [S1] done: 4.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.85it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.70it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.80it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.85it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.81it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.92it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.76it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.76it/s]
+torch.Size([1, 165120])
+>> gpt_gen_time: 12.35 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.84 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 13.69 seconds
+>> Generated audio length: 7.49 seconds
+>> RTF: 1.8280
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk090_0.wav
+turn090 [S3] done: 13.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.08it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.30it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.71it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.08it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.22it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.22it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.09it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.25it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.00it/s]
+torch.Size([1, 222208])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.61it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.02it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.02it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.09it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.19it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.19it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.15it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.19it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.09it/s]
+torch.Size([1, 227072])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 26.59it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.74it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.01it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.18it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.26it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.24it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.39it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.25it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.14it/s]
+torch.Size([1, 32000])
+>> gpt_gen_time: 36.27 seconds
+>> gpt_forward_time: 0.08 seconds
+>> s2mel_time: 2.63 seconds
+>> bigvgan_time: 0.38 seconds
+>> Total inference time: 39.68 seconds
+>> Generated audio length: 22.23 seconds
+>> RTF: 1.7853
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk091_0.wav
+turn091 [S2] done: 39.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.69it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.22it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.52it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.39it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.54it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.79it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.62it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.42it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.48it/s]
+torch.Size([1, 87552])
+>> gpt_gen_time: 6.71 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 8.10 seconds
+>> Generated audio length: 3.97 seconds
+>> RTF: 2.0393
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk092_0.wav
+turn092 [S1] done: 8.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.28it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.41it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.50it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.49it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.39it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.45it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.37it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.72it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.54it/s]
+torch.Size([1, 139008])
+>> gpt_gen_time: 10.44 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.79 seconds
+>> Generated audio length: 6.30 seconds
+>> RTF: 1.8705
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk093_0.wav
+turn093 [S2] done: 11.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.93it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.80it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.66it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.68it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.86it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.95it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.97it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.07it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.90it/s]
+torch.Size([1, 150528])
+>> gpt_gen_time: 11.27 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 12.61 seconds
+>> Generated audio length: 6.83 seconds
+>> RTF: 1.8473
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk094_0.wav
+turn094 [S1] done: 12.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.56it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.43it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.78it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.70it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.84it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.02it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.31it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.18it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.96it/s]
+torch.Size([1, 175104])
+>> gpt_gen_time: 13.05 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 14.39 seconds
+>> Generated audio length: 7.94 seconds
+>> RTF: 1.8117
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk095_0.wav
+turn095 [S2] done: 14.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.14it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.30it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.85it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.56it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.03it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.74it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.84it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.08it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.83it/s]
+torch.Size([1, 35072])
+>> gpt_gen_time: 2.77 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 4.16 seconds
+>> Generated audio length: 1.59 seconds
+>> RTF: 2.6132
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk096_0.wav
+turn096 [S3] done: 4.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 16%|®Ä®Ñ        | 4/25 [00:00<00:00, 30.17it/s] 32%|®Ä®Ä®Ä®á      | 8/25 [00:00<00:00, 29.74it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 29.51it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.39it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.37it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.67it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.34it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.41it/s]
+torch.Size([1, 234496])
+>> gpt_gen_time: 17.55 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 18.87 seconds
+>> Generated audio length: 10.63 seconds
+>> RTF: 1.7740
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk097_0.wav
+turn097 [S2] done: 18.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.94it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.80it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.77it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.47it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.74it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.70it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.48it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.60it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.53it/s]
+torch.Size([1, 39424])
+>> gpt_gen_time: 3.08 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 4.45 seconds
+>> Generated audio length: 1.79 seconds
+>> RTF: 2.4865
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk098_0.wav
+turn098 [S1] done: 4.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.81it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.80it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.11it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.85it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.15it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.45it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.48it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.39it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.22it/s]
+torch.Size([1, 203264])
+>> gpt_gen_time: 15.10 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 16.44 seconds
+>> Generated audio length: 9.22 seconds
+>> RTF: 1.7835
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk099_0.wav
+turn099 [S2] done: 16.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.20it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.02it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.22it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.49it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.48it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.85it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.73it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.76it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.57it/s]
+torch.Size([1, 182272])
+>> gpt_gen_time: 13.54 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.10 seconds
+>> Total inference time: 14.88 seconds
+>> Generated audio length: 8.27 seconds
+>> RTF: 1.7995
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk100_0.wav
+turn100 [S3] done: 14.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.06it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.51it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.96it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.77it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.79it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 30.08it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 30.09it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.93it/s]
+torch.Size([1, 196608])
+>> gpt_gen_time: 14.64 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.84 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.96 seconds
+>> Generated audio length: 8.92 seconds
+>> RTF: 1.7896
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk101_0.wav
+turn101 [S2] done: 16.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.54it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.03it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.20it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.20it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.84it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.19it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.12it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.79it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.95it/s]
+torch.Size([1, 139008])
+>> gpt_gen_time: 10.40 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 11.73 seconds
+>> Generated audio length: 6.30 seconds
+>> RTF: 1.8603
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk102_0.wav
+turn102 [S3] done: 11.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.99it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.94it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.31it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.55it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.60it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.36it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.49it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.61it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.49it/s]
+torch.Size([1, 228864])
+>> gpt_gen_time: 16.97 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 18.29 seconds
+>> Generated audio length: 10.38 seconds
+>> RTF: 1.7622
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk103_0.wav
+turn103 [S2] done: 18.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.02it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.45it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.65it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.86it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.08it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.88it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.97it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.81it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.83it/s]
+torch.Size([1, 135936])
+>> gpt_gen_time: 10.19 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.53 seconds
+>> Generated audio length: 6.16 seconds
+>> RTF: 1.8705
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk104_0.wav
+turn104 [S1] done: 11.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.18it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.68it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.33it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.59it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.04it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.15it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.14it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.00it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.81it/s]
+torch.Size([1, 226560])
+>> gpt_gen_time: 16.93 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 18.28 seconds
+>> Generated audio length: 10.27 seconds
+>> RTF: 1.7789
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk105_0.wav
+turn105 [S2] done: 18.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.12it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.36it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.92it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.07it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.25it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.34it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.24it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.32it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.21it/s]
+torch.Size([1, 82176])
+>> gpt_gen_time: 6.19 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 7.57 seconds
+>> Generated audio length: 3.73 seconds
+>> RTF: 2.0301
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk106_0.wav
+turn106 [S3] done: 7.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.73it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.06it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 28.98it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.14it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.18it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.23it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.20it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.41it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.13it/s]
+torch.Size([1, 183808])
+>> gpt_gen_time: 13.73 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.07 seconds
+>> Generated audio length: 8.34 seconds
+>> RTF: 1.8082
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk107_0.wav
+turn107 [S2] done: 15.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.70it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.74it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.78it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.85it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.79it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.53it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.82it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.68it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.68it/s]
+torch.Size([1, 116224])
+>> gpt_gen_time: 8.73 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 10.09 seconds
+>> Generated audio length: 5.27 seconds
+>> RTF: 1.9139
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk108_0.wav
+turn108 [S1] done: 10.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.91it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.32it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.39it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.49it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.27it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.57it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.51it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.75it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.48it/s]
+torch.Size([1, 132096])
+>> gpt_gen_time: 9.93 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.27 seconds
+>> Generated audio length: 5.99 seconds
+>> RTF: 1.8818
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk109_0.wav
+turn109 [S2] done: 11.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.56it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.59it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.04it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.93it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.05it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.72it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 27.97it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.29it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.53it/s]
+torch.Size([1, 141568])
+>> gpt_gen_time: 10.70 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 12.06 seconds
+>> Generated audio length: 6.42 seconds
+>> RTF: 1.8783
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk110_0.wav
+turn110 [S1] done: 12.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.44it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.16it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.30it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.21it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.16it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.18it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.17it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.26it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.20it/s]
+torch.Size([1, 155392])
+>> gpt_gen_time: 11.58 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 12.95 seconds
+>> Generated audio length: 7.05 seconds
+>> RTF: 1.8376
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk111_0.wav
+turn111 [S3] done: 13.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.71it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.97it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 27.39it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.06it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.51it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.83it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.81it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.75it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.56it/s]
+torch.Size([1, 242176])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 26.05it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.56it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.15it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 27.82it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.23it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 27.77it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 27.51it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 26.14it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 26.90it/s]
+torch.Size([1, 67328])
+>> gpt_gen_time: 23.19 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.82 seconds
+>> bigvgan_time: 0.23 seconds
+>> Total inference time: 25.60 seconds
+>> Generated audio length: 14.24 seconds
+>> RTF: 1.7984
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk112_0.wav
+turn112 [S2] done: 25.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.40it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.27it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.37it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.45it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.67it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.79it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.43it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.60it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.49it/s]
+torch.Size([1, 62720])
+>> gpt_gen_time: 4.79 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 6.18 seconds
+>> Generated audio length: 2.84 seconds
+>> RTF: 2.1741
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk113_0.wav
+turn113 [S1] done: 6.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.04it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.02it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.14it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.20it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.86it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.16it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.04it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.21it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.08it/s]
+torch.Size([1, 142592])
+>> gpt_gen_time: 10.56 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.89 seconds
+>> Generated audio length: 6.47 seconds
+>> RTF: 1.8387
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk114_0.wav
+turn114 [S2] done: 11.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.01it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.18it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.03it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.17it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.06it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.01it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.95it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.96it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.04it/s]
+torch.Size([1, 130304])
+>> gpt_gen_time: 9.64 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 10.98 seconds
+>> Generated audio length: 5.91 seconds
+>> RTF: 1.8575
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk115_0.wav
+turn115 [S1] done: 11.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.56it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.87it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.35it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.51it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.37it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.59it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.60it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.31it/s]
+torch.Size([1, 215296])
+>> gpt_gen_time: 15.82 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 17.14 seconds
+>> Generated audio length: 9.76 seconds
+>> RTF: 1.7553
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk116_0.wav
+turn116 [S2] done: 17.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.73it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.47it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.35it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.45it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.29it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.61it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.61it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.48it/s]
+torch.Size([1, 99840])
+>> gpt_gen_time: 7.41 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 8.78 seconds
+>> Generated audio length: 4.53 seconds
+>> RTF: 1.9393
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk117_0.wav
+turn117 [S3] done: 8.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.11it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.06it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.31it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.41it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.73it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.83it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.76it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.00it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.78it/s]
+torch.Size([1, 252160])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.82it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.54it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.26it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.47it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.60it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.49it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.18it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.30it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.39it/s]
+torch.Size([1, 33024])
+>> gpt_gen_time: 21.01 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.76 seconds
+>> bigvgan_time: 0.23 seconds
+>> Total inference time: 23.38 seconds
+>> Generated audio length: 13.13 seconds
+>> RTF: 1.7799
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk118_0.wav
+turn118 [S2] done: 23.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.18it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.89it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.71it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.41it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.65it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.62it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.83it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.66it/s]
+torch.Size([1, 83968])
+>> gpt_gen_time: 6.29 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 7.68 seconds
+>> Generated audio length: 3.81 seconds
+>> RTF: 2.0176
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk119_0.wav
+turn119 [S3] done: 7.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 16%|®Ä®Ñ        | 4/25 [00:00<00:00, 30.11it/s] 32%|®Ä®Ä®Ä®á      | 8/25 [00:00<00:00, 30.25it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 30.16it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 30.16it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 30.03it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 30.20it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 30.15it/s]
+torch.Size([1, 231936])
+>> gpt_gen_time: 17.02 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.84 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 18.34 seconds
+>> Generated audio length: 10.52 seconds
+>> RTF: 1.7433
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk120_0.wav
+turn120 [S2] done: 18.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.01it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.85it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.53it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.49it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.65it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.65it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.94it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.47it/s]
+torch.Size([1, 176896])
+>> gpt_gen_time: 12.96 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 14.34 seconds
+>> Generated audio length: 8.02 seconds
+>> RTF: 1.7874
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk121_0.wav
+turn121 [S3] done: 14.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 26.09it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 25.85it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 26.18it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 26.06it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 26.13it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 26.37it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 27.45it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 27.91it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 27.05it/s]
+torch.Size([1, 172544])
+>> gpt_gen_time: 13.44 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.93 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 14.84 seconds
+>> Generated audio length: 7.83 seconds
+>> RTF: 1.8967
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk122_0.wav
+turn122 [S2] done: 14.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.58it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.43it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.54it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.73it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.80it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.72it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.63it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.55it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.55it/s]
+torch.Size([1, 90112])
+>> gpt_gen_time: 6.74 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 8.10 seconds
+>> Generated audio length: 4.09 seconds
+>> RTF: 1.9815
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk123_0.wav
+turn123 [S1] done: 8.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.00it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.63it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.84it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.15it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.02it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.28it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.38it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.34it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.12it/s]
+torch.Size([1, 146176])
+>> gpt_gen_time: 10.81 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 12.14 seconds
+>> Generated audio length: 6.63 seconds
+>> RTF: 1.8312
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk124_0.wav
+turn124 [S2] done: 12.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.53it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.49it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.31it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.43it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.74it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.55it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.62it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.49it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.52it/s]
+torch.Size([1, 91904])
+>> gpt_gen_time: 6.83 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 8.16 seconds
+>> Generated audio length: 4.17 seconds
+>> RTF: 1.9571
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk125_0.wav
+turn125 [S3] done: 8.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.39it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.54it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.32it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.58it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.63it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.93it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.20it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.87it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.73it/s]
+torch.Size([1, 132864])
+>> gpt_gen_time: 9.79 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.12 seconds
+>> Generated audio length: 6.03 seconds
+>> RTF: 1.8448
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk126_0.wav
+turn126 [S2] done: 11.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.67it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.30it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.02it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.02it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.29it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.44it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.56it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.43it/s]
+torch.Size([1, 131072])
+>> gpt_gen_time: 9.77 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.13 seconds
+>> Generated audio length: 5.94 seconds
+>> RTF: 1.8726
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk127_0.wav
+turn127 [S3] done: 11.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.78it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.86it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.45it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.45it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.51it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 28.86it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.07it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.04it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.11it/s]
+torch.Size([1, 188416])
+>> gpt_gen_time: 13.98 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.31 seconds
+>> Generated audio length: 8.54 seconds
+>> RTF: 1.7917
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk128_0.wav
+turn128 [S2] done: 15.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.37it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.12it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.99it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.67it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.38it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.53it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.77it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.46it/s]
+torch.Size([1, 89600])
+>> gpt_gen_time: 6.69 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 8.07 seconds
+>> Generated audio length: 4.06 seconds
+>> RTF: 1.9855
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk129_0.wav
+turn129 [S3] done: 8.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.25it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.23it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.17it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.36it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.58it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.65it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.50it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.73it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.57it/s]
+torch.Size([1, 153088])
+>> gpt_gen_time: 11.33 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 12.67 seconds
+>> Generated audio length: 6.94 seconds
+>> RTF: 1.8244
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk130_0.wav
+turn130 [S2] done: 12.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.99it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.82it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.23it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.76it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.86it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.84it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.02it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.06it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.81it/s]
+torch.Size([1, 97280])
+>> gpt_gen_time: 7.18 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 8.52 seconds
+>> Generated audio length: 4.41 seconds
+>> RTF: 1.9318
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk131_0.wav
+turn131 [S1] done: 8.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.78it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.89it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.11it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.13it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.48it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.68it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.90it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.69it/s]
+torch.Size([1, 215552])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.05it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.60it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.32it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.68it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.58it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.85it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.56it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.47it/s]
+torch.Size([1, 55296])
+>> gpt_gen_time: 20.01 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.70 seconds
+>> bigvgan_time: 0.21 seconds
+>> Total inference time: 22.30 seconds
+>> Generated audio length: 12.48 seconds
+>> RTF: 1.7866
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk132_0.wav
+turn132 [S2] done: 22.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.09it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.41it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.25it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.23it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.43it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.62it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.58it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.64it/s]
+torch.Size([1, 129792])
+>> gpt_gen_time: 9.57 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 10.94 seconds
+>> Generated audio length: 5.89 seconds
+>> RTF: 1.8583
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk133_0.wav
+turn133 [S3] done: 11.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.35it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.18it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.96it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.24it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.26it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.14it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.21it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.25it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.10it/s]
+torch.Size([1, 258816])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.19it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.94it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.82it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.71it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.81it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.76it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.86it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.06it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.86it/s]
+torch.Size([1, 32512])
+>> gpt_gen_time: 21.49 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.74 seconds
+>> bigvgan_time: 0.23 seconds
+>> Total inference time: 23.84 seconds
+>> Generated audio length: 13.41 seconds
+>> RTF: 1.7772
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk134_0.wav
+turn134 [S2] done: 23.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.61it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.88it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.81it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.98it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.01it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.93it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.89it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.66it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.78it/s]
+torch.Size([1, 77312])
+>> gpt_gen_time: 5.86 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 7.24 seconds
+>> Generated audio length: 3.51 seconds
+>> RTF: 2.0645
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk135_0.wav
+turn135 [S1] done: 7.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.34it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.24it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.45it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.37it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.44it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.48it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.62it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.62it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.45it/s]
+torch.Size([1, 39936])
+>> gpt_gen_time: 3.07 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.11 seconds
+>> Total inference time: 4.42 seconds
+>> Generated audio length: 1.81 seconds
+>> RTF: 2.4395
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk136_0.wav
+turn136 [S2] done: 4.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.65it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.97it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 30.11it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 30.24it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 30.31it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 30.16it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 30.17it/s]
+torch.Size([1, 130304])
+>> gpt_gen_time: 10.88 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.83 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 12.19 seconds
+>> Generated audio length: 5.91 seconds
+>> RTF: 2.0622
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk137_0.wav
+turn137 [S3] done: 12.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.06it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.79it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.95it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.21it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.00it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.84it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.69it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.90it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.85it/s]
+torch.Size([1, 189696])
+>> gpt_gen_time: 14.01 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.36 seconds
+>> Generated audio length: 8.60 seconds
+>> RTF: 1.7855
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk138_0.wav
+turn138 [S2] done: 15.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 29.35it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.27it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.18it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.19it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.31it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.35it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.30it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.12it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.23it/s]
+torch.Size([1, 123136])
+>> gpt_gen_time: 9.24 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 10.59 seconds
+>> Generated audio length: 5.58 seconds
+>> RTF: 1.8961
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk139_0.wav
+turn139 [S3] done: 10.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.77it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.80it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.11it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.07it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.90it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.69it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.90it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.78it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.84it/s]
+torch.Size([1, 247296])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.40it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.54it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.75it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.44it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.36it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.87it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.83it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.90it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.68it/s]
+torch.Size([1, 54528])
+>> gpt_gen_time: 22.43 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.75 seconds
+>> bigvgan_time: 0.23 seconds
+>> Total inference time: 24.79 seconds
+>> Generated audio length: 13.89 seconds
+>> RTF: 1.7848
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk140_0.wav
+turn140 [S2] done: 24.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.14it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.91it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.36it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.70it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.63it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.67it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.67it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.89it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.63it/s]
+torch.Size([1, 97536])
+>> gpt_gen_time: 7.33 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.88 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 8.71 seconds
+>> Generated audio length: 4.42 seconds
+>> RTF: 1.9686
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk141_0.wav
+turn141 [S1] done: 8.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.24it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.57it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.87it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.17it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.37it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 29.27it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.43it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.48it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.19it/s]
+torch.Size([1, 220160])
+>> gpt_gen_time: 16.28 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 17.61 seconds
+>> Generated audio length: 9.98 seconds
+>> RTF: 1.7638
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk142_0.wav
+turn142 [S2] done: 17.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.64it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.51it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.34it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.32it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.24it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 28.87it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.26it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.23it/s]
+torch.Size([1, 76544])
+>> gpt_gen_time: 5.73 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 7.12 seconds
+>> Generated audio length: 3.47 seconds
+>> RTF: 2.0498
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk143_0.wav
+turn143 [S3] done: 7.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.20it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.51it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.19it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.32it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.44it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.26it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.21it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.44it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.33it/s]
+torch.Size([1, 135424])
+>> gpt_gen_time: 10.15 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.12 seconds
+>> Total inference time: 11.51 seconds
+>> Generated audio length: 6.14 seconds
+>> RTF: 1.8742
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk144_0.wav
+turn144 [S2] done: 11.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.30it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.92it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.21it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.37it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.60it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.78it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 29.04it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.02it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.66it/s]
+torch.Size([1, 227840])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.40it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.53it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 27.68it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 27.09it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 27.52it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 27.32it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 27.66it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 27.72it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 27.53it/s]
+torch.Size([1, 145152])
+>> gpt_gen_time: 27.92 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.79 seconds
+>> bigvgan_time: 0.25 seconds
+>> Total inference time: 30.35 seconds
+>> Generated audio length: 17.12 seconds
+>> RTF: 1.7730
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk145_0.wav
+turn145 [S1] done: 30.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.52it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.68it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.58it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.89it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.59it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.73it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.75it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 29.02it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.84it/s]
+torch.Size([1, 222208])
+>> gpt_gen_time: 16.72 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.87 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 18.06 seconds
+>> Generated audio length: 10.08 seconds
+>> RTF: 1.7922
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk146_0.wav
+turn146 [S2] done: 18.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.49it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 29.32it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 29.51it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 29.71it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.67it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.71it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.64it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.94it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.31it/s]
+torch.Size([1, 216064])
+>> gpt_gen_time: 15.95 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 17.30 seconds
+>> Generated audio length: 9.80 seconds
+>> RTF: 1.7658
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk147_0.wav
+turn147 [S1] done: 17.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.90it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.13it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 29.54it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 29.45it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.38it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.46it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.42it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.32it/s]
+torch.Size([1, 218368])
+>> gpt_gen_time: 16.32 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 17.66 seconds
+>> Generated audio length: 9.90 seconds
+>> RTF: 1.7835
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk148_0.wav
+turn148 [S2] done: 17.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 26.63it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.86it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.69it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 29.03it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 29.56it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.43it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 29.59it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.56it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.21it/s]
+torch.Size([1, 115712])
+>> gpt_gen_time: 8.76 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 10.15 seconds
+>> Generated audio length: 5.25 seconds
+>> RTF: 1.9339
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk149_0.wav
+turn149 [S3] done: 10.2s (1 ∂Œ)
+>> starting inference...
+  >> Warning: input text contains 1 unknown tokens (id=2):
+     Tokens which can't be encoded:  ['_']
+     Consider updating the BPE model or modifying the text to avoid unknown tokens.
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.18it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.64it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.25it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.22it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.15it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.27it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.58it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.78it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.54it/s]
+torch.Size([1, 271872])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.13it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 27.97it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.39it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.58it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 28.88it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 28.65it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 28.79it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 28.87it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 28.70it/s]
+torch.Size([1, 161792])
+>> gpt_gen_time: 32.54 seconds
+>> gpt_forward_time: 0.05 seconds
+>> s2mel_time: 1.76 seconds
+>> bigvgan_time: 0.24 seconds
+>> Total inference time: 34.92 seconds
+>> Generated audio length: 19.87 seconds
+>> RTF: 1.7576
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk150_0.wav
+turn150 [S2] done: 34.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 27.67it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 28.47it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 28.84it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 28.99it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 29.16it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 29.62it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 30.11it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.61it/s]
+torch.Size([1, 181760])
+>> gpt_gen_time: 13.54 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 14.89 seconds
+>> Generated audio length: 8.24 seconds
+>> RTF: 1.8065
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk151_0.wav
+turn151 [S3] done: 14.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 28.17it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 29.52it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 29.10it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 28.88it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 29.24it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 29.38it/s] 92%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á| 23/25 [00:00<00:00, 29.56it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 29.29it/s]
+torch.Size([1, 190464])
+>> gpt_gen_time: 14.31 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.86 seconds
+>> bigvgan_time: 0.13 seconds
+>> Total inference time: 15.64 seconds
+>> Generated audio length: 8.64 seconds
+>> RTF: 1.8104
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk152_0.wav
+turn152 [S2] done: 15.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 12%|®Ä®á        | 3/25 [00:00<00:00, 23.11it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 24.85it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 26.20it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 27.22it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 27.07it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 27.41it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 27.49it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 27.42it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 26.92it/s]
+torch.Size([1, 139008])
+>> gpt_gen_time: 10.52 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.93 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 11.90 seconds
+>> Generated audio length: 6.30 seconds
+>> RTF: 1.8882
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk153_0.wav
+turn153 [S1] done: 11.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 58.87it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 55.44it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 52.52it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 52.80it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 52.58it/s]
+torch.Size([1, 216832])
+>> gpt_gen_time: 8.24 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.48 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 9.15 seconds
+>> Generated audio length: 9.83 seconds
+>> RTF: 0.9306
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk154_0.wav
+turn154 [S2] done: 9.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 47.62it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 43.92it/s] 64%|®Ä®Ä®Ä®Ä®Ä®Ä®Ö   | 16/25 [00:00<00:00, 43.76it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 43.24it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 43.76it/s]
+torch.Size([1, 186112])
+>> gpt_gen_time: 6.32 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.58 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 7.23 seconds
+>> Generated audio length: 8.44 seconds
+>> RTF: 0.8570
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk155_0.wav
+turn155 [S3] done: 7.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 20%|®Ä®Ä        | 5/25 [00:00<00:00, 45.17it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 51.83it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 52.43it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 54.00it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 53.23it/s]
+torch.Size([1, 192768])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 67.00it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 60.08it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 61.66it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 60.93it/s]
+torch.Size([1, 108288])
+>> gpt_gen_time: 10.40 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.89 seconds
+>> bigvgan_time: 0.15 seconds
+>> Total inference time: 11.64 seconds
+>> Generated audio length: 13.85 seconds
+>> RTF: 0.8405
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk156_0.wav
+turn156 [S2] done: 11.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 58.21it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 57.86it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 57.93it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 59.66it/s]
+torch.Size([1, 141568])
+>> gpt_gen_time: 5.39 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.43 seconds
+>> bigvgan_time: 0.04 seconds
+>> Total inference time: 6.07 seconds
+>> Generated audio length: 6.42 seconds
+>> RTF: 0.9456
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk157_0.wav
+turn157 [S1] done: 6.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 57.53it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 53.07it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 51.85it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 53.76it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 53.64it/s]
+torch.Size([1, 209152])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 16%|®Ä®Ñ        | 4/25 [00:00<00:00, 36.56it/s] 44%|®Ä®Ä®Ä®Ä®Ö     | 11/25 [00:00<00:00, 55.42it/s] 68%|®Ä®Ä®Ä®Ä®Ä®Ä®Ç   | 17/25 [00:00<00:00, 56.13it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 60.09it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 57.64it/s]
+torch.Size([1, 65024])
+>> gpt_gen_time: 10.39 seconds
+>> gpt_forward_time: 0.03 seconds
+>> s2mel_time: 0.91 seconds
+>> bigvgan_time: 0.16 seconds
+>> Total inference time: 11.68 seconds
+>> Generated audio length: 12.63 seconds
+>> RTF: 0.9244
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk158_0.wav
+turn158 [S2] done: 11.7s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 57.46it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 53.09it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 54.65it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 57.05it/s]
+torch.Size([1, 128512])
+>> gpt_gen_time: 4.63 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.44 seconds
+>> bigvgan_time: 0.06 seconds
+>> Total inference time: 5.37 seconds
+>> Generated audio length: 5.83 seconds
+>> RTF: 0.9215
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk159_0.wav
+turn159 [S1] done: 5.4s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 56.25it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 61.23it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 61.02it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 60.94it/s]
+torch.Size([1, 175616])
+>> gpt_gen_time: 6.24 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.42 seconds
+>> bigvgan_time: 0.07 seconds
+>> Total inference time: 6.91 seconds
+>> Generated audio length: 7.96 seconds
+>> RTF: 0.8681
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk160_0.wav
+turn160 [S2] done: 6.9s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 20%|®Ä®Ä        | 5/25 [00:00<00:00, 44.94it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 44.91it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 41.30it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 40.86it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 40.44it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 41.28it/s]
+torch.Size([1, 233728])
+>> gpt_gen_time: 8.32 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.61 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 9.28 seconds
+>> Generated audio length: 10.60 seconds
+>> RTF: 0.8756
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk161_0.wav
+turn161 [S3] done: 9.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 16%|®Ä®Ñ        | 4/25 [00:00<00:00, 39.84it/s] 36%|®Ä®Ä®Ä®Ñ      | 9/25 [00:00<00:00, 44.24it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 48.40it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 51.26it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 47.37it/s]
+torch.Size([1, 168960])
+>> gpt_gen_time: 6.20 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.53 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 7.03 seconds
+>> Generated audio length: 7.66 seconds
+>> RTF: 0.9177
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk162_0.wav
+turn162 [S1] done: 7.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 57.53it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 56.32it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 58.46it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 59.30it/s]
+torch.Size([1, 169728])
+>> gpt_gen_time: 6.06 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.43 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 6.81 seconds
+>> Generated audio length: 7.70 seconds
+>> RTF: 0.8851
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk163_0.wav
+turn163 [S2] done: 6.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 53.00it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 53.44it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 49.02it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 52.26it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 52.40it/s]
+torch.Size([1, 220160])
+>> gpt_gen_time: 7.74 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.49 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 8.51 seconds
+>> Generated audio length: 9.98 seconds
+>> RTF: 0.8522
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk164_0.wav
+turn164 [S1] done: 8.5s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 54.32it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 52.25it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 53.10it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 53.54it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 52.97it/s]
+torch.Size([1, 239872])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 63.09it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 59.13it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 60.57it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 59.69it/s]
+torch.Size([1, 152320])
+>> gpt_gen_time: 13.87 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.91 seconds
+>> bigvgan_time: 0.18 seconds
+>> Total inference time: 15.24 seconds
+>> Generated audio length: 17.99 seconds
+>> RTF: 0.8474
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk165_0.wav
+turn165 [S2] done: 15.2s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 20%|®Ä®Ä        | 5/25 [00:00<00:00, 48.45it/s] 40%|®Ä®Ä®Ä®Ä      | 10/25 [00:00<00:00, 43.26it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 41.76it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 42.92it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 41.33it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 42.19it/s]
+torch.Size([1, 196608])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 58.96it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 56.35it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 53.28it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 54.67it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 54.85it/s]
+torch.Size([1, 47872])
+>> gpt_gen_time: 8.52 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 1.06 seconds
+>> bigvgan_time: 0.15 seconds
+>> Total inference time: 10.03 seconds
+>> Generated audio length: 11.29 seconds
+>> RTF: 0.8885
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk166_0.wav
+turn166 [S3] done: 10.0s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 60.01it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 52.68it/s] 80%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä  | 20/25 [00:00<00:00, 53.55it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 53.64it/s]
+torch.Size([1, 201984])
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 62.26it/s] 60%|®Ä®Ä®Ä®Ä®Ä®Ä    | 15/25 [00:00<00:00, 65.73it/s] 88%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ç | 22/25 [00:00<00:00, 66.99it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 66.81it/s]
+torch.Size([1, 70656])
+>> gpt_gen_time: 9.39 seconds
+>> gpt_forward_time: 0.02 seconds
+>> s2mel_time: 0.85 seconds
+>> bigvgan_time: 0.15 seconds
+>> Total inference time: 10.60 seconds
+>> Generated audio length: 12.56 seconds
+>> RTF: 0.8440
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk167_0.wav
+turn167 [S2] done: 10.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 59.25it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 55.17it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 50.78it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 51.62it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 52.86it/s]
+torch.Size([1, 183808])
+>> gpt_gen_time: 6.54 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.48 seconds
+>> bigvgan_time: 0.08 seconds
+>> Total inference time: 7.29 seconds
+>> Generated audio length: 8.34 seconds
+>> RTF: 0.8744
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk168_0.wav
+turn168 [S1] done: 7.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 57.06it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 51.81it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 49.09it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 50.40it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 51.44it/s]
+torch.Size([1, 240640])
+>> gpt_gen_time: 8.50 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.50 seconds
+>> bigvgan_time: 0.09 seconds
+>> Total inference time: 9.29 seconds
+>> Generated audio length: 10.91 seconds
+>> RTF: 0.8509
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk169_0.wav
+turn169 [S2] done: 9.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 28%|®Ä®Ä®Ç       | 7/25 [00:00<00:00, 63.14it/s] 56%|®Ä®Ä®Ä®Ä®Ä®Ñ    | 14/25 [00:00<00:00, 60.90it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 55.95it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 57.05it/s]
+torch.Size([1, 120576])
+>> gpt_gen_time: 4.06 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.44 seconds
+>> bigvgan_time: 0.07 seconds
+>> Total inference time: 4.76 seconds
+>> Generated audio length: 5.47 seconds
+>> RTF: 0.8707
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk170_0.wav
+turn170 [S1] done: 4.8s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 57.50it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 50.73it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 52.40it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 52.11it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 51.74it/s]
+torch.Size([1, 242944])
+>> gpt_gen_time: 8.35 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.49 seconds
+>> bigvgan_time: 0.06 seconds
+>> Total inference time: 9.12 seconds
+>> Generated audio length: 11.02 seconds
+>> RTF: 0.8276
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk171_0.wav
+turn171 [S2] done: 9.1s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 24%|®Ä®Ä®Ö       | 6/25 [00:00<00:00, 56.66it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 50.62it/s] 72%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®á  | 18/25 [00:00<00:00, 47.81it/s] 96%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ| 24/25 [00:00<00:00, 47.81it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 49.30it/s]
+torch.Size([1, 155392])
+>> gpt_gen_time: 5.48 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.51 seconds
+>> bigvgan_time: 0.07 seconds
+>> Total inference time: 6.30 seconds
+>> Generated audio length: 7.05 seconds
+>> RTF: 0.8944
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk172_0.wav
+turn172 [S3] done: 6.3s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 20%|®Ä®Ä        | 5/25 [00:00<00:00, 49.84it/s] 48%|®Ä®Ä®Ä®Ä®Ç     | 12/25 [00:00<00:00, 61.52it/s] 76%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ñ  | 19/25 [00:00<00:00, 64.30it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 64.15it/s]
+torch.Size([1, 52736])
+>> gpt_gen_time: 1.97 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.39 seconds
+>> bigvgan_time: 0.07 seconds
+>> Total inference time: 2.61 seconds
+>> Generated audio length: 2.39 seconds
+>> RTF: 1.0925
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk173_0.wav
+turn173 [S2] done: 2.6s (1 ∂Œ)
+>> starting inference...
+Use the specified emotion vector
+  0%|          | 0/25 [00:00<?, ?it/s] 20%|®Ä®Ä        | 5/25 [00:00<00:00, 47.19it/s] 52%|®Ä®Ä®Ä®Ä®Ä®á    | 13/25 [00:00<00:00, 63.87it/s] 84%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ö | 21/25 [00:00<00:00, 67.48it/s]100%|®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä®Ä| 25/25 [00:00<00:00, 66.04it/s]
+torch.Size([1, 23552])
+>> gpt_gen_time: 0.85 seconds
+>> gpt_forward_time: 0.01 seconds
+>> s2mel_time: 0.38 seconds
+>> bigvgan_time: 0.07 seconds
+>> Total inference time: 1.48 seconds
+>> Generated audio length: 1.07 seconds
+>> RTF: 1.3813
+>> wav file saved to: E:\Laboratory\Devpodcast\shows\vllm-podcast\episodes\ep02-engine-heartbeat\audio\segments\_brk174_0.wav
+turn174 [S1] done: 1.5s (1 ∂Œ)
+[proc] œÏ∂»πÈ“ªªØµΩ -17.0dB + ±‰ÀŸ 0.88x (ffmpeg atempo)
+[concat] ∆¥Ω”£®œÏ∂»πÈ“ªªØ£©...
+[done] episode.wav 1573.1s @ 22050Hz (±‰ÀŸ 0.88x)
